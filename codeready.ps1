@@ -477,9 +477,13 @@ function Show-ProfileMenu {
     Write-Host "  [5] Full Stack .NET    - C#/.NET, Node.js, TypeScript + VS 2026, VS Code" -ForegroundColor White
     Write-Host "  [6] Game Developer     - C/C++, C# + VS 2026, VS Code, Rider" -ForegroundColor White
     Write-Host "  [7] AI / ML Engineer   - Python, Mojo, Rust + VS Code, PyCharm, Cursor" -ForegroundColor White
-    Write-Host "  [8] Custom Setup       - Choose your own languages, versions, and IDEs" -ForegroundColor Yellow
     Write-Host ""
-    return (Read-Host "  Select profile (1-8)")
+    Write-Host "  [8] Custom Setup       - Choose your own languages, versions, and IDEs" -ForegroundColor Yellow
+    Write-Host "  [9] INSTALL EVERYTHING - All languages, IDEs, tools, frameworks" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "  You can select multiple profiles separated by spaces (e.g. 1 3 7)" -ForegroundColor DarkGray
+    Write-Host ""
+    return (Read-Host "  Select profile(s)")
 }
 
 # ================================================================
@@ -577,35 +581,94 @@ function Main {
     $selectedToolKeys = @()
     $selectedFWKeys = @()
 
-    switch ($profileChoice) {
-        "1" { $selectedLangs = @("nodejs","python","php","typescript"); $selectedIDEKeys = @("vscode","sublime");  $selectedToolKeys = @("git","docker","postman","nvm"); $selectedFWKeys = @("yarn","pnpm","vite","react","tailwind","express") }
-        "2" { $selectedLangs = @("java","kotlin","dart");              $selectedIDEKeys = @("android","vscode");   $selectedToolKeys = @("git"); $selectedFWKeys = @("reactnative","expo") }
-        "3" { $selectedLangs = @("python","mojo");                     $selectedIDEKeys = @("vscode","pycharm");   $selectedToolKeys = @("git","docker"); $selectedFWKeys = @("uv","conda","venvstudio","streamlit","fastapi") }
-        "4" { $selectedLangs = @("cpp","rust","zig","go");             $selectedIDEKeys = @("vscode","clion","vim"); $selectedToolKeys = @("git","cmake"); $selectedFWKeys = @("cargo-watch","wasm-pack") }
-        "5" { $selectedLangs = @("csharp","nodejs","typescript");      $selectedIDEKeys = @("vs2026","vscode");    $selectedToolKeys = @("git","docker","postman"); $selectedFWKeys = @("yarn","vite","react","nextjs") }
-        "6" { $selectedLangs = @("cpp","csharp");                      $selectedIDEKeys = @("vs2026","vscode","rider"); $selectedToolKeys = @("git","cmake"); $selectedFWKeys = @() }
-        "7" { $selectedLangs = @("python","mojo","rust");              $selectedIDEKeys = @("vscode","pycharm","cursor"); $selectedToolKeys = @("git","docker"); $selectedFWKeys = @("uv","conda","venvstudio","streamlit","fastapi") }
-        default {
-            # Custom: language selection
-            $langNames = $langs | ForEach-Object { "$($_.Name) - $($_.Desc)" }
-            $langIdxs = Show-NumberMenu "Select Programming Languages" $langNames
-            foreach ($idx in $langIdxs) { $selectedLangs += $langs[$idx].Key }
+    # Helper to merge profile selections (avoids duplicates)
+    function Add-ProfileItems($langList, $ideList, $toolList, $fwList) {
+        foreach ($l in $langList)  { if ($selectedLangs    -notcontains $l) { $script:tmpLangs += $l } }
+        foreach ($i in $ideList)   { if ($selectedIDEKeys  -notcontains $i) { $script:tmpIDEs  += $i } }
+        foreach ($t in $toolList)  { if ($selectedToolKeys -notcontains $t) { $script:tmpTools += $t } }
+        foreach ($f in $fwList)    { if ($selectedFWKeys   -notcontains $f) { $script:tmpFWs   += $f } }
+    }
 
-            # Custom: IDE selection
-            $ideNames = $ides | ForEach-Object { "$($_.Name) - $($_.Desc)" }
-            $ideIdxs = Show-NumberMenu "Select IDEs and Editors" $ideNames
-            foreach ($idx in $ideIdxs) { $selectedIDEKeys += $ides[$idx].Key }
+    $script:tmpLangs = @(); $script:tmpIDEs = @(); $script:tmpTools = @(); $script:tmpFWs = @()
 
-            # Custom: tool selection
-            $toolNames = $tools | ForEach-Object { "$($_.Name) - $($_.Desc)" }
-            $toolIdxs = Show-NumberMenu "Select Developer Tools" $toolNames
-            foreach ($idx in $toolIdxs) { $selectedToolKeys += $tools[$idx].Key }
+    # Parse multiple profile choices
+    $profileChoices = $profileChoice.Split(" ", [StringSplitOptions]::RemoveEmptyEntries)
+    $isCustom = $false
+    $isInstallAll = $false
 
-            # Custom: framework selection
-            $fws = Get-Frameworks
-            $fwNames = $fws | ForEach-Object { "$($_.Name) - $($_.Desc)" }
-            $fwIdxs = Show-NumberMenu "Select Frameworks, Libraries and Package Managers" $fwNames
-            foreach ($idx in $fwIdxs) { $selectedFWKeys += $fws[$idx].Key }
+    foreach ($pc in $profileChoices) {
+        switch ($pc) {
+            "1" { Add-ProfileItems @("nodejs","python","php","typescript") @("vscode","sublime") @("git","docker","postman","nvm") @("yarn","pnpm","vite","react","tailwind","express") }
+            "2" { Add-ProfileItems @("java","kotlin","dart") @("android","vscode") @("git") @("reactnative","expo") }
+            "3" { Add-ProfileItems @("python","mojo") @("vscode","pycharm") @("git","docker") @("uv","conda","venvstudio","streamlit","fastapi") }
+            "4" { Add-ProfileItems @("cpp","rust","zig","go") @("vscode","clion","vim") @("git","cmake") @("cargo-watch","wasm-pack") }
+            "5" { Add-ProfileItems @("csharp","nodejs","typescript") @("vs2026","vscode") @("git","docker","postman") @("yarn","vite","react","nextjs") }
+            "6" { Add-ProfileItems @("cpp","csharp") @("vs2026","vscode","rider") @("git","cmake") @() }
+            "7" { Add-ProfileItems @("python","mojo","rust") @("vscode","pycharm","cursor") @("git","docker") @("uv","conda","venvstudio","streamlit","fastapi") }
+            "8" { $isCustom = $true }
+            "9" { $isInstallAll = $true }
+        }
+    }
+
+    if ($isInstallAll) {
+        # INSTALL EVERYTHING
+        Write-Host ""
+        Write-Host "  ============================================================" -ForegroundColor Red
+        Write-Host "  WARNING: You are about to install EVERYTHING!" -ForegroundColor Red
+        Write-Host "  ============================================================" -ForegroundColor Red
+        Write-Host ""
+        Write-Host "  This includes:" -ForegroundColor Yellow
+        Write-Host "    - 18 programming languages and runtimes" -ForegroundColor White
+        Write-Host "    - 17 IDEs and editors" -ForegroundColor White
+        Write-Host "    - 9 developer tools" -ForegroundColor White
+        Write-Host "    - 38 frameworks, libraries and package managers" -ForegroundColor White
+        Write-Host ""
+        Write-Host "  Estimated time: 45-90 minutes (depends on internet speed)" -ForegroundColor Yellow
+        Write-Host "  Disk space: approximately 30-50 GB" -ForegroundColor Yellow
+        Write-Host "  System load: HIGH - your PC may slow down during install" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "  RECOMMENDATION: Close other programs before proceeding." -ForegroundColor Cyan
+        Write-Host ""
+        $confirmAll = Read-Host "  Type 'YES' (uppercase) to confirm"
+        if ($confirmAll -ne "YES") { Write-Info "Cancelled. Good choice - select specific profiles instead!"; return }
+
+        $selectedLangs = $langs | ForEach-Object { $_.Key }
+        $selectedIDEKeys = $ides | ForEach-Object { $_.Key }
+        $selectedToolKeys = $tools | ForEach-Object { $_.Key }
+        $fws = Get-Frameworks
+        $selectedFWKeys = $fws | ForEach-Object { $_.Key }
+    }
+    elseif ($isCustom) {
+        # Custom: language selection
+        $langNames = $langs | ForEach-Object { "$($_.Name) - $($_.Desc)" }
+        $langIdxs = Show-NumberMenu "Select Programming Languages" $langNames
+        foreach ($idx in $langIdxs) { $selectedLangs += $langs[$idx].Key }
+
+        # Custom: IDE selection
+        $ideNames = $ides | ForEach-Object { "$($_.Name) - $($_.Desc)" }
+        $ideIdxs = Show-NumberMenu "Select IDEs and Editors" $ideNames
+        foreach ($idx in $ideIdxs) { $selectedIDEKeys += $ides[$idx].Key }
+
+        # Custom: tool selection
+        $toolNames = $tools | ForEach-Object { "$($_.Name) - $($_.Desc)" }
+        $toolIdxs = Show-NumberMenu "Select Developer Tools" $toolNames
+        foreach ($idx in $toolIdxs) { $selectedToolKeys += $tools[$idx].Key }
+
+        # Custom: framework selection
+        $fws = Get-Frameworks
+        $fwNames = $fws | ForEach-Object { "$($_.Name) - $($_.Desc)" }
+        $fwIdxs = Show-NumberMenu "Select Frameworks, Libraries and Package Managers" $fwNames
+        foreach ($idx in $fwIdxs) { $selectedFWKeys += $fws[$idx].Key }
+    }
+    else {
+        # Merge collected profile items (deduplicated)
+        $selectedLangs = $script:tmpLangs | Select-Object -Unique
+        $selectedIDEKeys = $script:tmpIDEs | Select-Object -Unique
+        $selectedToolKeys = $script:tmpTools | Select-Object -Unique
+        $selectedFWKeys = $script:tmpFWs | Select-Object -Unique
+
+        if ($profileChoices.Count -gt 1) {
+            Write-Info "Merged $($profileChoices.Count) profiles - duplicates removed."
         }
     }
 

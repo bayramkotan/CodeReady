@@ -626,9 +626,13 @@ show_profile_menu() {
     echo -e "  ${BOLD}[5]${NC} Full Stack .NET    ${GRAY}- C#/.NET, Node.js, TypeScript + VS Code, Rider${NC}"
     echo -e "  ${BOLD}[6]${NC} Game Developer     ${GRAY}- C/C++, C# + VS Code, Rider${NC}"
     echo -e "  ${BOLD}[7]${NC} AI / ML Engineer   ${GRAY}- Python, Mojo, Rust + VS Code, PyCharm, Cursor${NC}"
-    echo -e "  ${BOLD}[8]${NC} Custom Setup       ${GRAY}- Choose your own${NC}"
     echo ""
-    read -rp "  Select profile (1-8): " choice
+    echo -e "  ${BOLD}[8]${NC} Custom Setup       ${GRAY}- Choose your own${NC}"
+    echo -e "  ${RED}[9] INSTALL EVERYTHING ${GRAY}- All languages, IDEs, tools, frameworks${NC}"
+    echo ""
+    echo -e "  ${GRAY}You can select multiple profiles separated by spaces (e.g. 1 3 7)${NC}"
+    echo ""
+    read -rp "  Select profile(s): " choice
     echo "$choice"
 }
 
@@ -663,32 +667,76 @@ main() {
     local profile
     profile=$(show_profile_menu)
 
-    case "$profile" in
-        1) sel_langs=("nodejs" "python" "php" "typescript"); sel_ides=("vscode" "sublime"); sel_tools=("git" "docker" "postman"); sel_fws=("yarn" "pnpm" "vite" "react" "tailwind" "express") ;;
-        2) sel_langs=("java" "kotlin" "dart"); sel_ides=("android" "vscode"); sel_tools=("git"); sel_fws=("reactnative" "expo") ;;
-        3) sel_langs=("python" "mojo"); sel_ides=("vscode" "pycharm"); sel_tools=("git" "docker"); sel_fws=("uv" "conda" "venvstudio" "streamlit" "fastapi") ;;
-        4) sel_langs=("cpp" "rust" "zig" "go"); sel_ides=("vscode" "clion" "vim"); sel_tools=("git" "cmake"); sel_fws=("cargo-watch" "wasm-pack") ;;
-        5) sel_langs=("csharp" "nodejs" "typescript"); sel_ides=("vscode" "rider"); sel_tools=("git" "docker" "postman"); sel_fws=("yarn" "vite" "react" "nextjs") ;;
-        6) sel_langs=("cpp" "csharp"); sel_ides=("vscode" "rider"); sel_tools=("git" "cmake"); sel_fws=() ;;
-        7) sel_langs=("python" "mojo" "rust"); sel_ides=("vscode" "pycharm" "cursor"); sel_tools=("git" "docker"); sel_fws=("uv" "conda" "venvstudio" "streamlit" "fastapi") ;;
-        *)
-            local sel_idx=()
-            number_menu "Select Programming Languages" LANG_LABELS sel_idx
-            for idx in "${sel_idx[@]}"; do sel_langs+=("${LANG_KEYS[$idx]}"); done
+    # Helper: add items avoiding duplicates
+    add_unique() {
+        local -n _arr=$1; shift
+        for item in "$@"; do
+            local found=0
+            for existing in "${_arr[@]}"; do [[ "$existing" == "$item" ]] && found=1 && break; done
+            [[ $found -eq 0 ]] && _arr+=("$item")
+        done
+    }
 
-            sel_idx=()
-            number_menu "Select IDEs and Editors" IDE_LABELS sel_idx
-            for idx in "${sel_idx[@]}"; do sel_ides+=("${IDE_KEYS[$idx]}"); done
+    local is_custom=0 is_all=0
 
-            sel_idx=()
-            number_menu "Select Developer Tools" TOOL_LABELS sel_idx
-            for idx in "${sel_idx[@]}"; do sel_tools+=("${TOOL_KEYS[$idx]}"); done
+    for pc in $profile; do
+        case "$pc" in
+            1) add_unique sel_langs "nodejs" "python" "php" "typescript"; add_unique sel_ides "vscode" "sublime"; add_unique sel_tools "git" "docker" "postman"; add_unique sel_fws "yarn" "pnpm" "vite" "react" "tailwind" "express" ;;
+            2) add_unique sel_langs "java" "kotlin" "dart"; add_unique sel_ides "android" "vscode"; add_unique sel_tools "git"; add_unique sel_fws "reactnative" "expo" ;;
+            3) add_unique sel_langs "python" "mojo"; add_unique sel_ides "vscode" "pycharm"; add_unique sel_tools "git" "docker"; add_unique sel_fws "uv" "conda" "venvstudio" "streamlit" "fastapi" ;;
+            4) add_unique sel_langs "cpp" "rust" "zig" "go"; add_unique sel_ides "vscode" "clion" "vim"; add_unique sel_tools "git" "cmake"; add_unique sel_fws "cargo-watch" "wasm-pack" ;;
+            5) add_unique sel_langs "csharp" "nodejs" "typescript"; add_unique sel_ides "vscode" "rider"; add_unique sel_tools "git" "docker" "postman"; add_unique sel_fws "yarn" "vite" "react" "nextjs" ;;
+            6) add_unique sel_langs "cpp" "csharp"; add_unique sel_ides "vscode" "rider"; add_unique sel_tools "git" "cmake" ;;
+            7) add_unique sel_langs "python" "mojo" "rust"; add_unique sel_ides "vscode" "pycharm" "cursor"; add_unique sel_tools "git" "docker"; add_unique sel_fws "uv" "conda" "venvstudio" "streamlit" "fastapi" ;;
+            8) is_custom=1 ;;
+            9) is_all=1 ;;
+        esac
+    done
 
-            sel_idx=()
-            number_menu "Select Frameworks, Libraries and Package Managers" FW_LABELS sel_idx
-            for idx in "${sel_idx[@]}"; do sel_fws+=("${FW_KEYS[$idx]}"); done
-            ;;
-    esac
+    if [[ $is_all -eq 1 ]]; then
+        echo ""
+        echo -e "  ${RED}============================================================${NC}"
+        echo -e "  ${RED}WARNING: You are about to install EVERYTHING!${NC}"
+        echo -e "  ${RED}============================================================${NC}"
+        echo ""
+        echo -e "  ${YELLOW}This includes:${NC}"
+        echo -e "    - 18 programming languages and runtimes"
+        echo -e "    - 17 IDEs and editors"
+        echo -e "    - 9 developer tools"
+        echo -e "    - 38 frameworks, libraries and package managers"
+        echo ""
+        echo -e "  ${YELLOW}Estimated time: 45-90 minutes (depends on internet speed)${NC}"
+        echo -e "  ${YELLOW}Disk space: approximately 30-50 GB${NC}"
+        echo -e "  ${YELLOW}System load: HIGH - your system may slow down during install${NC}"
+        echo ""
+        echo -e "  ${CYAN}RECOMMENDATION: Close other programs before proceeding.${NC}"
+        echo ""
+        read -rp "  Type 'YES' (uppercase) to confirm: " confirm_all
+        if [[ "$confirm_all" != "YES" ]]; then
+            info "Cancelled. Good choice - select specific profiles instead!"
+            exit 0
+        fi
+        sel_langs=("${LANG_KEYS[@]}")
+        sel_ides=("${IDE_KEYS[@]}")
+        sel_tools=("${TOOL_KEYS[@]}")
+        sel_fws=("${FW_KEYS[@]}")
+    elif [[ $is_custom -eq 1 ]]; then
+        local sel_idx=()
+        number_menu "Select Programming Languages" LANG_LABELS sel_idx
+        for idx in "${sel_idx[@]}"; do sel_langs+=("${LANG_KEYS[$idx]}"); done
+
+        sel_idx=()
+        number_menu "Select IDEs and Editors" IDE_LABELS sel_idx
+        for idx in "${sel_idx[@]}"; do sel_ides+=("${IDE_KEYS[$idx]}"); done
+
+        sel_idx=()
+        number_menu "Select Developer Tools" TOOL_LABELS sel_idx
+        for idx in "${sel_idx[@]}"; do sel_tools+=("${TOOL_KEYS[$idx]}"); done
+
+        sel_idx=()
+        number_menu "Select Frameworks, Libraries and Package Managers" FW_LABELS sel_idx
+        for idx in "${sel_idx[@]}"; do sel_fws+=("${FW_KEYS[$idx]}"); done
+    fi
 
     # Version selection for supported languages
     section "Version Selection"
