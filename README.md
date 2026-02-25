@@ -21,7 +21,7 @@
 
 ## Supported Software
 
-### Languages & Runtimes (18 languages)
+### Languages & Runtimes (19 languages)
 
 | Language | Available Versions | Windows | macOS | Linux |
 |----------|-------------------|---------|-------|-------|
@@ -43,6 +43,7 @@
 | TypeScript | latest (npm) | Yes | Yes | Yes |
 | Elixir | latest | Yes | Yes | Yes |
 | Scala | latest | Yes | Yes | Yes |
+| Julia | 1.12, 1.10 LTS | Yes | Yes | Yes |
 
 ### IDEs & Editors (17 editors)
 
@@ -90,11 +91,11 @@ Git, Docker Desktop, Postman, CMake, GitHub CLI, NVM, pyenv, WSL 2, Windows Term
 |---|---------|-----------|------|------------|
 | 1 | Web Developer | Node.js, Python, PHP, TS | VS Code, Sublime | Yarn, pnpm, Vite, React, Tailwind, Express |
 | 2 | Mobile Developer | Java, Kotlin, Dart | Android Studio, VS Code | React Native, Expo |
-| 3 | Data Scientist | Python, Mojo | VS Code, PyCharm | uv, Conda, VenvStudio, Streamlit, FastAPI |
+| 3 | Data Scientist | Python, Julia, Mojo | VS Code, PyCharm | uv, Conda, VenvStudio, Streamlit, FastAPI |
 | 4 | Systems Programmer | C/C++, Rust, Zig, Go | VS Code, CLion, Neovim | cargo-watch, wasm-pack |
 | 5 | Full Stack .NET | C#/.NET, Node.js, TS | VS 2026, VS Code | Yarn, Vite, React, Next.js |
 | 6 | Game Developer | C/C++, C# | VS 2026, VS Code, Rider | - |
-| 7 | AI / ML Engineer | Python, Mojo, Rust | VS Code, PyCharm, Cursor | uv, Conda, VenvStudio, Streamlit, FastAPI |
+| 7 | AI / ML Engineer | Python, Julia, Mojo, Rust | VS Code, PyCharm, Cursor | uv, Conda, VenvStudio, Streamlit, FastAPI |
 | 8 | Custom Setup | Your choice | Your choice | Your choice |
 
 ## Quick Start

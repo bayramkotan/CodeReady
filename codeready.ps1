@@ -307,6 +307,13 @@ function Get-Languages {
             Versions=@(
                 @{ Label="Scala 3 (latest)"; WinGet=""; Choco="scala" }
             )
+        },
+        @{
+            Key="julia"; Name="Julia"; Desc="High-performance scientific computing"
+            Versions=@(
+                @{ Label="Julia 1.12 (Latest)"; WinGet="Julialang.Julia"; Choco="julia" },
+                @{ Label="Julia 1.10 (LTS)"; WinGet="Julialang.Julia.LTS"; Choco="julia --version=1.10" }
+            )
         }
     )
 }
@@ -600,11 +607,11 @@ function Main {
         switch ($pc) {
             "1" { Add-ProfileItems @("nodejs","python","php","typescript") @("vscode","sublime") @("git","docker","postman","nvm") @("yarn","pnpm","vite","react","tailwind","express") }
             "2" { Add-ProfileItems @("java","kotlin","dart") @("android","vscode") @("git") @("reactnative","expo") }
-            "3" { Add-ProfileItems @("python","mojo") @("vscode","pycharm") @("git","docker") @("uv","conda","venvstudio","streamlit","fastapi") }
+            "3" { Add-ProfileItems @("python","julia","mojo") @("vscode","pycharm") @("git","docker") @("uv","conda","venvstudio","streamlit","fastapi") }
             "4" { Add-ProfileItems @("cpp","rust","zig","go") @("vscode","clion","vim") @("git","cmake") @("cargo-watch","wasm-pack") }
             "5" { Add-ProfileItems @("csharp","nodejs","typescript") @("vs2026","vscode") @("git","docker","postman") @("yarn","vite","react","nextjs") }
             "6" { Add-ProfileItems @("cpp","csharp") @("vs2026","vscode","rider") @("git","cmake") @() }
-            "7" { Add-ProfileItems @("python","mojo","rust") @("vscode","pycharm","cursor") @("git","docker") @("uv","conda","venvstudio","streamlit","fastapi") }
+            "7" { Add-ProfileItems @("python","julia","mojo","rust") @("vscode","pycharm","cursor") @("git","docker") @("uv","conda","venvstudio","streamlit","fastapi") }
             "8" { $isCustom = $true }
             "9" { $isInstallAll = $true }
         }

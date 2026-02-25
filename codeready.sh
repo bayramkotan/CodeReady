@@ -375,6 +375,23 @@ install_scala() {
     esac
 }
 
+install_julia() {
+    step "Installing Julia via juliaup..."
+    if command -v julia &>/dev/null; then ok "Julia already installed."; return; fi
+    case "$PKG" in
+        brew) pkg_install "Julia" "brew install julia" ;;
+        *)
+            curl -fsSL https://install.julialang.org | sh -s -- -y &>>"$LOG_FILE" 2>&1
+            if command -v juliaup &>/dev/null; then
+                ok "Julia installed via juliaup."
+            elif command -v snap &>/dev/null; then
+                pkg_install "Julia" "sudo snap install julia --classic"
+            else
+                fail "Julia (visit https://julialang.org/downloads/)"
+            fi ;;
+    esac
+}
+
 # ================================================================
 # IDE INSTALLERS
 # ================================================================
@@ -650,8 +667,8 @@ main() {
     if [[ "$OS_TYPE" == "macos" ]]; then ensure_brew; else update_pkg; fi
 
     # Language, IDE, Tool keys
-    local LANG_KEYS=("python" "nodejs" "java" "csharp" "cpp" "go" "rust" "php" "ruby" "kotlin" "dart" "swift" "zig" "mojo" "wasm" "typescript" "elixir" "scala")
-    local LANG_LABELS=("Python - General purpose, AI/ML" "Node.js - JavaScript/TypeScript runtime" "Java (JDK) - Enterprise, Android" "C# / .NET SDK - Microsoft ecosystem" "C/C++ - Systems programming" "Go - Cloud, microservices" "Rust - Memory safety, systems" "PHP - Web, CMS" "Ruby - Web, scripting" "Kotlin - Android, JVM" "Dart/Flutter - Mobile, web UI" "Swift - Apple ecosystem" "Zig - Next-gen systems, C interop" "Mojo - AI/GPU programming" "WebAssembly (WASI) - Portable binary" "TypeScript - Typed JavaScript" "Elixir - Functional, concurrent" "Scala - JVM functional/OOP")
+    local LANG_KEYS=("python" "nodejs" "java" "csharp" "cpp" "go" "rust" "php" "ruby" "kotlin" "dart" "swift" "zig" "mojo" "wasm" "typescript" "elixir" "scala" "julia")
+    local LANG_LABELS=("Python - General purpose, AI/ML" "Node.js - JavaScript/TypeScript runtime" "Java (JDK) - Enterprise, Android" "C# / .NET SDK - Microsoft ecosystem" "C/C++ - Systems programming" "Go - Cloud, microservices" "Rust - Memory safety, systems" "PHP - Web, CMS" "Ruby - Web, scripting" "Kotlin - Android, JVM" "Dart/Flutter - Mobile, web UI" "Swift - Apple ecosystem" "Zig - Next-gen systems, C interop" "Mojo - AI/GPU programming" "WebAssembly (WASI) - Portable binary" "TypeScript - Typed JavaScript" "Elixir - Functional, concurrent" "Scala - JVM functional/OOP" "Julia - Scientific computing, high-performance")
 
     local IDE_KEYS=("vscode" "intellij" "pycharm" "webstorm" "goland" "clion" "rider" "rustrover" "eclipse" "android" "sublime" "vim" "cursor" "windsurf" "zed")
     local IDE_LABELS=("VS Code - Lightweight, extensible" "IntelliJ IDEA Community - Java, Kotlin" "PyCharm Community - Python IDE" "WebStorm - JS/TS IDE (paid)" "GoLand - Go IDE (paid)" "CLion - C/C++ IDE (paid)" "Rider - .NET IDE (paid)" "RustRover - Rust IDE" "Eclipse IDE - Java, multi-language" "Android Studio - Android dev" "Sublime Text - Fast editor" "Neovim - Terminal editor" "Cursor - AI-powered editor" "Windsurf - AI-powered IDE" "Zed - High-performance editor")
@@ -683,11 +700,11 @@ main() {
         case "$pc" in
             1) add_unique sel_langs "nodejs" "python" "php" "typescript"; add_unique sel_ides "vscode" "sublime"; add_unique sel_tools "git" "docker" "postman"; add_unique sel_fws "yarn" "pnpm" "vite" "react" "tailwind" "express" ;;
             2) add_unique sel_langs "java" "kotlin" "dart"; add_unique sel_ides "android" "vscode"; add_unique sel_tools "git"; add_unique sel_fws "reactnative" "expo" ;;
-            3) add_unique sel_langs "python" "mojo"; add_unique sel_ides "vscode" "pycharm"; add_unique sel_tools "git" "docker"; add_unique sel_fws "uv" "conda" "venvstudio" "streamlit" "fastapi" ;;
+            3) add_unique sel_langs "python" "julia" "mojo"; add_unique sel_ides "vscode" "pycharm"; add_unique sel_tools "git" "docker"; add_unique sel_fws "uv" "conda" "venvstudio" "streamlit" "fastapi" ;;
             4) add_unique sel_langs "cpp" "rust" "zig" "go"; add_unique sel_ides "vscode" "clion" "vim"; add_unique sel_tools "git" "cmake"; add_unique sel_fws "cargo-watch" "wasm-pack" ;;
             5) add_unique sel_langs "csharp" "nodejs" "typescript"; add_unique sel_ides "vscode" "rider"; add_unique sel_tools "git" "docker" "postman"; add_unique sel_fws "yarn" "vite" "react" "nextjs" ;;
             6) add_unique sel_langs "cpp" "csharp"; add_unique sel_ides "vscode" "rider"; add_unique sel_tools "git" "cmake" ;;
-            7) add_unique sel_langs "python" "mojo" "rust"; add_unique sel_ides "vscode" "pycharm" "cursor"; add_unique sel_tools "git" "docker"; add_unique sel_fws "uv" "conda" "venvstudio" "streamlit" "fastapi" ;;
+            7) add_unique sel_langs "python" "julia" "mojo" "rust"; add_unique sel_ides "vscode" "pycharm" "cursor"; add_unique sel_tools "git" "docker"; add_unique sel_fws "uv" "conda" "venvstudio" "streamlit" "fastapi" ;;
             8) is_custom=1 ;;
             9) is_all=1 ;;
         esac
@@ -810,6 +827,11 @@ main() {
             typescript) install_typescript ;;
             elixir)     install_elixir ;;
             scala)      install_scala ;;
+            julia)      install_julia ;;
+            julia)
+                local julv=("1.12" "1.10")
+                local juli; juli=$(version_menu "Julia" "Julia 1.12 (Latest)" "Julia 1.10 (LTS)")
+                VER_CHOICE[julia]="${julv[$juli]}" ;;
         esac
     done
 
