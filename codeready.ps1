@@ -1,9 +1,8 @@
 #Requires -RunAsAdministrator
-# ╔══════════════════════════════════════════════════════════════════╗
-# ║                   CodeReady v1.0.0                               ║
-# ║       Developer Environment Setup Tool (Windows)                 ║
-# ║       https://github.com/user/codeready                         ║
-# ╚══════════════════════════════════════════════════════════════════╝
+# ================================================================
+# CodeReady v1.0.0
+# Developer Environment Setup Tool (Windows)
+# ================================================================
 
 param(
     [switch]$Silent,
@@ -16,40 +15,41 @@ $script:LogFile = "$env:USERPROFILE\codeready_install.log"
 $script:InstalledItems = @()
 $script:FailedItems = @()
 
-# ─── Colors & UI ───────────────────────────────────────────────────
+# --- Colors and UI ----------------------------------------------
 function Write-Banner {
     Clear-Host
     $banner = @"
 
-   ██████╗ ██████╗ ██████╗ ███████╗██████╗ ███████╗ █████╗ ██████╗ ██╗   ██╗
-  ██╔════╝██╔═══██╗██╔══██╗██╔════╝██╔══██╗██╔════╝██╔══██╗██╔══██╗╚██╗ ██╔╝
-  ██║     ██║   ██║██║  ██║█████╗  ██████╔╝█████╗  ███████║██║  ██║ ╚████╔╝
-  ██║     ██║   ██║██║  ██║██╔══╝  ██╔══██╗██╔══╝  ██╔══██║██║  ██║  ╚██╔╝
-  ╚██████╗╚██████╔╝██████╔╝███████╗██║  ██║███████╗██║  ██║██████╔╝   ██║
-   ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═════╝    ╚═╝
-                                                              v$script:Version
+     CCCCC   OOO   DDDD   EEEEE  RRRR   EEEEE   AAA   DDDD   Y   Y
+    C       O   O  D   D  E      R   R  E      A   A  D   D   Y Y
+    C       O   O  D   D  EEE    RRRR   EEE    AAAAA  D   D    Y
+    C       O   O  D   D  E      R  R   E      A   A  D   D    Y
+     CCCCC   OOO   DDDD   EEEEE  R   R  EEEEE  A   A  DDDD     Y
+                                                          v$script:Version
 "@
     Write-Host $banner -ForegroundColor Cyan
     Write-Host "  Developer Environment Setup Tool - Windows Edition" -ForegroundColor DarkCyan
-    Write-Host "  ═══════════════════════════════════════════════════" -ForegroundColor DarkGray
+    Write-Host "  ===================================================" -ForegroundColor DarkGray
     Write-Host ""
 }
 
 function Write-Step($msg) {
-    Write-Host "  [►] " -NoNewline -ForegroundColor Yellow
+    Write-Host "  [>] " -NoNewline -ForegroundColor Yellow
     Write-Host $msg
 }
 
 function Write-Success($msg) {
-    Write-Host "  [✓] " -NoNewline -ForegroundColor Green
+    Write-Host "  [+] " -NoNewline -ForegroundColor Green
     Write-Host $msg
-    Add-Content -Path $script:LogFile -Value "[OK] $msg"
+    $logMsg = "[OK] " + $msg
+    Add-Content -Path $script:LogFile -Value $logMsg
 }
 
 function Write-Fail($msg) {
-    Write-Host "  [✗] " -NoNewline -ForegroundColor Red
+    Write-Host "  [-] " -NoNewline -ForegroundColor Red
     Write-Host $msg
-    Add-Content -Path $script:LogFile -Value "[FAIL] $msg"
+    $logMsg = "[FAIL] " + $msg
+    Add-Content -Path $script:LogFile -Value $logMsg
 }
 
 function Write-Info($msg) {
@@ -59,13 +59,11 @@ function Write-Info($msg) {
 
 function Write-SectionHeader($title) {
     Write-Host ""
-    Write-Host "  ┌──────────────────────────────────────────────────┐" -ForegroundColor DarkYellow
-    Write-Host "  │  $($title.PadRight(48)) │" -ForegroundColor DarkYellow
-    Write-Host "  └──────────────────────────────────────────────────┘" -ForegroundColor DarkYellow
+    Write-Host "  === $title ===" -ForegroundColor DarkYellow
     Write-Host ""
 }
 
-# ─── Package Manager Setup ─────────────────────────────────────────
+# --- Package Manager Setup --------------------------------------
 function Ensure-WinGet {
     Write-Step "Checking winget..."
     if (Get-Command winget -ErrorAction SilentlyContinue) {
@@ -74,7 +72,7 @@ function Ensure-WinGet {
     }
     Write-Step "Installing winget..."
     try {
-        $progressPreference = 'silentlyContinue'
+        $progressPreference = "silentlyContinue"
         Invoke-WebRequest -Uri "https://aka.ms/getwinget" -OutFile "$env:TEMP\winget.msixbundle"
         Add-AppxPackage -Path "$env:TEMP\winget.msixbundle"
         Write-Success "winget installed."
@@ -95,7 +93,8 @@ function Ensure-Chocolatey {
     try {
         Set-ExecutionPolicy Bypass -Scope Process -Force
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-        Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+        $chocoUrl = "https://community.chocolatey.org/install.ps1"
+        Invoke-Expression ((New-Object System.Net.WebClient).DownloadString($chocoUrl))
         $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
         Write-Success "Chocolatey installed."
         return $true
@@ -105,7 +104,7 @@ function Ensure-Chocolatey {
     }
 }
 
-# ─── Installation Functions ────────────────────────────────────────
+# --- Installation Functions -------------------------------------
 function Install-WithWinGet($id, $name) {
     Write-Step "Installing $name..."
     try {
@@ -146,7 +145,7 @@ function Install-WithChoco($pkg, $name) {
     }
 }
 
-# ─── Menu System ───────────────────────────────────────────────────
+# --- Menu System ------------------------------------------------
 function Show-MultiSelectMenu($title, $items) {
     Write-SectionHeader $title
     $selected = @{}
@@ -160,13 +159,15 @@ function Show-MultiSelectMenu($title, $items) {
 
     $startLine = [Console]::CursorTop
 
-    # Draw initial menu
     for ($i = 0; $i -lt $keys.Count; $i++) {
         $key = $keys[$i]
-        $check = if ($selected[$key]) { "[X]" } else { "[ ]" }
-        $pointer = if ($i -eq $currentIndex) { " >" } else { "  " }
-        $color = if ($i -eq $currentIndex) { "Yellow" } else { "White" }
-        Write-Host "$pointer $check $($items[$key].Name) " -ForegroundColor $color -NoNewline
+        $mark = "[ ]"
+        if ($selected[$key]) { $mark = "[X]" }
+        $pointer = "  "
+        if ($i -eq $currentIndex) { $pointer = " >" }
+        $color = "White"
+        if ($i -eq $currentIndex) { $color = "Yellow" }
+        Write-Host "$pointer $mark $($items[$key].Name) " -ForegroundColor $color -NoNewline
         Write-Host "- $($items[$key].Desc)" -ForegroundColor DarkGray
     }
     Write-Host ""
@@ -200,20 +201,22 @@ function Show-MultiSelectMenu($title, $items) {
             }
         }
 
-        # Redraw menu
         [Console]::SetCursorPosition(0, $startLine)
         for ($i = 0; $i -lt $keys.Count; $i++) {
             $key = $keys[$i]
-            $check = if ($selected[$key]) { "[X]" } else { "[ ]" }
-            $pointer = if ($i -eq $currentIndex) { " >" } else { "  " }
-            $color = if ($i -eq $currentIndex) { "Yellow" } else { "White" }
-            Write-Host "$pointer $check $($items[$key].Name)  " -ForegroundColor $color -NoNewline
+            $mark = "[ ]"
+            if ($selected[$key]) { $mark = "[X]" }
+            $pointer = "  "
+            if ($i -eq $currentIndex) { $pointer = " >" }
+            $color = "White"
+            if ($i -eq $currentIndex) { $color = "Yellow" }
+            Write-Host "$pointer $mark $($items[$key].Name)  " -ForegroundColor $color -NoNewline
             Write-Host "- $($items[$key].Desc)                    " -ForegroundColor DarkGray
         }
     }
 }
 
-# ─── Language & IDE Definitions ────────────────────────────────────
+# --- Language and IDE Definitions --------------------------------
 function Get-LanguageDefinitions {
     return [ordered]@{
         "python"  = @{ Name="Python"; Desc="General purpose, AI/ML, scripting"; WinGet="Python.Python.3.12"; Choco="python3" }
@@ -226,7 +229,7 @@ function Get-LanguageDefinitions {
         "php"     = @{ Name="PHP"; Desc="Web development, CMS, server-side"; WinGet=""; Choco="php" }
         "ruby"    = @{ Name="Ruby"; Desc="Web development, scripting, DevOps"; WinGet="RubyInstallerTeam.Ruby.3.2"; Choco="ruby" }
         "kotlin"  = @{ Name="Kotlin"; Desc="Android, JVM, multiplatform"; WinGet=""; Choco="kotlin" }
-        "dart"    = @{ Name="Dart & Flutter"; Desc="Mobile, web, desktop UI"; WinGet=""; Choco="dart-sdk" }
+        "dart"    = @{ Name="Dart and Flutter"; Desc="Mobile, web, desktop UI"; WinGet=""; Choco="dart-sdk" }
         "swift"   = @{ Name="Swift"; Desc="Apple ecosystem, server-side"; WinGet="Swift.Toolchain"; Choco="" }
     }
 }
@@ -236,7 +239,7 @@ function Get-IDEDefinitions {
         "vscode"     = @{ Name="VS Code"; Desc="Lightweight, extensible, multi-language"; WinGet="Microsoft.VisualStudioCode"; Choco="vscode" }
         "vs2022"     = @{ Name="Visual Studio 2022 Community"; Desc="Full-featured IDE for .NET, C++"; WinGet="Microsoft.VisualStudio.2022.Community"; Choco="visualstudio2022community" }
         "intellij"   = @{ Name="IntelliJ IDEA Community"; Desc="Java, Kotlin, JVM languages"; WinGet="JetBrains.IntelliJIDEA.Community"; Choco="intellijidea-community" }
-        "pycharm"    = @{ Name="PyCharm Community"; Desc="Python IDE with debugging & testing"; WinGet="JetBrains.PyCharm.Community"; Choco="pycharm-community" }
+        "pycharm"    = @{ Name="PyCharm Community"; Desc="Python IDE with debugging and testing"; WinGet="JetBrains.PyCharm.Community"; Choco="pycharm-community" }
         "webstorm"   = @{ Name="WebStorm"; Desc="JavaScript/TypeScript IDE (paid)"; WinGet="JetBrains.WebStorm"; Choco="webstorm" }
         "goland"     = @{ Name="GoLand"; Desc="Go IDE by JetBrains (paid)"; WinGet="JetBrains.GoLand"; Choco="goland" }
         "clion"      = @{ Name="CLion"; Desc="C/C++ IDE by JetBrains (paid)"; WinGet="JetBrains.CLion"; Choco="clion" }
@@ -254,7 +257,7 @@ function Get-ToolDefinitions {
     return [ordered]@{
         "git"       = @{ Name="Git"; Desc="Version control system"; WinGet="Git.Git"; Choco="git" }
         "docker"    = @{ Name="Docker Desktop"; Desc="Containerization platform"; WinGet="Docker.DockerDesktop"; Choco="docker-desktop" }
-        "postman"   = @{ Name="Postman"; Desc="API testing & development"; WinGet="Postman.Postman"; Choco="postman" }
+        "postman"   = @{ Name="Postman"; Desc="API testing and development"; WinGet="Postman.Postman"; Choco="postman" }
         "wsl"       = @{ Name="WSL 2 (Ubuntu)"; Desc="Linux subsystem for Windows"; WinGet=""; Choco="" }
         "terminal"  = @{ Name="Windows Terminal"; Desc="Modern terminal application"; WinGet="Microsoft.WindowsTerminal"; Choco="microsoft-windows-terminal" }
         "cmake"     = @{ Name="CMake"; Desc="Cross-platform build system"; WinGet="Kitware.CMake"; Choco="cmake" }
@@ -262,7 +265,7 @@ function Get-ToolDefinitions {
     }
 }
 
-# ─── Installation Orchestrator ─────────────────────────────────────
+# --- Installation Orchestrator ----------------------------------
 function Install-Item($item) {
     if ($item.WinGet -and (Get-Command winget -ErrorAction SilentlyContinue)) {
         return Install-WithWinGet $item.WinGet $item.Name
@@ -289,14 +292,14 @@ function Install-WSL {
     }
 }
 
-# ─── Summary Report ────────────────────────────────────────────────
+# --- Summary Report ---------------------------------------------
 function Show-Summary {
     Write-SectionHeader "Installation Summary"
     
     if ($script:InstalledItems.Count -gt 0) {
         Write-Host "  Successfully installed ($($script:InstalledItems.Count)):" -ForegroundColor Green
         foreach ($item in $script:InstalledItems) {
-            Write-Host "    ✓ $item" -ForegroundColor Green
+            Write-Host "    + $item" -ForegroundColor Green
         }
     }
     
@@ -304,7 +307,7 @@ function Show-Summary {
         Write-Host ""
         Write-Host "  Failed installations ($($script:FailedItems.Count)):" -ForegroundColor Red
         foreach ($item in $script:FailedItems) {
-            Write-Host "    ✗ $item" -ForegroundColor Red
+            Write-Host "    - $item" -ForegroundColor Red
         }
     }
 
@@ -313,13 +316,12 @@ function Show-Summary {
     Write-Host "  Log file: $script:LogFile" -ForegroundColor DarkGray
     Write-Host ""
 
-    $refreshNeeded = $script:InstalledItems.Count -gt 0
-    if ($refreshNeeded) {
-        Write-Host "  ⚠  Please restart your terminal/PC for PATH changes to take effect." -ForegroundColor Yellow
+    if ($script:InstalledItems.Count -gt 0) {
+        Write-Host "  WARNING: Please restart your terminal/PC for PATH changes to take effect." -ForegroundColor Yellow
     }
 }
 
-# ─── Config File Support ──────────────────────────────────────────
+# --- Config File Support ----------------------------------------
 function Export-Config($languages, $ides, $tools) {
     $config = @{
         version = $script:Version
@@ -333,14 +335,7 @@ function Export-Config($languages, $ides, $tools) {
     Write-Info "Configuration saved to $configPath"
 }
 
-function Import-Config($path) {
-    if (Test-Path $path) {
-        return Get-Content $path | ConvertFrom-Json
-    }
-    return $null
-}
-
-# ─── Quick Setup Profiles ─────────────────────────────────────────
+# --- Quick Setup Profiles ---------------------------------------
 function Show-ProfileMenu {
     Write-SectionHeader "Quick Setup Profiles"
     Write-Host "  [1] Web Developer      - Node.js, Python, PHP + VS Code, Sublime" -ForegroundColor White
@@ -349,7 +344,7 @@ function Show-ProfileMenu {
     Write-Host "  [4] Systems Programmer - C/C++, Rust, Go + VS Code, CLion, Vim" -ForegroundColor White
     Write-Host "  [5] Full Stack .NET    - C#/.NET, Node.js + Visual Studio, VS Code" -ForegroundColor White
     Write-Host "  [6] Game Developer     - C/C++, C# + Visual Studio, VS Code" -ForegroundColor White
-    Write-Host "  [7] Custom Setup       - Choose your own languages & IDEs" -ForegroundColor Yellow
+    Write-Host "  [7] Custom Setup       - Choose your own languages and IDEs" -ForegroundColor Yellow
     Write-Host ""
     
     $choice = Read-Host "  Select profile (1-7)"
@@ -366,14 +361,12 @@ function Show-ProfileMenu {
     }
 }
 
-# ─── MAIN ──────────────────────────────────────────────────────────
+# --- MAIN -------------------------------------------------------
 function Main {
     Write-Banner
 
-    # Init log
     "CodeReady Installation Log - $(Get-Date)" | Set-Content -Path $script:LogFile
 
-    # Check admin
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
     $principal = [Security.Principal.WindowsPrincipal]$identity
     if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
@@ -382,7 +375,6 @@ function Main {
         return
     }
 
-    # Setup package managers
     Write-SectionHeader "Package Manager Setup"
     $hasWinGet = Ensure-WinGet
     $hasChoco = Ensure-Chocolatey
@@ -392,7 +384,6 @@ function Main {
         return
     }
 
-    # Profile or Custom selection
     $profile = Show-ProfileMenu
     
     $langDefs = Get-LanguageDefinitions
@@ -400,9 +391,8 @@ function Main {
     $toolDefs = Get-ToolDefinitions
 
     if ($null -eq $profile) {
-        # Custom selection with interactive menus
         $selectedLangs = Show-MultiSelectMenu "Select Programming Languages" $langDefs
-        $selectedIDEs = Show-MultiSelectMenu "Select IDEs & Editors" $ideDefs
+        $selectedIDEs = Show-MultiSelectMenu "Select IDEs and Editors" $ideDefs
         $selectedTools = Show-MultiSelectMenu "Select Developer Tools" $toolDefs
     } else {
         $selectedLangs = $profile.langs
@@ -410,7 +400,6 @@ function Main {
         $selectedTools = $profile.tools
     }
 
-    # Confirmation
     Write-SectionHeader "Installation Plan"
     Write-Host "  Languages: " -NoNewline -ForegroundColor Cyan
     Write-Host (($selectedLangs | ForEach-Object { $langDefs[$_].Name }) -join ", ")
@@ -426,26 +415,22 @@ function Main {
         return
     }
 
-    # Export config for future use
     Export-Config $selectedLangs $selectedIDEs $selectedTools
 
-    # Install Languages
-    Write-SectionHeader "Installing Languages & Runtimes"
+    Write-SectionHeader "Installing Languages and Runtimes"
     foreach ($lang in $selectedLangs) {
         if ($langDefs.Contains($lang)) {
             Install-Item $langDefs[$lang]
         }
     }
 
-    # Install IDEs
-    Write-SectionHeader "Installing IDEs & Editors"
+    Write-SectionHeader "Installing IDEs and Editors"
     foreach ($ide in $selectedIDEs) {
         if ($ideDefs.Contains($ide)) {
             Install-Item $ideDefs[$ide]
         }
     }
 
-    # Install Tools
     Write-SectionHeader "Installing Developer Tools"
     foreach ($tool in $selectedTools) {
         if ($tool -eq "wsl") {
@@ -455,12 +440,9 @@ function Main {
         }
     }
 
-    # Refresh PATH
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
 
-    # Summary
     Show-Summary
 }
 
-# Run
 Main
