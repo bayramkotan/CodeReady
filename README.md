@@ -1,79 +1,94 @@
-# 🚀 CodeReady
+# CodeReady v2.0
 
-**Developer Environment Setup Tool** — Interactive installer for programming languages, IDEs, and developer tools.
+**Developer Environment Setup Tool** - Interactive installer for programming languages, IDEs, and developer tools with **version selection**.
 
-> *"Which languages do you need? Which IDEs do you prefer? Let CodeReady handle the rest."*
+> *Select your languages, pick your versions, choose your IDEs - CodeReady handles the rest.*
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Version](https://img.shields.io/badge/version-2.0.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-green)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 
 ---
 
-## ✨ Features
+## What's New in v2.0
 
-- **Interactive menu** — Select languages and IDEs from a user-friendly interface
-- **Quick Setup Profiles** — Pre-configured setups for Web, Mobile, Data Science, Systems, .NET, and Game developers
-- **Cross-platform** — Works on Windows, macOS, Ubuntu/Debian, Fedora, Arch, openSUSE
-- **Smart package management** — Uses winget/Chocolatey (Windows), Homebrew (macOS), apt/dnf/pacman (Linux)
-- **Installation logging** — Full log file for troubleshooting
-- **Config export** — Save your selections for reuse on other machines
+- **Version selection** - Choose which version to install (e.g., Python 3.14 / 3.13 / 3.12 / 3.11)
+- **New languages** - Zig, Mojo, WebAssembly (WASI), TypeScript, Elixir, Scala
+- **New IDEs** - RustRover, Windsurf, Zed, Cursor
+- **Updated versions** - VS 2026, JDK 25, Python 3.14, .NET 9, Node.js 24
+- **AI/ML profile** - New quick setup for AI engineers
+- **Version managers** - nvm, pyenv support
 
-## 📦 Supported Software
+## Supported Software
 
-### Programming Languages & Runtimes
-| Language | Windows | macOS | Linux |
-|----------|---------|-------|-------|
-| Python 3.12 | ✅ winget | ✅ brew | ✅ apt/dnf/pacman |
-| Node.js (LTS via nvm) | ✅ winget | ✅ nvm | ✅ nvm |
-| Java (JDK 21) | ✅ winget | ✅ brew | ✅ apt/dnf/pacman |
-| C# / .NET 8 SDK | ✅ winget | ✅ brew | ✅ apt/dnf/pacman |
-| C/C++ (GCC/MinGW/Clang) | ✅ choco | ✅ brew | ✅ apt/dnf/pacman |
-| Go (Golang) | ✅ winget | ✅ brew | ✅ official binary |
-| Rust (via rustup) | ✅ winget | ✅ rustup | ✅ rustup |
-| PHP | ✅ choco | ✅ brew | ✅ apt/dnf/pacman |
-| Ruby | ✅ winget | ✅ brew | ✅ apt/dnf/pacman |
-| Kotlin | ✅ choco | ✅ brew | ✅ snap/SDKMAN |
-| Dart & Flutter | ✅ choco | ✅ brew | ✅ snap |
-| Swift | ✅ winget | ✅ Xcode | ⚠️ manual |
+### Languages & Runtimes (18 languages)
 
-### IDEs & Editors
-| IDE | Windows | macOS | Linux |
-|-----|---------|-------|-------|
-| VS Code | ✅ | ✅ | ✅ |
-| Visual Studio 2022 Community | ✅ | ❌ | ❌ |
-| IntelliJ IDEA Community | ✅ | ✅ | ✅ |
-| PyCharm Community | ✅ | ✅ | ✅ |
-| WebStorm | ✅ | ✅ | ✅ |
-| GoLand | ✅ | ✅ | ✅ |
-| CLion | ✅ | ✅ | ✅ |
-| Rider | ✅ | ✅ | ✅ |
-| Eclipse IDE | ✅ | ✅ | ✅ |
-| Android Studio | ✅ | ✅ | ✅ |
-| Sublime Text | ✅ | ✅ | ✅ |
-| Neovim | ✅ | ✅ | ✅ |
-| Notepad++ | ✅ | ❌ | ❌ |
-| Cursor | ✅ | ✅ | ⚠️ manual |
+| Language | Available Versions | Windows | macOS | Linux |
+|----------|-------------------|---------|-------|-------|
+| Python | 3.14, 3.13, 3.12, 3.11 | Yes | Yes | Yes |
+| Node.js | 24 LTS, 25, 22 LTS, 20 LTS | Yes | Yes | Yes |
+| Java (JDK) | 25, 23 LTS, 21 LTS, 17 LTS | Yes | Yes | Yes |
+| C# / .NET | 9, 8 LTS, 7, 6 LTS | Yes | Yes | Yes |
+| C/C++ | GCC/MinGW, LLVM/Clang, MSVC | Yes | Yes | Yes |
+| Go | 1.23, 1.22, 1.21 | Yes | Yes | Yes |
+| Rust | latest (via rustup) | Yes | Yes | Yes |
+| PHP | 8.4, 8.3, 8.2 | Yes | Yes | Yes |
+| Ruby | 3.3, 3.2, 3.1 | Yes | Yes | Yes |
+| Kotlin | latest | Yes | Yes | Yes |
+| Dart/Flutter | latest | Yes | Yes | Yes |
+| Swift | latest | Yes | Yes | Partial |
+| Zig | 0.13, 0.12 | Yes | Yes | Yes |
+| Mojo | latest (pip) | WSL | Yes | Yes |
+| WebAssembly | Wasmtime, Wasmer | Yes | Yes | Yes |
+| TypeScript | latest (npm) | Yes | Yes | Yes |
+| Elixir | latest | Yes | Yes | Yes |
+| Scala | latest | Yes | Yes | Yes |
 
-### Developer Tools
-| Tool | Windows | macOS | Linux |
-|------|---------|-------|-------|
-| Git | ✅ | ✅ | ✅ |
-| Docker | ✅ | ✅ | ✅ |
-| Postman | ✅ | ✅ | ✅ |
-| CMake | ✅ | ✅ | ✅ |
-| GitHub CLI | ✅ | ✅ | ✅ |
-| WSL 2 (Ubuntu) | ✅ | ❌ | ❌ |
-| Windows Terminal | ✅ | ❌ | ❌ |
+### IDEs & Editors (17 editors)
 
-## 🏃 Quick Start
+| IDE | Type | Windows | macOS | Linux |
+|-----|------|---------|-------|-------|
+| VS Code | Free | Yes | Yes | Yes |
+| Visual Studio 2026 Community | Free | Yes | - | - |
+| IntelliJ IDEA Community | Free | Yes | Yes | Yes |
+| PyCharm Community | Free | Yes | Yes | Yes |
+| WebStorm | Paid | Yes | Yes | Yes |
+| GoLand | Paid | Yes | Yes | Yes |
+| CLion | Paid | Yes | Yes | Yes |
+| Rider | Paid | Yes | Yes | Yes |
+| RustRover | Free | Yes | Yes | Yes |
+| Eclipse IDE | Free | Yes | Yes | Yes |
+| Android Studio | Free | Yes | Yes | Yes |
+| Sublime Text | Freemium | Yes | Yes | Yes |
+| Neovim | Free | Yes | Yes | Yes |
+| Notepad++ | Free | Yes | - | - |
+| Cursor | Freemium | Yes | Yes | Yes |
+| Windsurf | Free | Yes | Yes | Yes |
+| Zed | Free | Yes | Yes | Yes |
+
+### Developer Tools (9 tools)
+
+Git, Docker Desktop, Postman, CMake, GitHub CLI, NVM, pyenv, WSL 2, Windows Terminal
+
+## Quick Setup Profiles (8 profiles)
+
+| # | Profile | Languages | IDEs |
+|---|---------|-----------|------|
+| 1 | Web Developer | Node.js, Python, PHP, TypeScript | VS Code, Sublime |
+| 2 | Mobile Developer | Java, Kotlin, Dart | Android Studio, VS Code |
+| 3 | Data Scientist | Python, Mojo | VS Code, PyCharm |
+| 4 | Systems Programmer | C/C++, Rust, Zig, Go | VS Code, CLion, Neovim |
+| 5 | Full Stack .NET | C#/.NET, Node.js, TypeScript | VS 2026, VS Code |
+| 6 | Game Developer | C/C++, C# | VS 2026, VS Code, Rider |
+| 7 | AI / ML Engineer | Python, Mojo, Rust | VS Code, PyCharm, Cursor |
+| 8 | Custom Setup | Your choice | Your choice |
+
+## Quick Start
 
 ### Windows
 ```powershell
-# Option 1: Double-click
-codeready.bat
-
-# Option 2: PowerShell (as Administrator)
+# Double-click codeready.bat
+# Or run in Admin PowerShell:
 Set-ExecutionPolicy Bypass -Scope Process -Force
 .\codeready.ps1
 ```
@@ -84,64 +99,35 @@ chmod +x codeready.sh
 ./codeready.sh
 ```
 
-## 🎯 Quick Setup Profiles
+## How It Works
 
-Instead of selecting individual items, choose a pre-configured profile:
+1. Select a **profile** or choose **custom setup**
+2. Pick your **programming languages**
+3. Choose **which version** of each language
+4. Select your **IDEs and editors**
+5. Pick **developer tools**
+6. Confirm and let CodeReady install everything
 
-| # | Profile | Languages | IDEs | Tools |
-|---|---------|-----------|------|-------|
-| 1 | **Web Developer** | Node.js, Python, PHP | VS Code, Sublime | Git, Docker, Postman |
-| 2 | **Mobile Developer** | Java, Kotlin, Dart | Android Studio, VS Code | Git |
-| 3 | **Data Scientist** | Python, Node.js | VS Code, PyCharm | Git, Docker |
-| 4 | **Systems Programmer** | C/C++, Rust, Go | VS Code, CLion, Vim | Git, CMake |
-| 5 | **Full Stack .NET** | C#/.NET, Node.js | VS 2022, VS Code | Git, Docker, Postman |
-| 6 | **Game Developer** | C/C++, C# | VS 2022, VS Code | Git, CMake |
-| 7 | **Custom Setup** | Your choice | Your choice | Your choice |
-
-## 📁 Project Structure
+## Project Structure
 
 ```
-codeready/
-├── codeready.bat       # Windows launcher (auto-elevates to admin)
-├── codeready.ps1       # Windows PowerShell script (main logic)
-├── codeready.sh        # Linux/macOS bash script (main logic)
-└── README.md           # This file
+CodeReady/
+├── codeready.bat       # Windows launcher (auto-elevates)
+├── codeready.ps1       # Windows PowerShell script
+├── codeready.sh        # Linux/macOS bash script
+└── README.md
 ```
 
-## 📋 Output Files
+## Requirements
 
-After installation, CodeReady creates:
-- `~/codeready_install.log` — Detailed installation log
-- `~/codeready_config.json` — Your selections (Windows only, for reuse)
+- **Windows:** 10/11, Administrator, Internet
+- **macOS:** 12+, Internet
+- **Linux:** Ubuntu 20.04+ / Debian 11+ / Fedora 36+ / Arch / openSUSE, sudo, Internet
 
-## 🔧 Requirements
+## License
 
-### Windows
-- Windows 10 version 1809+ or Windows 11
-- Administrator privileges
-- Internet connection
-
-### macOS
-- macOS 12 Monterey or later
-- Command Line Tools (`xcode-select --install`)
-- Internet connection
-
-### Linux
-- Ubuntu 20.04+ / Debian 11+ / Fedora 36+ / Arch / openSUSE
-- sudo privileges
-- Internet connection
-
-## 🤝 Contributing
-
-Contributions are welcome! To add a new language or IDE:
-
-1. **Windows:** Add entry to `Get-LanguageDefinitions` or `Get-IDEDefinitions` in `codeready.ps1`
-2. **Linux/macOS:** Add an `install_<name>()` function in `codeready.sh` and register it in the dispatcher
-
-## 📄 License
-
-MIT License — feel free to use, modify, and distribute.
+MIT License
 
 ---
 
-**Made with ❤️ for developers who value their time.**
+**Made with care for developers who value their time.**
