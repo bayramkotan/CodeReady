@@ -369,6 +369,7 @@ function Get-Frameworks {
         @{ Key="poetry";    Name="Poetry";             Desc="Python dependency management";       Type="pip"; Cmd="pip install poetry --break-system-packages 2>$null; pip install poetry" },
         @{ Key="pipx";      Name="pipx";               Desc="Install Python CLI tools in isolation"; Type="pip"; Cmd="pip install pipx --break-system-packages 2>$null; pip install pipx" },
         @{ Key="conda";     Name="Miniconda";          Desc="Python/R data science pkg manager";  Type="winget"; WinGet="Anaconda.Miniconda3"; Choco="miniconda3" },
+        @{ Key="venvstudio"; Name="VenvStudio";        Desc="GUI virtual environment manager (PySide6) by bayramkotan"; Type="pip"; Cmd="pip install VenvStudio --break-system-packages 2>$null; pip install VenvStudio" },
 
         # --- JS/TS Frameworks ---
         @{ Key="react";     Name="React (create-react-app)"; Desc="Facebook UI library";          Type="npm"; Cmd="npm install -g create-react-app" },
@@ -579,11 +580,11 @@ function Main {
     switch ($profileChoice) {
         "1" { $selectedLangs = @("nodejs","python","php","typescript"); $selectedIDEKeys = @("vscode","sublime");  $selectedToolKeys = @("git","docker","postman","nvm"); $selectedFWKeys = @("yarn","pnpm","vite","react","tailwind","express") }
         "2" { $selectedLangs = @("java","kotlin","dart");              $selectedIDEKeys = @("android","vscode");   $selectedToolKeys = @("git"); $selectedFWKeys = @("reactnative","expo") }
-        "3" { $selectedLangs = @("python","mojo");                     $selectedIDEKeys = @("vscode","pycharm");   $selectedToolKeys = @("git","docker"); $selectedFWKeys = @("uv","conda","streamlit","fastapi") }
+        "3" { $selectedLangs = @("python","mojo");                     $selectedIDEKeys = @("vscode","pycharm");   $selectedToolKeys = @("git","docker"); $selectedFWKeys = @("uv","conda","venvstudio","streamlit","fastapi") }
         "4" { $selectedLangs = @("cpp","rust","zig","go");             $selectedIDEKeys = @("vscode","clion","vim"); $selectedToolKeys = @("git","cmake"); $selectedFWKeys = @("cargo-watch","wasm-pack") }
         "5" { $selectedLangs = @("csharp","nodejs","typescript");      $selectedIDEKeys = @("vs2026","vscode");    $selectedToolKeys = @("git","docker","postman"); $selectedFWKeys = @("yarn","vite","react","nextjs") }
         "6" { $selectedLangs = @("cpp","csharp");                      $selectedIDEKeys = @("vs2026","vscode","rider"); $selectedToolKeys = @("git","cmake"); $selectedFWKeys = @() }
-        "7" { $selectedLangs = @("python","mojo","rust");              $selectedIDEKeys = @("vscode","pycharm","cursor"); $selectedToolKeys = @("git","docker"); $selectedFWKeys = @("uv","conda","streamlit","fastapi") }
+        "7" { $selectedLangs = @("python","mojo","rust");              $selectedIDEKeys = @("vscode","pycharm","cursor"); $selectedToolKeys = @("git","docker"); $selectedFWKeys = @("uv","conda","venvstudio","streamlit","fastapi") }
         default {
             # Custom: language selection
             $langNames = $langs | ForEach-Object { "$($_.Name) - $($_.Desc)" }

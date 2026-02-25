@@ -553,6 +553,7 @@ install_framework() {
                     bash /tmp/miniconda.sh -b -p "$HOME/miniconda3" &>>"$LOG_FILE" && ok "Miniconda installed." || fail "Miniconda"
                     rm -f /tmp/miniconda.sh ;;
             esac ;;
+        venvstudio) step "Installing VenvStudio..."; (pip3 install VenvStudio 2>/dev/null || pip install VenvStudio) &>>"$LOG_FILE" 2>&1 && ok "VenvStudio installed." || fail "VenvStudio" ;;
 
         # JS/TS Frameworks
         react)      step "Installing React (create-react-app)..."; npm install -g create-react-app &>>"$LOG_FILE" && ok "React CLI installed." || fail "React" ;;
@@ -654,8 +655,8 @@ main() {
     local TOOL_KEYS=("git" "docker" "postman" "cmake" "gh" "pyenv")
     local TOOL_LABELS=("Git - Version control" "Docker - Containers" "Postman - API testing" "CMake - Build system" "GitHub CLI - GitHub from terminal" "pyenv - Python version manager")
 
-    local FW_KEYS=("npm" "yarn" "pnpm" "bun" "uv" "poetry" "pipx" "conda" "react" "nextjs" "vue" "nuxt" "angular" "svelte" "vite" "astro" "express" "nest" "remix" "django" "flask" "fastapi" "streamlit" "tailwind" "bootstrap" "reactnative" "expo" "ionic" "electron" "tauri" "cargo-watch" "wasm-pack" "blazor" "maui" "terraform" "kubectl" "helm")
-    local FW_LABELS=("npm (latest) - Node default pkg manager" "Yarn - Fast JS pkg manager" "pnpm - Disk-efficient JS pkg manager" "Bun - Ultra-fast JS runtime" "uv - Ultra-fast Python pkg manager (Rust)" "Poetry - Python dependency mgmt" "pipx - Isolated Python CLI tools" "Miniconda - Python/R data science" "React (create-react-app) - Facebook UI" "Next.js - React fullstack framework" "Vue CLI - Progressive JS framework" "Nuxt (nuxi) - Vue fullstack framework" "Angular CLI - Google enterprise web" "SvelteKit - Lightweight reactive" "Vite - Next-gen build tool" "Astro - Content-focused web framework" "Express.js - Minimal Node.js web" "NestJS CLI - Progressive Node.js" "Remix - Full stack web framework" "Django - Python web framework" "Flask - Lightweight Python web" "FastAPI - Modern async Python API" "Streamlit - Python data app" "Tailwind CSS - Utility-first CSS" "Bootstrap - Popular CSS framework" "React Native CLI - Cross-platform mobile" "Expo CLI - React Native toolchain" "Ionic CLI - Cross-platform mobile" "Electron Forge - Desktop apps (web tech)" "Tauri CLI - Lightweight desktop (Rust)" "cargo-watch - Rust auto-rebuild" "wasm-pack - Rust to WebAssembly" "Blazor - C# web UI (in .NET SDK)" ".NET MAUI - Cross-platform .NET UI" "Terraform - Infrastructure as code" "kubectl - Kubernetes CLI" "Helm - Kubernetes pkg manager")
+    local FW_KEYS=("npm" "yarn" "pnpm" "bun" "uv" "poetry" "pipx" "conda" "venvstudio" "react" "nextjs" "vue" "nuxt" "angular" "svelte" "vite" "astro" "express" "nest" "remix" "django" "flask" "fastapi" "streamlit" "tailwind" "bootstrap" "reactnative" "expo" "ionic" "electron" "tauri" "cargo-watch" "wasm-pack" "blazor" "maui" "terraform" "kubectl" "helm")
+    local FW_LABELS=("npm (latest) - Node default pkg manager" "Yarn - Fast JS pkg manager" "pnpm - Disk-efficient JS pkg manager" "Bun - Ultra-fast JS runtime" "uv - Ultra-fast Python pkg manager (Rust)" "Poetry - Python dependency mgmt" "pipx - Isolated Python CLI tools" "Miniconda - Python/R data science" "VenvStudio - GUI venv manager (PySide6)" "React (create-react-app) - Facebook UI" "Next.js - React fullstack framework" "Vue CLI - Progressive JS framework" "Nuxt (nuxi) - Vue fullstack framework" "Angular CLI - Google enterprise web" "SvelteKit - Lightweight reactive" "Vite - Next-gen build tool" "Astro - Content-focused web framework" "Express.js - Minimal Node.js web" "NestJS CLI - Progressive Node.js" "Remix - Full stack web framework" "Django - Python web framework" "Flask - Lightweight Python web" "FastAPI - Modern async Python API" "Streamlit - Python data app" "Tailwind CSS - Utility-first CSS" "Bootstrap - Popular CSS framework" "React Native CLI - Cross-platform mobile" "Expo CLI - React Native toolchain" "Ionic CLI - Cross-platform mobile" "Electron Forge - Desktop apps (web tech)" "Tauri CLI - Lightweight desktop (Rust)" "cargo-watch - Rust auto-rebuild" "wasm-pack - Rust to WebAssembly" "Blazor - C# web UI (in .NET SDK)" ".NET MAUI - Cross-platform .NET UI" "Terraform - Infrastructure as code" "kubectl - Kubernetes CLI" "Helm - Kubernetes pkg manager")
 
     local sel_langs=() sel_ides=() sel_tools=() sel_fws=()
 
@@ -665,11 +666,11 @@ main() {
     case "$profile" in
         1) sel_langs=("nodejs" "python" "php" "typescript"); sel_ides=("vscode" "sublime"); sel_tools=("git" "docker" "postman"); sel_fws=("yarn" "pnpm" "vite" "react" "tailwind" "express") ;;
         2) sel_langs=("java" "kotlin" "dart"); sel_ides=("android" "vscode"); sel_tools=("git"); sel_fws=("reactnative" "expo") ;;
-        3) sel_langs=("python" "mojo"); sel_ides=("vscode" "pycharm"); sel_tools=("git" "docker"); sel_fws=("uv" "conda" "streamlit" "fastapi") ;;
+        3) sel_langs=("python" "mojo"); sel_ides=("vscode" "pycharm"); sel_tools=("git" "docker"); sel_fws=("uv" "conda" "venvstudio" "streamlit" "fastapi") ;;
         4) sel_langs=("cpp" "rust" "zig" "go"); sel_ides=("vscode" "clion" "vim"); sel_tools=("git" "cmake"); sel_fws=("cargo-watch" "wasm-pack") ;;
         5) sel_langs=("csharp" "nodejs" "typescript"); sel_ides=("vscode" "rider"); sel_tools=("git" "docker" "postman"); sel_fws=("yarn" "vite" "react" "nextjs") ;;
         6) sel_langs=("cpp" "csharp"); sel_ides=("vscode" "rider"); sel_tools=("git" "cmake"); sel_fws=() ;;
-        7) sel_langs=("python" "mojo" "rust"); sel_ides=("vscode" "pycharm" "cursor"); sel_tools=("git" "docker"); sel_fws=("uv" "conda" "streamlit" "fastapi") ;;
+        7) sel_langs=("python" "mojo" "rust"); sel_ides=("vscode" "pycharm" "cursor"); sel_tools=("git" "docker"); sel_fws=("uv" "conda" "venvstudio" "streamlit" "fastapi") ;;
         *)
             local sel_idx=()
             number_menu "Select Programming Languages" LANG_LABELS sel_idx

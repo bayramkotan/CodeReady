@@ -75,7 +75,7 @@ Git, Docker Desktop, Postman, CMake, GitHub CLI, NVM, pyenv, WSL 2, Windows Term
 | Category | Items |
 |----------|-------|
 | JS/TS Package Managers | npm, Yarn, pnpm, Bun |
-| Python Package Managers | uv, Poetry, pipx, Miniconda |
+| Python Package Managers | uv, Poetry, pipx, Miniconda, VenvStudio |
 | JS/TS Frameworks | React, Next.js, Vue, Nuxt, Angular, SvelteKit, Vite, Astro, Express.js, NestJS, Remix |
 | Python Frameworks | Django, Flask, FastAPI, Streamlit |
 | CSS/UI Frameworks | Tailwind CSS, Bootstrap |
@@ -90,11 +90,11 @@ Git, Docker Desktop, Postman, CMake, GitHub CLI, NVM, pyenv, WSL 2, Windows Term
 |---|---------|-----------|------|------------|
 | 1 | Web Developer | Node.js, Python, PHP, TS | VS Code, Sublime | Yarn, pnpm, Vite, React, Tailwind, Express |
 | 2 | Mobile Developer | Java, Kotlin, Dart | Android Studio, VS Code | React Native, Expo |
-| 3 | Data Scientist | Python, Mojo | VS Code, PyCharm | uv, Conda, Streamlit, FastAPI |
+| 3 | Data Scientist | Python, Mojo | VS Code, PyCharm | uv, Conda, VenvStudio, Streamlit, FastAPI |
 | 4 | Systems Programmer | C/C++, Rust, Zig, Go | VS Code, CLion, Neovim | cargo-watch, wasm-pack |
 | 5 | Full Stack .NET | C#/.NET, Node.js, TS | VS 2026, VS Code | Yarn, Vite, React, Next.js |
 | 6 | Game Developer | C/C++, C# | VS 2026, VS Code, Rider | - |
-| 7 | AI / ML Engineer | Python, Mojo, Rust | VS Code, PyCharm, Cursor | uv, Conda, Streamlit, FastAPI |
+| 7 | AI / ML Engineer | Python, Mojo, Rust | VS Code, PyCharm, Cursor | uv, Conda, VenvStudio, Streamlit, FastAPI |
 | 8 | Custom Setup | Your choice | Your choice | Your choice |
 
 ## Quick Start
