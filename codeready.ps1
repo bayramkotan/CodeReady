@@ -372,11 +372,11 @@ function Get-Frameworks {
         @{ Key="bun";       Name="Bun";                Desc="Ultra-fast JS runtime and pkg manager"; Type="winget"; WinGet="Oven-sh.Bun"; Choco="bun" },
 
         # --- Python Package Managers ---
+        @{ Key="venvstudio"; Name="VenvStudio";        Desc="GUI virtual environment manager (PySide6) by bayramkotan"; Type="pip"; Cmd="pip install VenvStudio --break-system-packages 2>$null; pip install VenvStudio" },
         @{ Key="uv";        Name="uv";                 Desc="Ultra-fast Python package manager (Rust)"; Type="pip"; Cmd="pip install uv --break-system-packages 2>$null; pip install uv" },
         @{ Key="poetry";    Name="Poetry";             Desc="Python dependency management";       Type="pip"; Cmd="pip install poetry --break-system-packages 2>$null; pip install poetry" },
         @{ Key="pipx";      Name="pipx";               Desc="Install Python CLI tools in isolation"; Type="pip"; Cmd="pip install pipx --break-system-packages 2>$null; pip install pipx" },
         @{ Key="conda";     Name="Miniconda";          Desc="Python/R data science pkg manager";  Type="winget"; WinGet="Anaconda.Miniconda3"; Choco="miniconda3" },
-        @{ Key="venvstudio"; Name="VenvStudio";        Desc="GUI virtual environment manager (PySide6) by bayramkotan"; Type="pip"; Cmd="pip install VenvStudio --break-system-packages 2>$null; pip install VenvStudio" },
 
         # --- JS/TS Frameworks ---
         @{ Key="react";     Name="React (create-react-app)"; Desc="Facebook UI library";          Type="npm"; Cmd="npm install -g create-react-app" },
@@ -607,11 +607,11 @@ function Main {
         switch ($pc) {
             "1" { Add-ProfileItems @("nodejs","python","php","typescript") @("vscode","sublime") @("git","docker","postman","nvm") @("yarn","pnpm","vite","react","tailwind","express") }
             "2" { Add-ProfileItems @("java","kotlin","dart") @("android","vscode") @("git") @("reactnative","expo") }
-            "3" { Add-ProfileItems @("python","julia","mojo") @("vscode","pycharm") @("git","docker") @("uv","conda","venvstudio","streamlit","fastapi") }
+            "3" { Add-ProfileItems @("python","julia","mojo") @("vscode","pycharm") @("git","docker") @("venvstudio","uv","conda","streamlit","fastapi") }
             "4" { Add-ProfileItems @("cpp","rust","zig","go") @("vscode","clion","vim") @("git","cmake") @("cargo-watch","wasm-pack") }
             "5" { Add-ProfileItems @("csharp","nodejs","typescript") @("vs2026","vscode") @("git","docker","postman") @("yarn","vite","react","nextjs") }
             "6" { Add-ProfileItems @("cpp","csharp") @("vs2026","vscode","rider") @("git","cmake") @() }
-            "7" { Add-ProfileItems @("python","julia","mojo","rust") @("vscode","pycharm","cursor") @("git","docker") @("uv","conda","venvstudio","streamlit","fastapi") }
+            "7" { Add-ProfileItems @("python","julia","mojo","rust") @("vscode","pycharm","cursor") @("git","docker") @("venvstudio","uv","conda","streamlit","fastapi") }
             "8" { $isCustom = $true }
             "9" { $isInstallAll = $true }
         }
