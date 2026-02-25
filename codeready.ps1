@@ -354,6 +354,117 @@ function Get-Tools {
 }
 
 # ================================================================
+# FRAMEWORKS, PACKAGE MANAGERS, LIBRARIES
+# ================================================================
+function Get-Frameworks {
+    return @(
+        # --- JS/TS Package Managers ---
+        @{ Key="npm";       Name="npm (latest)";       Desc="Node.js default package manager";    Type="npm"; Cmd="npm install -g npm@latest" },
+        @{ Key="yarn";      Name="Yarn";               Desc="Fast, reliable JS package manager";  Type="npm"; Cmd="npm install -g yarn" },
+        @{ Key="pnpm";      Name="pnpm";               Desc="Fast, disk-efficient JS pkg manager"; Type="npm"; Cmd="npm install -g pnpm" },
+        @{ Key="bun";       Name="Bun";                Desc="Ultra-fast JS runtime and pkg manager"; Type="winget"; WinGet="Oven-sh.Bun"; Choco="bun" },
+
+        # --- Python Package Managers ---
+        @{ Key="uv";        Name="uv";                 Desc="Ultra-fast Python package manager (Rust)"; Type="pip"; Cmd="pip install uv --break-system-packages 2>$null; pip install uv" },
+        @{ Key="poetry";    Name="Poetry";             Desc="Python dependency management";       Type="pip"; Cmd="pip install poetry --break-system-packages 2>$null; pip install poetry" },
+        @{ Key="pipx";      Name="pipx";               Desc="Install Python CLI tools in isolation"; Type="pip"; Cmd="pip install pipx --break-system-packages 2>$null; pip install pipx" },
+        @{ Key="conda";     Name="Miniconda";          Desc="Python/R data science pkg manager";  Type="winget"; WinGet="Anaconda.Miniconda3"; Choco="miniconda3" },
+
+        # --- JS/TS Frameworks ---
+        @{ Key="react";     Name="React (create-react-app)"; Desc="Facebook UI library";          Type="npm"; Cmd="npm install -g create-react-app" },
+        @{ Key="nextjs";    Name="Next.js (create-next-app)"; Desc="React fullstack framework";   Type="npm"; Cmd="npm install -g create-next-app" },
+        @{ Key="vue";       Name="Vue CLI";            Desc="Progressive JS framework";           Type="npm"; Cmd="npm install -g @vue/cli" },
+        @{ Key="nuxt";      Name="Nuxt (nuxi)";       Desc="Vue fullstack framework";            Type="npm"; Cmd="npm install -g nuxi" },
+        @{ Key="angular";   Name="Angular CLI";        Desc="Google enterprise web framework";    Type="npm"; Cmd="npm install -g @angular/cli" },
+        @{ Key="svelte";    Name="SvelteKit";          Desc="Lightweight reactive framework";     Type="npm"; Cmd="npm install -g create-svelte" },
+        @{ Key="vite";      Name="Vite";               Desc="Next-gen frontend build tool";       Type="npm"; Cmd="npm install -g create-vite" },
+        @{ Key="astro";     Name="Astro";              Desc="Content-focused web framework";      Type="npm"; Cmd="npm install -g create-astro" },
+        @{ Key="express";   Name="Express.js";         Desc="Minimal Node.js web framework";      Type="npm"; Cmd="npm install -g express-generator" },
+        @{ Key="nest";      Name="NestJS CLI";         Desc="Progressive Node.js framework";      Type="npm"; Cmd="npm install -g @nestjs/cli" },
+        @{ Key="remix";     Name="Remix";              Desc="Full stack web framework";           Type="npm"; Cmd="npm install -g create-remix" },
+
+        # --- Python Frameworks ---
+        @{ Key="django";    Name="Django";             Desc="Python web framework";               Type="pip"; Cmd="pip install django --break-system-packages 2>$null; pip install django" },
+        @{ Key="flask";     Name="Flask";              Desc="Lightweight Python web framework";   Type="pip"; Cmd="pip install flask --break-system-packages 2>$null; pip install flask" },
+        @{ Key="fastapi";   Name="FastAPI";            Desc="Modern async Python API framework";  Type="pip"; Cmd="pip install fastapi uvicorn --break-system-packages 2>$null; pip install fastapi uvicorn" },
+        @{ Key="streamlit"; Name="Streamlit";          Desc="Python data app framework";          Type="pip"; Cmd="pip install streamlit --break-system-packages 2>$null; pip install streamlit" },
+
+        # --- CSS/UI Frameworks ---
+        @{ Key="tailwind";  Name="Tailwind CSS";       Desc="Utility-first CSS framework";        Type="npm"; Cmd="npm install -g tailwindcss" },
+        @{ Key="bootstrap"; Name="Bootstrap";          Desc="Popular CSS framework";              Type="npm"; Cmd="npm install -g bootstrap" },
+
+        # --- Mobile/Cross-platform ---
+        @{ Key="reactnative"; Name="React Native CLI"; Desc="Cross-platform mobile framework";    Type="npm"; Cmd="npm install -g react-native-cli" },
+        @{ Key="expo";      Name="Expo CLI";           Desc="React Native toolchain";             Type="npm"; Cmd="npm install -g expo-cli" },
+        @{ Key="ionic";     Name="Ionic CLI";          Desc="Cross-platform mobile framework";    Type="npm"; Cmd="npm install -g @ionic/cli" },
+        @{ Key="electron";  Name="Electron Forge";     Desc="Desktop apps with web tech";         Type="npm"; Cmd="npm install -g @electron-forge/cli" },
+        @{ Key="tauri";     Name="Tauri CLI";          Desc="Lightweight desktop apps (Rust)";    Type="npm"; Cmd="npm install -g @tauri-apps/cli" },
+
+        # --- Rust Ecosystem ---
+        @{ Key="cargo-watch"; Name="cargo-watch";      Desc="Auto-rebuild Rust on file changes";  Type="cargo"; Cmd="cargo install cargo-watch" },
+        @{ Key="wasm-pack"; Name="wasm-pack";          Desc="Rust to WebAssembly toolchain";      Type="cargo"; Cmd="cargo install wasm-pack" },
+
+        # --- .NET Ecosystem ---
+        @{ Key="blazor";    Name="Blazor (via .NET)";  Desc="C# web UI framework (included in .NET SDK)"; Type="info"; Cmd="" },
+        @{ Key="maui";      Name=".NET MAUI";          Desc="Cross-platform .NET UI (install via VS workload)"; Type="info"; Cmd="" },
+
+        # --- DevOps/Infra ---
+        @{ Key="terraform";  Name="Terraform";         Desc="Infrastructure as code";             Type="winget"; WinGet="Hashicorp.Terraform"; Choco="terraform" },
+        @{ Key="kubectl";    Name="kubectl";           Desc="Kubernetes CLI";                     Type="winget"; WinGet="Kubernetes.kubectl"; Choco="kubernetes-cli" },
+        @{ Key="helm";       Name="Helm";              Desc="Kubernetes package manager";         Type="winget"; WinGet="Helm.Helm"; Choco="kubernetes-helm" }
+    )
+}
+
+# --- Framework installer ----------------------------------------
+function Install-Framework($fw) {
+    $name = $fw.Name
+    Write-Step "Installing $name..."
+    try {
+        switch ($fw.Type) {
+            "npm" {
+                if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
+                    Write-Fail "$name requires npm (Node.js). Install Node.js first."
+                    return
+                }
+                Invoke-Expression $fw.Cmd 2>&1 | Out-Null
+            }
+            "pip" {
+                if (-not (Get-Command pip -ErrorAction SilentlyContinue) -and -not (Get-Command pip3 -ErrorAction SilentlyContinue)) {
+                    Write-Fail "$name requires pip (Python). Install Python first."
+                    return
+                }
+                Invoke-Expression $fw.Cmd 2>&1 | Out-Null
+            }
+            "cargo" {
+                if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
+                    Write-Fail "$name requires cargo (Rust). Install Rust first."
+                    return
+                }
+                Invoke-Expression $fw.Cmd 2>&1 | Out-Null
+            }
+            "winget" {
+                Install-Item $fw.WinGet $fw.Choco $name
+                return
+            }
+            "info" {
+                Write-Info "$name - $($fw.Desc)"
+                return
+            }
+        }
+        if ($LASTEXITCODE -eq 0 -or $?) {
+            Write-Success "$name installed."
+            $script:InstalledItems += $name
+        } else {
+            Write-Fail "$name installation may have issues."
+            $script:FailedItems += $name
+        }
+    } catch {
+        Write-Fail "Error installing ${name}: $_"
+        $script:FailedItems += $name
+    }
+}
+
+# ================================================================
 # PROFILES
 # ================================================================
 function Show-ProfileMenu {
@@ -463,15 +574,16 @@ function Main {
     $selectedVersions = @{}
     $selectedIDEKeys = @()
     $selectedToolKeys = @()
+    $selectedFWKeys = @()
 
     switch ($profileChoice) {
-        "1" { $selectedLangs = @("nodejs","python","php","typescript"); $selectedIDEKeys = @("vscode","sublime");  $selectedToolKeys = @("git","docker","postman","nvm") }
-        "2" { $selectedLangs = @("java","kotlin","dart");              $selectedIDEKeys = @("android","vscode");   $selectedToolKeys = @("git") }
-        "3" { $selectedLangs = @("python","mojo");                     $selectedIDEKeys = @("vscode","pycharm");   $selectedToolKeys = @("git","docker") }
-        "4" { $selectedLangs = @("cpp","rust","zig","go");             $selectedIDEKeys = @("vscode","clion","vim"); $selectedToolKeys = @("git","cmake") }
-        "5" { $selectedLangs = @("csharp","nodejs","typescript");      $selectedIDEKeys = @("vs2026","vscode");    $selectedToolKeys = @("git","docker","postman") }
-        "6" { $selectedLangs = @("cpp","csharp");                      $selectedIDEKeys = @("vs2026","vscode","rider"); $selectedToolKeys = @("git","cmake") }
-        "7" { $selectedLangs = @("python","mojo","rust");              $selectedIDEKeys = @("vscode","pycharm","cursor"); $selectedToolKeys = @("git","docker") }
+        "1" { $selectedLangs = @("nodejs","python","php","typescript"); $selectedIDEKeys = @("vscode","sublime");  $selectedToolKeys = @("git","docker","postman","nvm"); $selectedFWKeys = @("yarn","pnpm","vite","react","tailwind","express") }
+        "2" { $selectedLangs = @("java","kotlin","dart");              $selectedIDEKeys = @("android","vscode");   $selectedToolKeys = @("git"); $selectedFWKeys = @("reactnative","expo") }
+        "3" { $selectedLangs = @("python","mojo");                     $selectedIDEKeys = @("vscode","pycharm");   $selectedToolKeys = @("git","docker"); $selectedFWKeys = @("uv","conda","streamlit","fastapi") }
+        "4" { $selectedLangs = @("cpp","rust","zig","go");             $selectedIDEKeys = @("vscode","clion","vim"); $selectedToolKeys = @("git","cmake"); $selectedFWKeys = @("cargo-watch","wasm-pack") }
+        "5" { $selectedLangs = @("csharp","nodejs","typescript");      $selectedIDEKeys = @("vs2026","vscode");    $selectedToolKeys = @("git","docker","postman"); $selectedFWKeys = @("yarn","vite","react","nextjs") }
+        "6" { $selectedLangs = @("cpp","csharp");                      $selectedIDEKeys = @("vs2026","vscode","rider"); $selectedToolKeys = @("git","cmake"); $selectedFWKeys = @() }
+        "7" { $selectedLangs = @("python","mojo","rust");              $selectedIDEKeys = @("vscode","pycharm","cursor"); $selectedToolKeys = @("git","docker"); $selectedFWKeys = @("uv","conda","streamlit","fastapi") }
         default {
             # Custom: language selection
             $langNames = $langs | ForEach-Object { "$($_.Name) - $($_.Desc)" }
@@ -487,6 +599,12 @@ function Main {
             $toolNames = $tools | ForEach-Object { "$($_.Name) - $($_.Desc)" }
             $toolIdxs = Show-NumberMenu "Select Developer Tools" $toolNames
             foreach ($idx in $toolIdxs) { $selectedToolKeys += $tools[$idx].Key }
+
+            # Custom: framework selection
+            $fws = Get-Frameworks
+            $fwNames = $fws | ForEach-Object { "$($_.Name) - $($_.Desc)" }
+            $fwIdxs = Show-NumberMenu "Select Frameworks, Libraries and Package Managers" $fwNames
+            foreach ($idx in $fwIdxs) { $selectedFWKeys += $fws[$idx].Key }
         }
     }
 
@@ -521,6 +639,14 @@ function Main {
         $tool = $tools | Where-Object { $_.Key -eq $tk }
         if ($tool) { Write-Host "    - $($tool.Name)" }
     }
+    if ($selectedFWKeys.Count -gt 0) {
+        $fws = Get-Frameworks
+        Write-Host "  Frameworks/Libraries:" -ForegroundColor Cyan
+        foreach ($fk in $selectedFWKeys) {
+            $fw = $fws | Where-Object { $_.Key -eq $fk }
+            if ($fw) { Write-Host "    - $($fw.Name)" }
+        }
+    }
     Write-Host ""
     $confirm = Read-Host "  Proceed? (Y/n)"
     if ($confirm -eq "n" -or $confirm -eq "N") { Write-Info "Cancelled."; return }
@@ -550,6 +676,16 @@ function Main {
         if ($toolKey -eq "wsl") { Install-WSL; continue }
         $tool = $tools | Where-Object { $_.Key -eq $toolKey }
         if ($tool) { Install-Item $tool.WinGet $tool.Choco $tool.Name }
+    }
+
+    # INSTALL FRAMEWORKS
+    if ($selectedFWKeys.Count -gt 0) {
+        Write-SectionHeader "Installing Frameworks, Libraries and Package Managers"
+        $fws = Get-Frameworks
+        foreach ($fwKey in $selectedFWKeys) {
+            $fw = $fws | Where-Object { $_.Key -eq $fwKey }
+            if ($fw) { Install-Framework $fw }
+        }
     }
 
     # Refresh PATH

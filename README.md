@@ -70,18 +70,32 @@
 
 Git, Docker Desktop, Postman, CMake, GitHub CLI, NVM, pyenv, WSL 2, Windows Terminal
 
+### Frameworks, Libraries & Package Managers (37 items)
+
+| Category | Items |
+|----------|-------|
+| JS/TS Package Managers | npm, Yarn, pnpm, Bun |
+| Python Package Managers | uv, Poetry, pipx, Miniconda |
+| JS/TS Frameworks | React, Next.js, Vue, Nuxt, Angular, SvelteKit, Vite, Astro, Express.js, NestJS, Remix |
+| Python Frameworks | Django, Flask, FastAPI, Streamlit |
+| CSS/UI Frameworks | Tailwind CSS, Bootstrap |
+| Mobile/Cross-platform | React Native, Expo, Ionic, Electron Forge, Tauri |
+| Rust Ecosystem | cargo-watch, wasm-pack |
+| .NET Ecosystem | Blazor, .NET MAUI |
+| DevOps/Infra | Terraform, kubectl, Helm |
+
 ## Quick Setup Profiles (8 profiles)
 
-| # | Profile | Languages | IDEs |
-|---|---------|-----------|------|
-| 1 | Web Developer | Node.js, Python, PHP, TypeScript | VS Code, Sublime |
-| 2 | Mobile Developer | Java, Kotlin, Dart | Android Studio, VS Code |
-| 3 | Data Scientist | Python, Mojo | VS Code, PyCharm |
-| 4 | Systems Programmer | C/C++, Rust, Zig, Go | VS Code, CLion, Neovim |
-| 5 | Full Stack .NET | C#/.NET, Node.js, TypeScript | VS 2026, VS Code |
-| 6 | Game Developer | C/C++, C# | VS 2026, VS Code, Rider |
-| 7 | AI / ML Engineer | Python, Mojo, Rust | VS Code, PyCharm, Cursor |
-| 8 | Custom Setup | Your choice | Your choice |
+| # | Profile | Languages | IDEs | Frameworks |
+|---|---------|-----------|------|------------|
+| 1 | Web Developer | Node.js, Python, PHP, TS | VS Code, Sublime | Yarn, pnpm, Vite, React, Tailwind, Express |
+| 2 | Mobile Developer | Java, Kotlin, Dart | Android Studio, VS Code | React Native, Expo |
+| 3 | Data Scientist | Python, Mojo | VS Code, PyCharm | uv, Conda, Streamlit, FastAPI |
+| 4 | Systems Programmer | C/C++, Rust, Zig, Go | VS Code, CLion, Neovim | cargo-watch, wasm-pack |
+| 5 | Full Stack .NET | C#/.NET, Node.js, TS | VS 2026, VS Code | Yarn, Vite, React, Next.js |
+| 6 | Game Developer | C/C++, C# | VS 2026, VS Code, Rider | - |
+| 7 | AI / ML Engineer | Python, Mojo, Rust | VS Code, PyCharm, Cursor | uv, Conda, Streamlit, FastAPI |
+| 8 | Custom Setup | Your choice | Your choice | Your choice |
 
 ## Quick Start
 
@@ -106,7 +120,8 @@ chmod +x codeready.sh
 3. Choose **which version** of each language
 4. Select your **IDEs and editors**
 5. Pick **developer tools**
-6. Confirm and let CodeReady install everything
+6. Choose **frameworks, libraries and package managers**
+7. Confirm and let CodeReady install everything
 
 ## Project Structure
 

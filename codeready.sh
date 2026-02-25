@@ -521,6 +521,99 @@ install_tool() {
 }
 
 # ================================================================
+# FRAMEWORK / LIBRARY INSTALLERS
+# ================================================================
+install_framework() {
+    local key="$1"
+    case "$key" in
+        # JS/TS Package Managers
+        npm)        step "Updating npm..."; npm install -g npm@latest &>>"$LOG_FILE" && ok "npm updated." || fail "npm" ;;
+        yarn)       step "Installing Yarn..."; npm install -g yarn &>>"$LOG_FILE" && ok "Yarn installed." || fail "Yarn" ;;
+        pnpm)       step "Installing pnpm..."; npm install -g pnpm &>>"$LOG_FILE" && ok "pnpm installed." || fail "pnpm" ;;
+        bun)
+            step "Installing Bun..."
+            case "$PKG" in
+                brew) brew install oven-sh/bun/bun &>>"$LOG_FILE" && ok "Bun installed." || fail "Bun" ;;
+                *)    curl -fsSL https://bun.sh/install | bash &>>"$LOG_FILE" && ok "Bun installed." || fail "Bun" ;;
+            esac ;;
+
+        # Python Package Managers
+        uv)         step "Installing uv..."; (pip3 install uv 2>/dev/null || pip install uv 2>/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh) &>>"$LOG_FILE" 2>&1 && ok "uv installed." || fail "uv" ;;
+        poetry)     step "Installing Poetry..."; (curl -sSL https://install.python-poetry.org | python3 -) &>>"$LOG_FILE" 2>&1 && ok "Poetry installed." || fail "Poetry" ;;
+        pipx)       step "Installing pipx..."; (pip3 install --user pipx 2>/dev/null || pip install --user pipx) &>>"$LOG_FILE" 2>&1 && ok "pipx installed." || fail "pipx" ;;
+        conda)
+            step "Installing Miniconda..."
+            case "$PKG" in
+                brew) brew install --cask miniconda &>>"$LOG_FILE" && ok "Miniconda installed." || fail "Miniconda" ;;
+                *)
+                    local ARCH; ARCH=$(uname -m)
+                    local OS_STR="Linux"
+                    [[ "$OS_TYPE" == "macos" ]] && OS_STR="MacOSX"
+                    curl -fsSL "https://repo.anaconda.com/miniconda/Miniconda3-latest-${OS_STR}-${ARCH}.sh" -o /tmp/miniconda.sh &>>"$LOG_FILE"
+                    bash /tmp/miniconda.sh -b -p "$HOME/miniconda3" &>>"$LOG_FILE" && ok "Miniconda installed." || fail "Miniconda"
+                    rm -f /tmp/miniconda.sh ;;
+            esac ;;
+
+        # JS/TS Frameworks
+        react)      step "Installing React (create-react-app)..."; npm install -g create-react-app &>>"$LOG_FILE" && ok "React CLI installed." || fail "React" ;;
+        nextjs)     step "Installing Next.js (create-next-app)..."; npm install -g create-next-app &>>"$LOG_FILE" && ok "Next.js CLI installed." || fail "Next.js" ;;
+        vue)        step "Installing Vue CLI..."; npm install -g @vue/cli &>>"$LOG_FILE" && ok "Vue CLI installed." || fail "Vue CLI" ;;
+        nuxt)       step "Installing Nuxt (nuxi)..."; npm install -g nuxi &>>"$LOG_FILE" && ok "Nuxt CLI installed." || fail "Nuxt" ;;
+        angular)    step "Installing Angular CLI..."; npm install -g @angular/cli &>>"$LOG_FILE" && ok "Angular CLI installed." || fail "Angular CLI" ;;
+        svelte)     step "Installing SvelteKit..."; npm install -g create-svelte &>>"$LOG_FILE" && ok "SvelteKit installed." || fail "SvelteKit" ;;
+        vite)       step "Installing Vite..."; npm install -g create-vite &>>"$LOG_FILE" && ok "Vite installed." || fail "Vite" ;;
+        astro)      step "Installing Astro..."; npm install -g create-astro &>>"$LOG_FILE" && ok "Astro installed." || fail "Astro" ;;
+        express)    step "Installing Express.js..."; npm install -g express-generator &>>"$LOG_FILE" && ok "Express.js installed." || fail "Express.js" ;;
+        nest)       step "Installing NestJS CLI..."; npm install -g @nestjs/cli &>>"$LOG_FILE" && ok "NestJS installed." || fail "NestJS" ;;
+        remix)      step "Installing Remix..."; npm install -g create-remix &>>"$LOG_FILE" && ok "Remix installed." || fail "Remix" ;;
+
+        # Python Frameworks
+        django)     step "Installing Django..."; (pip3 install django 2>/dev/null || pip install django) &>>"$LOG_FILE" 2>&1 && ok "Django installed." || fail "Django" ;;
+        flask)      step "Installing Flask..."; (pip3 install flask 2>/dev/null || pip install flask) &>>"$LOG_FILE" 2>&1 && ok "Flask installed." || fail "Flask" ;;
+        fastapi)    step "Installing FastAPI..."; (pip3 install fastapi uvicorn 2>/dev/null || pip install fastapi uvicorn) &>>"$LOG_FILE" 2>&1 && ok "FastAPI installed." || fail "FastAPI" ;;
+        streamlit)  step "Installing Streamlit..."; (pip3 install streamlit 2>/dev/null || pip install streamlit) &>>"$LOG_FILE" 2>&1 && ok "Streamlit installed." || fail "Streamlit" ;;
+
+        # CSS/UI
+        tailwind)   step "Installing Tailwind CSS..."; npm install -g tailwindcss &>>"$LOG_FILE" && ok "Tailwind CSS installed." || fail "Tailwind CSS" ;;
+        bootstrap)  step "Installing Bootstrap..."; npm install -g bootstrap &>>"$LOG_FILE" && ok "Bootstrap installed." || fail "Bootstrap" ;;
+
+        # Mobile/Cross-platform
+        reactnative) step "Installing React Native CLI..."; npm install -g react-native-cli &>>"$LOG_FILE" && ok "React Native CLI installed." || fail "React Native" ;;
+        expo)       step "Installing Expo CLI..."; npm install -g expo-cli &>>"$LOG_FILE" && ok "Expo CLI installed." || fail "Expo" ;;
+        ionic)      step "Installing Ionic CLI..."; npm install -g @ionic/cli &>>"$LOG_FILE" && ok "Ionic CLI installed." || fail "Ionic" ;;
+        electron)   step "Installing Electron Forge..."; npm install -g @electron-forge/cli &>>"$LOG_FILE" && ok "Electron Forge installed." || fail "Electron" ;;
+        tauri)      step "Installing Tauri CLI..."; npm install -g @tauri-apps/cli &>>"$LOG_FILE" && ok "Tauri CLI installed." || fail "Tauri" ;;
+
+        # Rust Ecosystem
+        cargo-watch) step "Installing cargo-watch..."; cargo install cargo-watch &>>"$LOG_FILE" 2>&1 && ok "cargo-watch installed." || fail "cargo-watch" ;;
+        wasm-pack)  step "Installing wasm-pack..."; cargo install wasm-pack &>>"$LOG_FILE" 2>&1 && ok "wasm-pack installed." || fail "wasm-pack" ;;
+
+        # .NET info
+        blazor)     info "Blazor is included in .NET SDK - use: dotnet new blazor" ;;
+        maui)       info ".NET MAUI - install via: dotnet workload install maui" ;;
+
+        # DevOps/Infra
+        terraform)
+            case "$PKG" in
+                brew) pkg_install "Terraform" "brew install terraform" ;;
+                *)    pkg_install "Terraform" "sudo snap install terraform --classic 2>/dev/null || (curl -fsSL https://releases.hashicorp.com/terraform/1.9.0/terraform_1.9.0_linux_amd64.zip -o /tmp/tf.zip && sudo unzip -o /tmp/tf.zip -d /usr/local/bin/)" ;;
+            esac ;;
+        kubectl)
+            case "$PKG" in
+                brew) pkg_install "kubectl" "brew install kubectl" ;;
+                *)    pkg_install "kubectl" "sudo snap install kubectl --classic 2>/dev/null || (curl -LO 'https://dl.k8s.io/release/\$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl' && sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl)" ;;
+            esac ;;
+        helm)
+            case "$PKG" in
+                brew) pkg_install "Helm" "brew install helm" ;;
+                *)    pkg_install "Helm" "sudo snap install helm --classic 2>/dev/null || (curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash)" ;;
+            esac ;;
+
+        *) fail "Unknown framework: $key" ;;
+    esac
+}
+
+# ================================================================
 # PROFILES
 # ================================================================
 show_profile_menu() {
@@ -561,19 +654,22 @@ main() {
     local TOOL_KEYS=("git" "docker" "postman" "cmake" "gh" "pyenv")
     local TOOL_LABELS=("Git - Version control" "Docker - Containers" "Postman - API testing" "CMake - Build system" "GitHub CLI - GitHub from terminal" "pyenv - Python version manager")
 
-    local sel_langs=() sel_ides=() sel_tools=()
+    local FW_KEYS=("npm" "yarn" "pnpm" "bun" "uv" "poetry" "pipx" "conda" "react" "nextjs" "vue" "nuxt" "angular" "svelte" "vite" "astro" "express" "nest" "remix" "django" "flask" "fastapi" "streamlit" "tailwind" "bootstrap" "reactnative" "expo" "ionic" "electron" "tauri" "cargo-watch" "wasm-pack" "blazor" "maui" "terraform" "kubectl" "helm")
+    local FW_LABELS=("npm (latest) - Node default pkg manager" "Yarn - Fast JS pkg manager" "pnpm - Disk-efficient JS pkg manager" "Bun - Ultra-fast JS runtime" "uv - Ultra-fast Python pkg manager (Rust)" "Poetry - Python dependency mgmt" "pipx - Isolated Python CLI tools" "Miniconda - Python/R data science" "React (create-react-app) - Facebook UI" "Next.js - React fullstack framework" "Vue CLI - Progressive JS framework" "Nuxt (nuxi) - Vue fullstack framework" "Angular CLI - Google enterprise web" "SvelteKit - Lightweight reactive" "Vite - Next-gen build tool" "Astro - Content-focused web framework" "Express.js - Minimal Node.js web" "NestJS CLI - Progressive Node.js" "Remix - Full stack web framework" "Django - Python web framework" "Flask - Lightweight Python web" "FastAPI - Modern async Python API" "Streamlit - Python data app" "Tailwind CSS - Utility-first CSS" "Bootstrap - Popular CSS framework" "React Native CLI - Cross-platform mobile" "Expo CLI - React Native toolchain" "Ionic CLI - Cross-platform mobile" "Electron Forge - Desktop apps (web tech)" "Tauri CLI - Lightweight desktop (Rust)" "cargo-watch - Rust auto-rebuild" "wasm-pack - Rust to WebAssembly" "Blazor - C# web UI (in .NET SDK)" ".NET MAUI - Cross-platform .NET UI" "Terraform - Infrastructure as code" "kubectl - Kubernetes CLI" "Helm - Kubernetes pkg manager")
+
+    local sel_langs=() sel_ides=() sel_tools=() sel_fws=()
 
     local profile
     profile=$(show_profile_menu)
 
     case "$profile" in
-        1) sel_langs=("nodejs" "python" "php" "typescript"); sel_ides=("vscode" "sublime"); sel_tools=("git" "docker" "postman") ;;
-        2) sel_langs=("java" "kotlin" "dart"); sel_ides=("android" "vscode"); sel_tools=("git") ;;
-        3) sel_langs=("python" "mojo"); sel_ides=("vscode" "pycharm"); sel_tools=("git" "docker") ;;
-        4) sel_langs=("cpp" "rust" "zig" "go"); sel_ides=("vscode" "clion" "vim"); sel_tools=("git" "cmake") ;;
-        5) sel_langs=("csharp" "nodejs" "typescript"); sel_ides=("vscode" "rider"); sel_tools=("git" "docker" "postman") ;;
-        6) sel_langs=("cpp" "csharp"); sel_ides=("vscode" "rider"); sel_tools=("git" "cmake") ;;
-        7) sel_langs=("python" "mojo" "rust"); sel_ides=("vscode" "pycharm" "cursor"); sel_tools=("git" "docker") ;;
+        1) sel_langs=("nodejs" "python" "php" "typescript"); sel_ides=("vscode" "sublime"); sel_tools=("git" "docker" "postman"); sel_fws=("yarn" "pnpm" "vite" "react" "tailwind" "express") ;;
+        2) sel_langs=("java" "kotlin" "dart"); sel_ides=("android" "vscode"); sel_tools=("git"); sel_fws=("reactnative" "expo") ;;
+        3) sel_langs=("python" "mojo"); sel_ides=("vscode" "pycharm"); sel_tools=("git" "docker"); sel_fws=("uv" "conda" "streamlit" "fastapi") ;;
+        4) sel_langs=("cpp" "rust" "zig" "go"); sel_ides=("vscode" "clion" "vim"); sel_tools=("git" "cmake"); sel_fws=("cargo-watch" "wasm-pack") ;;
+        5) sel_langs=("csharp" "nodejs" "typescript"); sel_ides=("vscode" "rider"); sel_tools=("git" "docker" "postman"); sel_fws=("yarn" "vite" "react" "nextjs") ;;
+        6) sel_langs=("cpp" "csharp"); sel_ides=("vscode" "rider"); sel_tools=("git" "cmake"); sel_fws=() ;;
+        7) sel_langs=("python" "mojo" "rust"); sel_ides=("vscode" "pycharm" "cursor"); sel_tools=("git" "docker"); sel_fws=("uv" "conda" "streamlit" "fastapi") ;;
         *)
             local sel_idx=()
             number_menu "Select Programming Languages" LANG_LABELS sel_idx
@@ -586,6 +682,10 @@ main() {
             sel_idx=()
             number_menu "Select Developer Tools" TOOL_LABELS sel_idx
             for idx in "${sel_idx[@]}"; do sel_tools+=("${TOOL_KEYS[$idx]}"); done
+
+            sel_idx=()
+            number_menu "Select Frameworks, Libraries and Package Managers" FW_LABELS sel_idx
+            for idx in "${sel_idx[@]}"; do sel_fws+=("${FW_KEYS[$idx]}"); done
             ;;
     esac
 
@@ -632,6 +732,9 @@ main() {
     echo -e "  ${CYAN}Languages:${NC} ${sel_langs[*]}"
     echo -e "  ${CYAN}IDEs:${NC}      ${sel_ides[*]}"
     echo -e "  ${CYAN}Tools:${NC}     ${sel_tools[*]}"
+    if [[ ${#sel_fws[@]} -gt 0 ]]; then
+        echo -e "  ${CYAN}Frameworks:${NC} ${sel_fws[*]}"
+    fi
     echo ""
     read -rp "  Proceed? (Y/n): " confirm
     [[ "$confirm" == "n" || "$confirm" == "N" ]] && { info "Cancelled."; exit 0; }
@@ -668,6 +771,12 @@ main() {
     # Install tools
     section "Installing Developer Tools"
     for tool in "${sel_tools[@]}"; do install_tool "$tool"; done
+
+    # Install frameworks
+    if [[ ${#sel_fws[@]} -gt 0 ]]; then
+        section "Installing Frameworks, Libraries and Package Managers"
+        for fw in "${sel_fws[@]}"; do install_framework "$fw"; done
+    fi
 
     # Summary
     section "Installation Summary"
