@@ -16,12 +16,12 @@ function Write-Banner {
     Clear-Host
     $banner = @"
 
-     CCCCC   OOO   DDDD   EEEEE  RRRR   EEEEE   AAA   DDDD   Y   Y
-    C       O   O  D   D  E      R   R  E      A   A  D   D   Y Y
-    C       O   O  D   D  EEE    RRRR   EEE    AAAAA  D   D    Y
-    C       O   O  D   D  E      R  R   E      A   A  D   D    Y
-     CCCCC   OOO   DDDD   EEEEE  R   R  EEEEE  A   A  DDDD     Y
-                                                        v$script:Version
+   ####  #####  ####  ###### ####  ###### #####  ####  #   #
+  #      #   #  #   # #      #   # #      #   #  #   #  # #
+  #      #   #  #   # ####   ####  ####   #####  #   #   #
+  #      #   #  #   # #      #  #  #      #   #  #   #   #
+   ####  #####  ####  ###### #   # ###### #   #  ####    #
+                                                     v$script:Version
 "@
     Write-Host $banner -ForegroundColor Cyan
     Write-Host "  Developer Environment Setup Tool - Windows Edition" -ForegroundColor DarkCyan

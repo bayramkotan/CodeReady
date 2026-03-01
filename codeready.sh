@@ -38,15 +38,14 @@ CYAN='\033[0;36m'; GRAY='\033[0;90m'; NC='\033[0m'; BOLD='\033[1m'
 
 print_banner() {
     clear
-    echo -e "${CYAN}"
-    cat << 'EOF'
-     CCCCC   OOO   DDDD   EEEEE  RRRR   EEEEE   AAA   DDDD   Y   Y
-    C       O   O  D   D  E      R   R  E      A   A  D   D   Y Y
-    C       O   O  D   D  EEE    RRRR   EEE    AAAAA  D   D    Y
-    C       O   O  D   D  E      R  R   E      A   A  D   D    Y
-     CCCCC   OOO   DDDD   EEEEE  R   R  EEEEE  A   A  DDDD     Y
-EOF
-    echo -e "                                                        v${VERSION}${NC}"
+    echo ""
+    echo -e "${CYAN}   ####  #####  ####  ###### ####  ###### #####  ####  #   #${NC}"
+    echo -e "${CYAN}  #      #   #  #   # #      #   # #      #   #  #   #  # #${NC}"
+    echo -e "${CYAN}  #      #   #  #   # ####   ####  ####   #####  #   #   #${NC}"
+    echo -e "${CYAN}  #      #   #  #   # #      #  #  #      #   #  #   #   #${NC}"
+    echo -e "${CYAN}   ####  #####  ####  ###### #   # ###### #   #  ####    #${NC}"
+    echo ""
+    echo -e "                                                     ${BOLD}v${VERSION}${NC}"
     echo -e "  ${GRAY}Developer Environment Setup Tool - Linux/macOS${NC}"
     echo -e "  ${GRAY}================================================${NC}"
     echo ""
@@ -121,12 +120,12 @@ number_menu() {
 version_menu() {
     local lang_name="$1"; shift
     local -a labels=("$@")
-    echo ""
-    echo -e "  ${CYAN}$lang_name - Select version:${NC}"
+    echo "" >&2
+    echo -e "  ${CYAN}$lang_name - Select version:${NC}" >&2
     for ((i=0; i<${#labels[@]}; i++)); do
         local tag=""
         [[ $i -eq 0 ]] && tag=" (latest)"
-        echo "    [$((i+1))] ${labels[$i]}$tag"
+        echo "    [$((i+1))] ${labels[$i]}$tag" >&2
     done
     read -rp "    Version (default=1): " choice
     [[ -z "$choice" ]] && choice=1
@@ -635,20 +634,20 @@ install_framework() {
 # PROFILES
 # ================================================================
 show_profile_menu() {
-    section "Quick Setup Profiles"
-    echo -e "  ${BOLD}[1]${NC} Web Developer      ${GRAY}- Node.js, Python, PHP, TypeScript + VS Code, Sublime${NC}"
-    echo -e "  ${BOLD}[2]${NC} Mobile Developer   ${GRAY}- Java, Kotlin, Dart + Android Studio, VS Code${NC}"
-    echo -e "  ${BOLD}[3]${NC} Data Scientist     ${GRAY}- Python, Mojo + VS Code, PyCharm${NC}"
-    echo -e "  ${BOLD}[4]${NC} Systems Programmer ${GRAY}- C/C++, Rust, Zig, Go + VS Code, CLion, Neovim${NC}"
-    echo -e "  ${BOLD}[5]${NC} Full Stack .NET    ${GRAY}- C#/.NET, Node.js, TypeScript + VS Code, Rider${NC}"
-    echo -e "  ${BOLD}[6]${NC} Game Developer     ${GRAY}- C/C++, C# + VS Code, Rider${NC}"
-    echo -e "  ${BOLD}[7]${NC} AI / ML Engineer   ${GRAY}- Python, Mojo, Rust + VS Code, PyCharm, Cursor${NC}"
-    echo ""
-    echo -e "  ${BOLD}[8]${NC} Custom Setup       ${GRAY}- Choose your own${NC}"
-    echo -e "  ${RED}[9] INSTALL EVERYTHING ${GRAY}- All languages, IDEs, tools, frameworks${NC}"
-    echo ""
-    echo -e "  ${GRAY}You can select multiple profiles separated by spaces (e.g. 1 3 7)${NC}"
-    echo ""
+    section "Quick Setup Profiles" >&2
+    echo -e "  ${BOLD}[1]${NC} Web Developer      ${GRAY}- Node.js, Python, PHP, TypeScript + VS Code, Sublime${NC}" >&2
+    echo -e "  ${BOLD}[2]${NC} Mobile Developer   ${GRAY}- Java, Kotlin, Dart + Android Studio, VS Code${NC}" >&2
+    echo -e "  ${BOLD}[3]${NC} Data Scientist     ${GRAY}- Python, Mojo + VS Code, PyCharm${NC}" >&2
+    echo -e "  ${BOLD}[4]${NC} Systems Programmer ${GRAY}- C/C++, Rust, Zig, Go + VS Code, CLion, Neovim${NC}" >&2
+    echo -e "  ${BOLD}[5]${NC} Full Stack .NET    ${GRAY}- C#/.NET, Node.js, TypeScript + VS Code, Rider${NC}" >&2
+    echo -e "  ${BOLD}[6]${NC} Game Developer     ${GRAY}- C/C++, C# + VS Code, Rider${NC}" >&2
+    echo -e "  ${BOLD}[7]${NC} AI / ML Engineer   ${GRAY}- Python, Mojo, Rust + VS Code, PyCharm, Cursor${NC}" >&2
+    echo "" >&2
+    echo -e "  ${BOLD}[8]${NC} Custom Setup       ${GRAY}- Choose your own${NC}" >&2
+    echo -e "  ${RED}[9] INSTALL EVERYTHING ${GRAY}- All languages, IDEs, tools, frameworks${NC}" >&2
+    echo "" >&2
+    echo -e "  ${GRAY}You can select multiple profiles separated by spaces (e.g. 1 3 7)${NC}" >&2
+    echo "" >&2
     read -rp "  Select profile(s): " choice
     echo "$choice"
 }
