@@ -863,7 +863,22 @@ main() {
     echo -e "  ${CYAN}Total: ${#INSTALLED[@]} succeeded, ${#FAILED[@]} failed${NC}"
     echo -e "  ${GRAY}Log: $LOG_FILE${NC}"
     echo ""
-    [[ ${#INSTALLED[@]} -gt 0 ]] && echo -e "  ${YELLOW}Restart your terminal for PATH changes.${NC}"
+    if [[ ${#INSTALLED[@]} -gt 0 ]]; then
+        # Reload shell config so everything works immediately
+        echo ""
+        step "Reloading shell configuration..."
+        [[ -f "$HOME/.bashrc" ]] && source "$HOME/.bashrc" 2>/dev/null
+        [[ -f "$HOME/.zshrc" ]] && source "$HOME/.zshrc" 2>/dev/null
+        [[ -f "$HOME/.profile" ]] && source "$HOME/.profile" 2>/dev/null
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" 2>/dev/null
+        [ -s "$HOME/.cargo/env" ] && . "$HOME/.cargo/env" 2>/dev/null
+        [ -s "$HOME/.sdkman/bin/sdkman-init.sh" ] && . "$HOME/.sdkman/bin/sdkman-init.sh" 2>/dev/null
+        export PATH="$HOME/.local/bin:$PATH"
+        ok "Shell configuration reloaded."
+        echo ""
+        echo -e "  ${YELLOW}If commands still not found, run: source ~/.bashrc${NC}"
+    fi
     echo ""
 }
 
