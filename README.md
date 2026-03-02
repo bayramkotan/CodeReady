@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/CodeReady-v2.0.0-00d4ff?style=for-the-badge&labelColor=0a0a0a" alt="Version" />
+  <img src="https://img.shields.io/badge/CodeReady-v2.1.0-00d4ff?style=for-the-badge&labelColor=0a0a0a" alt="Version" />
   <img src="https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white" alt="Windows" />
   <img src="https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Linux" />
   <img src="https://img.shields.io/badge/macOS-000000?style=for-the-badge&logo=apple&logoColor=white" alt="macOS" />
@@ -10,11 +10,12 @@
 
 <p align="center">
   <b>The ultimate developer environment setup tool.</b><br/>
-  Select your languages. Pick your versions. Choose your IDEs. CodeReady handles the rest.
+  Scans your system. Detects what you have. Installs what you need. Zero guesswork.
 </p>
 
 <p align="center">
   <a href="#-quick-start">Quick Start</a> &bull;
+  <a href="#-system-scan">System Scan</a> &bull;
   <a href="#-features">Features</a> &bull;
   <a href="#-supported-software">Supported Software</a> &bull;
   <a href="#-profiles">Profiles</a> &bull;
@@ -27,11 +28,50 @@
 
 Setting up a new development machine is painful. You spend hours downloading compilers, configuring IDEs, installing package managers, and getting frameworks working. **CodeReady automates all of it** with a single interactive script.
 
-- **One command** sets up your entire dev environment
-- **Version selection** — choose Python 3.14 or 3.11, JDK 25 or 17, you decide
-- **Multi-profile support** — combine Web Dev + Data Science in one go
+- **System scan first** — detects what's already installed and shows upgrade recommendations
+- **Version selection** — choose between multiple versions for each language (latest, LTS, older)
+- **Multi-profile support** — combine Web Dev + Data Science + AI/ML in one go
 - **Cross-platform** — same experience on Windows, macOS, and Linux
 - **82+ packages** — languages, IDEs, tools, frameworks, all in one place
+- **Auto shell reload** — installed tools work immediately, no terminal restart needed
+
+---
+
+## System Scan
+
+CodeReady scans your system **before** installing anything. It detects every language, IDE, tool, and package manager already on your machine, compares versions, and shows you exactly what's outdated.
+
+```
+=== System Scan ===
+  Scanning your system for installed software...
+
+  Languages and Runtimes:
+    Python            3.x.x       ⬆ upgrade available
+    Node.js           2x.x.x      ✓ up to date
+    Java (JDK)        —  not installed
+    Go                1.x.x       ⬆ upgrade available
+    Rust              1.x.x       ✓
+    ...
+
+  IDEs and Editors:
+    VS Code           x.xx        ✓
+    Neovim            —  not installed
+
+  Developer Tools:
+    Git               x.xx.x      ✓
+    Docker            —  not installed
+
+  Package Managers:
+    npm               x.x.x       ✓
+    uv                —  not installed
+
+  ────────────────────────────────────────
+  ✓ 8 installed  |  — 5 not found
+
+  Continue to profile selection? (Y/n):
+```
+
+After the scan, you proceed to profile selection where CodeReady installs only what's missing or outdated.
 
 ---
 
@@ -60,13 +100,16 @@ chmod +x codeready.sh
 
 | Feature | Description |
 |---------|-------------|
+| **System Scan** | Detects installed software and versions before installing anything |
+| **Upgrade Detection** | Compares your versions with latest — shows what needs updating |
 | **Interactive Menus** | Number-based selection with multi-select support |
-| **Version Selection** | Pick specific versions for each language (e.g., Python 3.14 / 3.13 / 3.12 / 3.11) |
+| **Version Selection** | Pick specific versions for each language (latest, LTS, or older) |
 | **8 Quick Profiles** | Pre-configured setups for common developer roles |
 | **Multi-Profile** | Select `1 3 7` to combine Web Dev + Data Science + AI/ML |
 | **Install Everything** | Option 9 installs all 82+ packages (with safety warnings) |
 | **Smart Deduplication** | Combining profiles never installs the same package twice |
 | **Auto Package Manager** | Detects and installs winget/Chocolatey (Win) or Homebrew/apt/dnf/pacman (Unix) |
+| **Auto Shell Reload** | Sources `.bashrc`/`.zshrc` after install — tools work immediately |
 | **Failure Resilience** | Failed installs don't block remaining items |
 | **Installation Log** | Full log saved to `~/codeready_install.log` |
 | **Pure ASCII** | No encoding issues on any terminal or locale |
@@ -77,33 +120,35 @@ chmod +x codeready.sh
 
 ### Programming Languages and Runtimes — 18 languages
 
-| Language | Versions | Win | Mac | Linux | Notes |
-|----------|----------|:---:|:---:|:-----:|-------|
-| **Python** | 3.14, 3.13, 3.12, 3.11 | ✅ | ✅ | ✅ | Via system pkg or official installer |
-| **Node.js** | 24 LTS, 25, 22 LTS, 20 LTS | ✅ | ✅ | ✅ | Via nvm (preferred) |
-| **Java (JDK)** | 25, 23 LTS, 21 LTS, 17 LTS | ✅ | ✅ | ✅ | Eclipse Temurin / OpenJDK |
-| **C# / .NET** | 9, 8 LTS, 7, 6 LTS | ✅ | ✅ | ✅ | Microsoft .NET SDK |
+| Language | Version Selection | Win | Mac | Linux | Notes |
+|----------|-------------------|:---:|:---:|:-----:|-------|
+| **Python** | Multiple versions (latest + older) | ✅ | ✅ | ✅ | Via system pkg or official installer |
+| **Node.js** | LTS + Current versions | ✅ | ✅ | ✅ | Via nvm (preferred) |
+| **Java (JDK)** | Latest + LTS versions | ✅ | ✅ | ✅ | Eclipse Temurin / OpenJDK |
+| **C# / .NET** | Latest + LTS versions | ✅ | ✅ | ✅ | Microsoft .NET SDK |
 | **C / C++** | GCC, Clang/LLVM, MSVC | ✅ | ✅ | ✅ | MinGW on Windows |
-| **Go** | 1.23, 1.22, 1.21 | ✅ | ✅ | ✅ | Official binary |
-| **Rust** | latest (via rustup) | ✅ | ✅ | ✅ | Always latest stable |
-| **PHP** | 8.4, 8.3, 8.2 | ✅ | ✅ | ✅ | Includes Composer |
-| **Ruby** | 3.3, 3.2, 3.1 | ✅ | ✅ | ✅ | |
-| **Kotlin** | latest | ✅ | ✅ | ✅ | Via SDKMAN or snap |
-| **Dart / Flutter** | latest | ✅ | ✅ | ✅ | Flutter includes Dart |
-| **Swift** | latest | ✅ | ✅ | ⚠️ | macOS via Xcode, Linux partial |
-| **Zig** | 0.13, 0.12 | ✅ | ✅ | ✅ | Next-gen systems language |
-| **Mojo** | latest (pip) | WSL | ✅ | ✅ | AI/GPU programming by Modular |
+| **Go** | Multiple recent versions | ✅ | ✅ | ✅ | Official binary |
+| **Rust** | Always latest via rustup | ✅ | ✅ | ✅ | Managed by rustup |
+| **PHP** | Multiple recent versions | ✅ | ✅ | ✅ | Includes Composer |
+| **Ruby** | Multiple recent versions | ✅ | ✅ | ✅ | |
+| **Kotlin** | Latest | ✅ | ✅ | ✅ | Via SDKMAN or snap |
+| **Dart / Flutter** | Latest | ✅ | ✅ | ✅ | Flutter includes Dart |
+| **Swift** | Latest | ✅ | ✅ | ⚠️ | macOS via Xcode, Linux partial |
+| **Zig** | Multiple recent versions | ✅ | ✅ | ✅ | Next-gen systems language |
+| **Mojo** | Latest | WSL | ✅ | ✅ | AI/GPU programming by Modular |
 | **WebAssembly** | Wasmtime / Wasmer | ✅ | ✅ | ✅ | WASI runtimes |
-| **TypeScript** | latest (npm) | ✅ | ✅ | ✅ | Requires Node.js |
-| **Elixir** | latest | ✅ | ✅ | ✅ | Functional, concurrent |
-| **Scala** | 3 (latest) | ✅ | ✅ | ✅ | JVM functional/OOP |
+| **TypeScript** | Latest (via npm) | ✅ | ✅ | ✅ | Requires Node.js |
+| **Elixir** | Latest | ✅ | ✅ | ✅ | Functional, concurrent |
+| **Scala** | Latest | ✅ | ✅ | ✅ | JVM functional/OOP |
+
+> **Version selection** is available for Python, Node.js, Java, .NET, Go, PHP, Ruby, and Zig. You pick your preferred version during setup. Other languages install the latest stable release.
 
 ### IDEs and Editors — 17 editors
 
 | IDE | License | Win | Mac | Linux |
 |-----|---------|:---:|:---:|:-----:|
 | **VS Code** | Free | ✅ | ✅ | ✅ |
-| **Visual Studio 2026** Community | Free | ✅ | — | — |
+| **Visual Studio** Community | Free | ✅ | — | — |
 | **IntelliJ IDEA** Community | Free | ✅ | ✅ | ✅ |
 | **PyCharm** Community | Free | ✅ | ✅ | ✅ |
 | **WebStorm** | Paid | ✅ | ✅ | ✅ |
@@ -226,8 +271,8 @@ Select profile(s): 9         <- install EVERYTHING (with safety warnings)
 | **2** | **Mobile Developer** | Java, Kotlin, Dart/Flutter | Android Studio, VS Code | React Native, Expo |
 | **3** | **Data Scientist** | Python, Mojo | VS Code, PyCharm | VenvStudio, uv, Conda, Streamlit, FastAPI |
 | **4** | **Systems Programmer** | C/C++, Rust, Zig, Go | VS Code, CLion, Neovim | cargo-watch, wasm-pack |
-| **5** | **Full Stack .NET** | C#/.NET, Node.js, TypeScript | VS 2026, VS Code | Yarn, Vite, React, Next.js |
-| **6** | **Game Developer** | C/C++, C# | VS 2026, VS Code, Rider | CMake |
+| **5** | **Full Stack .NET** | C#/.NET, Node.js, TypeScript | Visual Studio, VS Code | Yarn, Vite, React, Next.js |
+| **6** | **Game Developer** | C/C++, C# | Visual Studio, VS Code, Rider | CMake |
 | **7** | **AI / ML Engineer** | Python, Mojo, Rust | VS Code, PyCharm, Cursor | VenvStudio, uv, Conda, Streamlit, FastAPI |
 | **8** | **Custom Setup** | *You choose* | *You choose* | *You choose* |
 | **9** | **INSTALL EVERYTHING** | *All 18 languages* | *All 17 IDEs* | *All 38 frameworks* |
@@ -240,15 +285,17 @@ Select profile(s): 9         <- install EVERYTHING (with safety warnings)
 
 ```
  ┌─────────────────────────────────────────────────────────┐
- │  1. Select profile(s) or custom setup                   │
- │  2. Pick programming languages                          │
- │  3. Choose version for each language                    │
- │  4. Select IDEs and editors                             │
- │  5. Pick developer tools                                │
- │  6. Choose frameworks, libraries and package managers   │
- │  7. Review installation plan                            │
- │  8. Confirm -> CodeReady installs everything            │
- │  9. Summary: succeeded / failed / log file              │
+ │  1. System scan — detect installed software & versions  │
+ │  2. Select profile(s) or custom setup                   │
+ │  3. Pick programming languages                          │
+ │  4. Choose version for each language                    │
+ │  5. Select IDEs and editors                             │
+ │  6. Pick developer tools                                │
+ │  7. Choose frameworks, libraries and package managers   │
+ │  8. Review installation plan                            │
+ │  9. Confirm -> CodeReady installs everything            │
+ │ 10. Auto-reload shell -> tools work immediately         │
+ │ 11. Summary: succeeded / failed / log file              │
  └─────────────────────────────────────────────────────────┘
 ```
 
@@ -271,6 +318,7 @@ CodeReady/
 ├── codeready.bat       # Windows launcher (auto-elevates to Admin)
 ├── codeready.ps1       # Windows PowerShell script
 ├── codeready.sh        # Linux/macOS bash script
+├── codeready_todo.md   # Development roadmap
 └── README.md
 ```
 
@@ -293,8 +341,9 @@ CodeReady/
 | PowerShell encoding errors | Script uses pure ASCII — ensure file is saved as UTF-8 without BOM |
 | Permission denied (Linux) | Run `chmod +x codeready.sh` first |
 | Package not found | Some packages vary by OS. Check `~/codeready_install.log` for details |
-| PATH not updated | Restart your terminal or PC after installation |
-| Mojo on Windows | Mojo requires WSL. Install WSL 2 first, then `pip install mojo` inside WSL |
+| Command not found after install | CodeReady auto-reloads your shell, but if needed run `source ~/.bashrc` (or `~/.zshrc`) |
+| Mojo on Windows | Mojo requires WSL. Install WSL 2 first, then install Mojo inside WSL |
+| System scan shows wrong version | Some tools report versions differently. Check with `<tool> --version` manually |
 
 ---
 
