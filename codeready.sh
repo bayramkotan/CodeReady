@@ -653,8 +653,175 @@ show_profile_menu() {
 }
 
 # ================================================================
-# MAIN
+# SYSTEM SCAN - Auto-detect installed software and versions
 # ================================================================
+get_cmd_version() {
+    local cmd="$1" flag="${2:---version}"
+    if command -v "$cmd" &>/dev/null; then
+        local ver
+        ver=$("$cmd" $flag 2>&1 | head -1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+        [[ -n "$ver" ]] && echo "$ver" || echo "installed"
+    else
+        echo ""
+    fi
+}
+
+system_scan() {
+    section "System Scan"
+    echo -e "  ${GRAY}Scanning your system for installed software...${NC}"
+    echo ""
+
+    # Detect languages
+    local py_ver=$(get_cmd_version python3)
+    [[ -z "$py_ver" ]] && py_ver=$(get_cmd_version python)
+    local node_ver=""
+    if [[ -s "$HOME/.nvm/nvm.sh" ]]; then
+        source "$HOME/.nvm/nvm.sh" 2>/dev/null
+        node_ver=$(get_cmd_version node "-v" | sed 's/^v//')
+    else
+        node_ver=$(get_cmd_version node "-v" | sed 's/^v//')
+    fi
+    local java_ver=$(java -version 2>&1 | head -1 | grep -oP '\d+[\.\d]*' | head -1)
+    local dotnet_ver=$(get_cmd_version dotnet "--version")
+    local gcc_ver=$(get_cmd_version gcc "--version")
+    local go_ver=$(get_cmd_version go "version" | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    [[ -z "$go_ver" ]] && go_ver=$(go version 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local rust_ver=""
+    [[ -s "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env" 2>/dev/null
+    rust_ver=$(get_cmd_version rustc "--version")
+    local php_ver=$(get_cmd_version php "--version")
+    local ruby_ver=$(get_cmd_version ruby "--version")
+    local kotlin_ver=$(get_cmd_version kotlin "-version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local dart_ver=$(get_cmd_version dart "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local zig_ver=$(get_cmd_version zig "version")
+    local ts_ver=$(get_cmd_version tsc "--version")
+    local elixir_ver=$(get_cmd_version elixir "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local scala_ver=$(get_cmd_version scala "-version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local julia_ver=$(get_cmd_version julia "--version")
+    local swift_ver=$(get_cmd_version swift "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+
+    # Detect IDEs/Editors
+    local code_ver=$(get_cmd_version code "--version" 2>/dev/null | head -1)
+    local nvim_ver=$(get_cmd_version nvim "--version")
+    local cursor_ver="" && command -v cursor &>/dev/null && cursor_ver="installed"
+    local sublime_ver="" && command -v subl &>/dev/null && sublime_ver="installed"
+
+    # Detect tools
+    local git_ver=$(get_cmd_version git "--version")
+    local docker_ver=$(get_cmd_version docker "--version")
+    local cmake_ver=$(get_cmd_version cmake "--version")
+    local gh_ver=$(get_cmd_version gh "--version")
+
+    # Detect package managers / frameworks
+    local npm_ver=$(get_cmd_version npm "--version")
+    local yarn_ver=$(get_cmd_version yarn "--version")
+    local pnpm_ver=$(get_cmd_version pnpm "--version")
+    local bun_ver=$(get_cmd_version bun "--version")
+    local uv_ver=$(get_cmd_version uv "--version")
+    local poetry_ver=$(get_cmd_version poetry "--version")
+    local conda_ver=$(get_cmd_version conda "--version")
+    local pip_ver=$(get_cmd_version pip3 "--version")
+    [[ -z "$pip_ver" ]] && pip_ver=$(get_cmd_version pip "--version")
+    local terraform_ver=$(get_cmd_version terraform "--version")
+    local kubectl_ver=$(get_cmd_version kubectl "version --client --short" 2>/dev/null | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local helm_ver=$(get_cmd_version helm "version --short" 2>/dev/null | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+
+    # Latest versions (our recommendations)
+    declare -A LATEST=(
+        [python]="3.14" [nodejs]="24" [java]="25" [dotnet]="9" [gcc]="—"
+        [go]="1.23" [rust]="latest" [php]="8.4" [ruby]="3.3" [kotlin]="latest"
+        [dart]="latest" [zig]="0.13" [typescript]="latest" [elixir]="latest"
+        [scala]="3" [julia]="1.12" [swift]="latest"
+        [vscode]="latest" [nvim]="latest" [git]="latest" [docker]="latest"
+        [cmake]="latest" [gh]="latest"
+        [npm]="latest" [yarn]="latest" [pnpm]="latest" [bun]="latest"
+        [uv]="latest" [poetry]="latest" [conda]="latest"
+        [terraform]="latest" [kubectl]="latest" [helm]="latest"
+    )
+
+    # Display function
+    show_item() {
+        local name="$1" current="$2" recommended="$3" width=16
+        local padded
+        padded=$(printf "%-${width}s" "$name")
+        if [[ -z "$current" ]]; then
+            echo -e "    ${GRAY}${padded}${NC}  ${GRAY}—  not installed${NC}"
+        elif [[ "$recommended" == "latest" || "$recommended" == "—" ]]; then
+            echo -e "    ${GREEN}${padded}${NC}  ${GREEN}${current}${NC}  ${GREEN}✓${NC}"
+        elif [[ "$current" == "$recommended"* ]]; then
+            echo -e "    ${GREEN}${padded}${NC}  ${GREEN}${current}${NC}  ${GREEN}✓ up to date${NC}"
+        else
+            echo -e "    ${YELLOW}${padded}${NC}  ${YELLOW}${current}${NC}  ${CYAN}⬆ ${recommended} available${NC}"
+        fi
+    }
+
+    # Print scan results
+    echo -e "  ${BOLD}${CYAN}Languages and Runtimes:${NC}"
+    show_item "Python"     "$py_ver"     "${LATEST[python]}"
+    show_item "Node.js"    "$node_ver"   "${LATEST[nodejs]}"
+    show_item "Java (JDK)" "$java_ver"   "${LATEST[java]}"
+    show_item ".NET SDK"   "$dotnet_ver" "${LATEST[dotnet]}"
+    show_item "C/C++ (GCC)" "$gcc_ver"   "${LATEST[gcc]}"
+    show_item "Go"         "$go_ver"     "${LATEST[go]}"
+    show_item "Rust"       "$rust_ver"   "${LATEST[rust]}"
+    show_item "PHP"        "$php_ver"    "${LATEST[php]}"
+    show_item "Ruby"       "$ruby_ver"   "${LATEST[ruby]}"
+    show_item "Kotlin"     "$kotlin_ver" "${LATEST[kotlin]}"
+    show_item "Dart"       "$dart_ver"   "${LATEST[dart]}"
+    show_item "Swift"      "$swift_ver"  "${LATEST[swift]}"
+    show_item "Zig"        "$zig_ver"    "${LATEST[zig]}"
+    show_item "TypeScript" "$ts_ver"     "${LATEST[typescript]}"
+    show_item "Elixir"     "$elixir_ver" "${LATEST[elixir]}"
+    show_item "Scala"      "$scala_ver"  "${LATEST[scala]}"
+    show_item "Julia"      "$julia_ver"  "${LATEST[julia]}"
+    echo ""
+
+    echo -e "  ${BOLD}${CYAN}IDEs and Editors:${NC}"
+    show_item "VS Code"    "$code_ver"   "${LATEST[vscode]}"
+    show_item "Neovim"     "$nvim_ver"   "${LATEST[nvim]}"
+    show_item "Cursor"     "$cursor_ver" "latest"
+    show_item "Sublime"    "$sublime_ver" "latest"
+    echo ""
+
+    echo -e "  ${BOLD}${CYAN}Developer Tools:${NC}"
+    show_item "Git"        "$git_ver"    "${LATEST[git]}"
+    show_item "Docker"     "$docker_ver" "${LATEST[docker]}"
+    show_item "CMake"      "$cmake_ver"  "${LATEST[cmake]}"
+    show_item "GitHub CLI" "$gh_ver"     "${LATEST[gh]}"
+    echo ""
+
+    echo -e "  ${BOLD}${CYAN}Package Managers:${NC}"
+    show_item "npm"        "$npm_ver"    "${LATEST[npm]}"
+    show_item "Yarn"       "$yarn_ver"   "${LATEST[yarn]}"
+    show_item "pnpm"       "$pnpm_ver"   "${LATEST[pnpm]}"
+    show_item "Bun"        "$bun_ver"    "${LATEST[bun]}"
+    show_item "uv"         "$uv_ver"     "${LATEST[uv]}"
+    show_item "Poetry"     "$poetry_ver" "${LATEST[poetry]}"
+    show_item "Conda"      "$conda_ver"  "${LATEST[conda]}"
+    show_item "Terraform"  "$terraform_ver" "${LATEST[terraform]}"
+    show_item "kubectl"    "$kubectl_ver" "${LATEST[kubectl]}"
+    show_item "Helm"       "$helm_ver"   "${LATEST[helm]}"
+    echo ""
+
+    # Count stats
+    local installed_count=0 update_count=0 missing_count=0
+    for v in "$py_ver" "$node_ver" "$java_ver" "$dotnet_ver" "$gcc_ver" "$go_ver" "$rust_ver" "$php_ver" "$ruby_ver" "$git_ver" "$docker_ver" "$code_ver" "$npm_ver"; do
+        if [[ -n "$v" ]]; then
+            ((installed_count++))
+        else
+            ((missing_count++))
+        fi
+    done
+
+    echo -e "  ${BOLD}────────────────────────────────────────${NC}"
+    echo -e "  ${GREEN}✓ ${installed_count} installed${NC}  ${GRAY}|${NC}  ${GRAY}— ${missing_count} not found${NC}"
+    echo ""
+
+    # Offer auto-upgrade
+    read -rp "  Continue to profile selection? (Y/n): " scan_choice
+    [[ "$scan_choice" == "n" || "$scan_choice" == "N" ]] && { info "Exited."; exit 0; }
+    echo ""
+}
 main() {
     print_banner
     echo "CodeReady v2 Install Log - $(date)" > "$LOG_FILE"
@@ -664,6 +831,9 @@ main() {
 
     section "Package Manager Setup"
     if [[ "$OS_TYPE" == "macos" ]]; then ensure_brew; else update_pkg; fi
+
+    # System scan - show what's installed
+    system_scan
 
     # Language, IDE, Tool keys
     local LANG_KEYS=("python" "nodejs" "java" "csharp" "cpp" "go" "rust" "php" "ruby" "kotlin" "dart" "swift" "zig" "mojo" "wasm" "typescript" "elixir" "scala" "julia")

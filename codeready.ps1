@@ -554,6 +554,147 @@ function Show-Summary {
 }
 
 # ================================================================
+# SYSTEM SCAN - Auto-detect installed software and versions
+# ================================================================
+function Get-CmdVersion($cmd, $flag) {
+    if (-not $flag) { $flag = "--version" }
+    try {
+        $out = & $cmd $flag 2>&1 | Select-Object -First 1
+        if ($out -match '(\d+\.\d+[\.\d]*)') { return $Matches[1] }
+        return "installed"
+    } catch { return "" }
+}
+
+function Show-ScanItem($name, $current, $recommended) {
+    $padded = $name.PadRight(16)
+    if ([string]::IsNullOrEmpty($current)) {
+        Write-Host "    $padded  " -NoNewline -ForegroundColor DarkGray
+        Write-Host "- not installed" -ForegroundColor DarkGray
+    }
+    elseif ($recommended -eq "latest" -or $recommended -eq "-") {
+        Write-Host "    $padded  " -NoNewline -ForegroundColor Green
+        Write-Host "$current" -NoNewline -ForegroundColor Green
+        Write-Host "  OK" -ForegroundColor Green
+    }
+    elseif ($current.StartsWith($recommended)) {
+        Write-Host "    $padded  " -NoNewline -ForegroundColor Green
+        Write-Host "$current" -NoNewline -ForegroundColor Green
+        Write-Host "  up to date" -ForegroundColor Green
+    }
+    else {
+        Write-Host "    $padded  " -NoNewline -ForegroundColor Yellow
+        Write-Host "$current" -NoNewline -ForegroundColor Yellow
+        Write-Host "  >> $recommended available" -ForegroundColor Cyan
+    }
+}
+
+function Start-SystemScan {
+    Write-SectionHeader "System Scan"
+    Write-Host "  Scanning your system for installed software..." -ForegroundColor DarkGray
+    Write-Host ""
+
+    # Languages
+    $py = Get-CmdVersion "python" "--version"
+    $node = Get-CmdVersion "node" "-v"
+    if ($node) { $node = $node -replace '^v','' }
+    $javaOut = java -version 2>&1 | Select-Object -First 1
+    $java = if ($javaOut -match '(\d+[\.\d]*)') { $Matches[1] } else { "" }
+    $dotnet = Get-CmdVersion "dotnet" "--version"
+    $gcc = Get-CmdVersion "gcc" "--version"
+    $goOut = go version 2>&1
+    $goVer = if ($goOut -match '(\d+\.\d+[\.\d]*)') { $Matches[1] } else { "" }
+    $rust = Get-CmdVersion "rustc" "--version"
+    $php = Get-CmdVersion "php" "--version"
+    $ruby = Get-CmdVersion "ruby" "--version"
+    $kotlin = try { kotlin -version 2>&1 | Select-Object -First 1; if ($_ -match '(\d+\.\d+[\.\d]*)') { $Matches[1] } else { "" } } catch { "" }
+    $dart = Get-CmdVersion "dart" "--version"
+    $zig = Get-CmdVersion "zig" "version"
+    $ts = Get-CmdVersion "tsc" "--version"
+    $swift = Get-CmdVersion "swift" "--version"
+
+    # IDEs
+    $code = Get-CmdVersion "code" "--version"
+    $nvim = Get-CmdVersion "nvim" "--version"
+    $cursorExe = if (Get-Command cursor -ErrorAction SilentlyContinue) { "installed" } else { "" }
+    $sublExe = if (Get-Command subl -ErrorAction SilentlyContinue) { "installed" } else { "" }
+
+    # Tools
+    $git = Get-CmdVersion "git" "--version"
+    $docker = Get-CmdVersion "docker" "--version"
+    $cmake = Get-CmdVersion "cmake" "--version"
+    $gh = Get-CmdVersion "gh" "--version"
+
+    # Package managers
+    $npm = Get-CmdVersion "npm" "--version"
+    $yarn = Get-CmdVersion "yarn" "--version"
+    $pnpm = Get-CmdVersion "pnpm" "--version"
+    $bun = Get-CmdVersion "bun" "--version"
+    $uv = Get-CmdVersion "uv" "--version"
+    $poetry = Get-CmdVersion "poetry" "--version"
+    $condaVer = Get-CmdVersion "conda" "--version"
+    $terraform = Get-CmdVersion "terraform" "--version"
+    $kubectl = try { kubectl version --client --short 2>&1; if ($_ -match '(\d+\.\d+[\.\d]*)') { $Matches[1] } else { "" } } catch { "" }
+    $helm = try { helm version --short 2>&1; if ($_ -match '(\d+\.\d+[\.\d]*)') { $Matches[1] } else { "" } } catch { "" }
+
+    Write-Host "  Languages and Runtimes:" -ForegroundColor Cyan
+    Show-ScanItem "Python"     $py     "3.14"
+    Show-ScanItem "Node.js"    $node   "24"
+    Show-ScanItem "Java (JDK)" $java   "25"
+    Show-ScanItem ".NET SDK"   $dotnet "9"
+    Show-ScanItem "C/C++ (GCC)" $gcc   "-"
+    Show-ScanItem "Go"         $goVer  "1.23"
+    Show-ScanItem "Rust"       $rust   "latest"
+    Show-ScanItem "PHP"        $php    "8.4"
+    Show-ScanItem "Ruby"       $ruby   "3.3"
+    Show-ScanItem "Kotlin"     $kotlin "latest"
+    Show-ScanItem "Dart"       $dart   "latest"
+    Show-ScanItem "Swift"      $swift  "latest"
+    Show-ScanItem "Zig"        $zig    "0.13"
+    Show-ScanItem "TypeScript" $ts     "latest"
+    Write-Host ""
+
+    Write-Host "  IDEs and Editors:" -ForegroundColor Cyan
+    Show-ScanItem "VS Code"    $code      "latest"
+    Show-ScanItem "Neovim"     $nvim      "latest"
+    Show-ScanItem "Cursor"     $cursorExe "latest"
+    Show-ScanItem "Sublime"    $sublExe   "latest"
+    Write-Host ""
+
+    Write-Host "  Developer Tools:" -ForegroundColor Cyan
+    Show-ScanItem "Git"        $git    "latest"
+    Show-ScanItem "Docker"     $docker "latest"
+    Show-ScanItem "CMake"      $cmake  "latest"
+    Show-ScanItem "GitHub CLI" $gh     "latest"
+    Write-Host ""
+
+    Write-Host "  Package Managers:" -ForegroundColor Cyan
+    Show-ScanItem "npm"        $npm        "latest"
+    Show-ScanItem "Yarn"       $yarn       "latest"
+    Show-ScanItem "pnpm"       $pnpm       "latest"
+    Show-ScanItem "Bun"        $bun        "latest"
+    Show-ScanItem "uv"         $uv         "latest"
+    Show-ScanItem "Poetry"     $poetry     "latest"
+    Show-ScanItem "Conda"      $condaVer   "latest"
+    Show-ScanItem "Terraform"  $terraform  "latest"
+    Show-ScanItem "kubectl"    $kubectl    "latest"
+    Show-ScanItem "Helm"       $helm       "latest"
+    Write-Host ""
+
+    Write-Host "  ----------------------------------------" -ForegroundColor DarkGray
+    $instCount = @($py,$node,$java,$dotnet,$gcc,$goVer,$rust,$php,$ruby,$git,$docker,$code,$npm) | Where-Object { $_ } | Measure-Object | Select-Object -ExpandProperty Count
+    $missCount = 13 - $instCount
+    Write-Host "  " -NoNewline
+    Write-Host "$instCount installed" -NoNewline -ForegroundColor Green
+    Write-Host "  |  " -NoNewline -ForegroundColor DarkGray
+    Write-Host "$missCount not found" -ForegroundColor DarkGray
+    Write-Host ""
+
+    $scanChoice = Read-Host "  Continue to profile selection? (Y/n)"
+    if ($scanChoice -eq "n" -or $scanChoice -eq "N") { Write-Info "Exited."; return $false }
+    return $true
+}
+
+# ================================================================
 # MAIN
 # ================================================================
 function Main {
@@ -573,6 +714,10 @@ function Main {
     $hasWinGet = Ensure-WinGet
     $hasChoco = Ensure-Chocolatey
     if (-not $hasWinGet -and -not $hasChoco) { Write-Fail "No package manager available."; return }
+
+    # System scan - show what's installed
+    $scanResult = Start-SystemScan
+    if ($scanResult -eq $false) { return }
 
     # Load definitions
     $langs = Get-Languages
