@@ -707,17 +707,17 @@ function Start-SystemScan {
     $windsurfExe = if (Get-Command windsurf -ErrorAction SilentlyContinue) { "installed" } else { "" }
     $antigravExe = if (Get-Command antigravity -ErrorAction SilentlyContinue) { "installed" } else { "" }
     $fleetExe = if (Get-Command fleet -ErrorAction SilentlyContinue) { "installed" } else { "" }
-    $ideaExe = if (Get-Command idea -ErrorAction SilentlyContinue) { "installed" } else { "" }
-    $pycharmExe = if (Get-Command pycharm -ErrorAction SilentlyContinue) { "installed" } else { "" }
-    $webstormExe = if (Get-Command webstorm -ErrorAction SilentlyContinue) { "installed" } else { "" }
-    $golandExe = if (Get-Command goland -ErrorAction SilentlyContinue) { "installed" } else { "" }
-    $clionExe = if (Get-Command clion -ErrorAction SilentlyContinue) { "installed" } else { "" }
-    $riderExe = if (Get-Command rider -ErrorAction SilentlyContinue) { "installed" } else { "" }
-    $rustroverExe = if (Get-Command rustrover -ErrorAction SilentlyContinue) { "installed" } else { "" }
-    $eclipseExe = if (Get-Command eclipse -ErrorAction SilentlyContinue) { "installed" } else { "" }
-    $netbeansExe = if (Get-Command netbeans -ErrorAction SilentlyContinue) { "installed" } else { "" }
-    $androidExe = if (Get-Command studio -ErrorAction SilentlyContinue) { "installed" } else { "" }
-    $notepadppExe = if (Get-Command notepad++ -ErrorAction SilentlyContinue) { "installed" } else { "" }
+    $ideaExe = if ((Get-Command idea -ErrorAction SilentlyContinue) -or (Test-Path "${env:ProgramFiles}\JetBrains\IntelliJ IDEA*\bin\idea64.exe") -or (Get-ChildItem "${env:LOCALAPPDATA}\Programs\IntelliJ IDEA*" -ErrorAction SilentlyContinue)) { "installed" } else { "" }
+    $pycharmExe = if ((Get-Command pycharm -ErrorAction SilentlyContinue) -or (Test-Path "${env:ProgramFiles}\JetBrains\PyCharm*\bin\pycharm64.exe") -or (Get-ChildItem "${env:LOCALAPPDATA}\Programs\PyCharm*" -ErrorAction SilentlyContinue)) { "installed" } else { "" }
+    $webstormExe = if ((Get-Command webstorm -ErrorAction SilentlyContinue) -or (Test-Path "${env:ProgramFiles}\JetBrains\WebStorm*\bin\webstorm64.exe")) { "installed" } else { "" }
+    $golandExe = if ((Get-Command goland -ErrorAction SilentlyContinue) -or (Test-Path "${env:ProgramFiles}\JetBrains\GoLand*\bin\goland64.exe")) { "installed" } else { "" }
+    $clionExe = if ((Get-Command clion -ErrorAction SilentlyContinue) -or (Test-Path "${env:ProgramFiles}\JetBrains\CLion*\bin\clion64.exe")) { "installed" } else { "" }
+    $riderExe = if ((Get-Command rider -ErrorAction SilentlyContinue) -or (Test-Path "${env:ProgramFiles}\JetBrains\Rider*\bin\rider64.exe")) { "installed" } else { "" }
+    $rustroverExe = if ((Get-Command rustrover -ErrorAction SilentlyContinue) -or (Test-Path "${env:ProgramFiles}\JetBrains\RustRover*\bin\rustrover64.exe")) { "installed" } else { "" }
+    $eclipseExe = if ((Get-Command eclipse -ErrorAction SilentlyContinue) -or (Test-Path "${env:ProgramFiles}\Eclipse\eclipse.exe") -or (Test-Path "C:\Eclipse\eclipse.exe")) { "installed" } else { "" }
+    $netbeansExe = if ((Get-Command netbeans -ErrorAction SilentlyContinue) -or (Test-Path "${env:ProgramFiles}\NetBeans*\bin\netbeans64.exe")) { "installed" } else { "" }
+    $androidExe = if ((Get-Command studio -ErrorAction SilentlyContinue) -or (Get-Command "android-studio" -ErrorAction SilentlyContinue) -or (Test-Path "${env:ProgramFiles}\Android\Android Studio\bin\studio64.exe") -or (Test-Path "${env:LOCALAPPDATA}\Programs\Android Studio\bin\studio64.exe")) { "installed" } else { "" }
+    $notepadppExe = if ((Get-Command "notepad++" -ErrorAction SilentlyContinue) -or (Test-Path "${env:ProgramFiles}\Notepad++\notepad++.exe") -or (Test-Path "${env:ProgramFiles(x86)}\Notepad++\notepad++.exe")) { "installed" } else { "" }
 
     # Tools
     $git = Get-CmdVersion "git" "--version"

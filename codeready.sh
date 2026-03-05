@@ -843,7 +843,24 @@ install_tool() {
             skip_installed "Docker" "docker" && return
             case "$PKG" in
                 brew) pkg_install "Docker" "brew install --cask docker" ;;
-                apt)  pkg_install "Docker" "sudo apt install -y ca-certificates curl && sudo install -m 0755 -d /etc/apt/keyrings && curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc && sudo chmod a+r /etc/apt/keyrings/docker.asc && echo \"deb [arch=\$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \$(. /etc/os-release && echo \$VERSION_CODENAME) stable\" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null && sudo apt update && sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin && sudo usermod -aG docker \$USER" ;;
+                apt)
+                    step "Installing Docker..."
+                    sudo apt install -y ca-certificates curl &>>"$LOG_FILE"
+                    sudo install -m 0755 -d /etc/apt/keyrings
+                    # Detect distro: debian or ubuntu
+                    local DISTRO
+                    if grep -qi "debian" /etc/os-release; then DISTRO="debian"; else DISTRO="ubuntu"; fi
+                    local CODENAME
+                    CODENAME=$(. /etc/os-release && echo "$VERSION_CODENAME")
+                    # Fallback for Debian testing/sid (no codename match)
+                    if [[ "$DISTRO" == "debian" && ("$CODENAME" == "trixie" || "$CODENAME" == "sid" || -z "$CODENAME") ]]; then
+                        CODENAME="bookworm"
+                    fi
+                    curl -fsSL "https://download.docker.com/linux/${DISTRO}/gpg" -o /etc/apt/keyrings/docker.asc 2>>"$LOG_FILE"
+                    sudo chmod a+r /etc/apt/keyrings/docker.asc
+                    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/${DISTRO} ${CODENAME} stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+                    sudo apt update &>>"$LOG_FILE" && sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin &>>"$LOG_FILE" && sudo usermod -aG docker "$USER" && ok "Docker installed." || fail "Docker"
+                    ;;
                 dnf)  pkg_install "Docker" "sudo dnf install -y docker && sudo systemctl enable --now docker && sudo usermod -aG docker \$USER" ;;
                 pacman) pkg_install "Docker" "sudo pacman -S --noconfirm docker docker-compose && sudo systemctl enable --now docker && sudo usermod -aG docker \$USER" ;;
             esac ;;
