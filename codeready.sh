@@ -699,6 +699,10 @@ system_scan() {
     local scala_ver=$(get_cmd_version scala "-version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
     local julia_ver=$(get_cmd_version julia "--version")
     local swift_ver=$(get_cmd_version swift "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local mojo_ver=$(get_cmd_version mojo "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local flutter_ver=$(get_cmd_version flutter "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local wasmtime_ver=$(get_cmd_version wasmtime "--version")
+    local wasmer_ver=$(get_cmd_version wasmer "--version")
 
     # Detect IDEs/Editors
     local code_ver=$(get_cmd_version code "--version" 2>/dev/null | head -1)
@@ -728,10 +732,10 @@ system_scan() {
 
     # Latest versions (our recommendations)
     declare -A LATEST=(
-        [python]="3.14" [nodejs]="24" [java]="25" [dotnet]="9" [gcc]="—"
-        [go]="1.23" [rust]="latest" [php]="8.4" [ruby]="3.3" [kotlin]="latest"
-        [dart]="latest" [zig]="0.13" [typescript]="latest" [elixir]="latest"
-        [scala]="3" [julia]="1.12" [swift]="latest"
+        [python]="latest" [nodejs]="latest" [java]="latest" [dotnet]="latest" [gcc]="—"
+        [go]="latest" [rust]="latest" [php]="latest" [ruby]="latest" [kotlin]="latest"
+        [dart]="latest" [zig]="latest" [typescript]="latest" [elixir]="latest"
+        [scala]="latest" [julia]="latest" [swift]="latest"
         [vscode]="latest" [nvim]="latest" [git]="latest" [docker]="latest"
         [cmake]="latest" [gh]="latest"
         [npm]="latest" [yarn]="latest" [pnpm]="latest" [bun]="latest"
@@ -770,10 +774,16 @@ system_scan() {
     show_item "Dart"       "$dart_ver"   "${LATEST[dart]}"
     show_item "Swift"      "$swift_ver"  "${LATEST[swift]}"
     show_item "Zig"        "$zig_ver"    "${LATEST[zig]}"
+    show_item "Mojo"       "$mojo_ver"   "latest"
     show_item "TypeScript" "$ts_ver"     "${LATEST[typescript]}"
     show_item "Elixir"     "$elixir_ver" "${LATEST[elixir]}"
     show_item "Scala"      "$scala_ver"  "${LATEST[scala]}"
     show_item "Julia"      "$julia_ver"  "${LATEST[julia]}"
+    local wasm_label=""
+    [[ -n "$wasmtime_ver" ]] && wasm_label="wasmtime $wasmtime_ver"
+    [[ -n "$wasmer_ver" ]] && wasm_label="${wasm_label:+$wasm_label, }wasmer $wasmer_ver"
+    show_item "WebAssembly" "$wasm_label" "latest"
+    show_item "Flutter"    "$flutter_ver" "latest"
     echo ""
 
     echo -e "  ${BOLD}${CYAN}IDEs and Editors:${NC}"

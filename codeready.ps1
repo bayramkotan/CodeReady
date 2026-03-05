@@ -611,6 +611,13 @@ function Start-SystemScan {
     $zig = Get-CmdVersion "zig" "version"
     $ts = Get-CmdVersion "tsc" "--version"
     $swift = Get-CmdVersion "swift" "--version"
+    $mojo = Get-CmdVersion "mojo" "--version"
+    $flutter = Get-CmdVersion "flutter" "--version"
+    $wasmtime = Get-CmdVersion "wasmtime" "--version"
+    $wasmer = Get-CmdVersion "wasmer" "--version"
+    $elixir = Get-CmdVersion "elixir" "--version"
+    $scalaVer = try { scala -version 2>&1 | Select-Object -First 1; if ($_ -match '(\d+\.\d+[\.\d]*)') { $Matches[1] } else { "" } } catch { "" }
+    $juliaVer = Get-CmdVersion "julia" "--version"
 
     # IDEs
     $code = Get-CmdVersion "code" "--version"
@@ -637,20 +644,29 @@ function Start-SystemScan {
     $helm = try { helm version --short 2>&1; if ($_ -match '(\d+\.\d+[\.\d]*)') { $Matches[1] } else { "" } } catch { "" }
 
     Write-Host "  Languages and Runtimes:" -ForegroundColor Cyan
-    Show-ScanItem "Python"     $py     "3.14"
-    Show-ScanItem "Node.js"    $node   "24"
-    Show-ScanItem "Java (JDK)" $java   "25"
-    Show-ScanItem ".NET SDK"   $dotnet "9"
+    Show-ScanItem "Python"     $py     "latest"
+    Show-ScanItem "Node.js"    $node   "latest"
+    Show-ScanItem "Java (JDK)" $java   "latest"
+    Show-ScanItem ".NET SDK"   $dotnet "latest"
     Show-ScanItem "C/C++ (GCC)" $gcc   "-"
-    Show-ScanItem "Go"         $goVer  "1.23"
+    Show-ScanItem "Go"         $goVer  "latest"
     Show-ScanItem "Rust"       $rust   "latest"
-    Show-ScanItem "PHP"        $php    "8.4"
-    Show-ScanItem "Ruby"       $ruby   "3.3"
+    Show-ScanItem "PHP"        $php    "latest"
+    Show-ScanItem "Ruby"       $ruby   "latest"
     Show-ScanItem "Kotlin"     $kotlin "latest"
     Show-ScanItem "Dart"       $dart   "latest"
     Show-ScanItem "Swift"      $swift  "latest"
-    Show-ScanItem "Zig"        $zig    "0.13"
+    Show-ScanItem "Zig"        $zig    "latest"
+    Show-ScanItem "Mojo"       $mojo   "latest"
     Show-ScanItem "TypeScript" $ts     "latest"
+    Show-ScanItem "Elixir"     $elixir "latest"
+    Show-ScanItem "Scala"      $scalaVer "latest"
+    Show-ScanItem "Julia"      $juliaVer "latest"
+    $wasmLabel = ""
+    if ($wasmtime) { $wasmLabel = "wasmtime $wasmtime" }
+    if ($wasmer) { if ($wasmLabel) { $wasmLabel += ", " }; $wasmLabel += "wasmer $wasmer" }
+    Show-ScanItem "WebAssembly" $wasmLabel "latest"
+    Show-ScanItem "Flutter"    $flutter "latest"
     Write-Host ""
 
     Write-Host "  IDEs and Editors:" -ForegroundColor Cyan
