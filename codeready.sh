@@ -975,9 +975,27 @@ system_scan() {
 
     # Detect IDEs/Editors
     local code_ver=$(get_cmd_version code "--version" 2>/dev/null | head -1)
+    local codium_ver=$(get_cmd_version codium "--version" 2>/dev/null | head -1)
     local nvim_ver=$(get_cmd_version nvim "--version")
+    local vim_ver=$(get_cmd_version vim "--version" 2>&1 | grep -oP '\d+\.\d+' | head -1)
     local cursor_ver="" && command -v cursor &>/dev/null && cursor_ver="installed"
     local sublime_ver="" && command -v subl &>/dev/null && sublime_ver="installed"
+    local emacs_ver=$(get_cmd_version emacs "--version")
+    local zed_ver="" && command -v zed &>/dev/null && zed_ver="installed"
+    local windsurf_ver="" && command -v windsurf &>/dev/null && windsurf_ver="installed"
+    local antigravity_ver="" && command -v antigravity &>/dev/null && antigravity_ver="installed"
+    local fleet_ver="" && command -v fleet &>/dev/null && fleet_ver="installed"
+    local idea_ver="" && (command -v idea &>/dev/null || command -v intellij-idea-community &>/dev/null) && idea_ver="installed"
+    local pycharm_ver="" && command -v pycharm &>/dev/null && pycharm_ver="installed"
+    local webstorm_ver="" && command -v webstorm &>/dev/null && webstorm_ver="installed"
+    local goland_ver="" && command -v goland &>/dev/null && goland_ver="installed"
+    local clion_ver="" && command -v clion &>/dev/null && clion_ver="installed"
+    local rider_ver="" && command -v rider &>/dev/null && rider_ver="installed"
+    local rustrover_ver="" && command -v rustrover &>/dev/null && rustrover_ver="installed"
+    local eclipse_ver="" && command -v eclipse &>/dev/null && eclipse_ver="installed"
+    local netbeans_ver="" && command -v netbeans &>/dev/null && netbeans_ver="installed"
+    local android_ver="" && (command -v studio &>/dev/null || command -v android-studio &>/dev/null) && android_ver="installed"
+    local notepadpp_ver="" && command -v notepad++ &>/dev/null && notepadpp_ver="installed"
 
     # Detect tools
     local git_ver=$(get_cmd_version git "--version")
@@ -1075,10 +1093,28 @@ system_scan() {
     echo ""
 
     echo -e "  ${BOLD}${CYAN}IDEs and Editors:${NC}"
-    show_item "VS Code"    "$code_ver"   "${LATEST[vscode]}"
-    show_item "Neovim"     "$nvim_ver"   "${LATEST[nvim]}"
-    show_item "Cursor"     "$cursor_ver" "latest"
-    show_item "Sublime"    "$sublime_ver" "latest"
+    show_item "VS Code"      "$code_ver"        "latest"
+    show_item "VSCodium"     "$codium_ver"      "latest"
+    show_item "Antigravity"  "$antigravity_ver" "latest"
+    show_item "Cursor"       "$cursor_ver"      "latest"
+    show_item "Zed"          "$zed_ver"         "latest"
+    show_item "Windsurf"     "$windsurf_ver"    "latest"
+    show_item "Sublime"      "$sublime_ver"     "latest"
+    show_item "Vim"          "$vim_ver"         "latest"
+    show_item "Neovim"       "$nvim_ver"        "latest"
+    show_item "GNU Emacs"    "$emacs_ver"       "latest"
+    show_item "IntelliJ"     "$idea_ver"        "latest"
+    show_item "PyCharm"      "$pycharm_ver"     "latest"
+    show_item "WebStorm"     "$webstorm_ver"    "latest"
+    show_item "GoLand"       "$goland_ver"      "latest"
+    show_item "CLion"        "$clion_ver"       "latest"
+    show_item "Rider"        "$rider_ver"       "latest"
+    show_item "RustRover"    "$rustrover_ver"   "latest"
+    show_item "Fleet"        "$fleet_ver"       "latest"
+    show_item "Eclipse"      "$eclipse_ver"     "latest"
+    show_item "NetBeans"     "$netbeans_ver"    "latest"
+    show_item "Android St."  "$android_ver"     "latest"
+    show_item "Notepad++"    "$notepadpp_ver"   "latest"
     echo ""
 
     echo -e "  ${BOLD}${CYAN}Developer Tools:${NC}"

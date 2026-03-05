@@ -685,9 +685,27 @@ function Start-SystemScan {
 
     # IDEs
     $code = Get-CmdVersion "code" "--version"
+    $codium = Get-CmdVersion "codium" "--version"
     $nvim = Get-CmdVersion "nvim" "--version"
+    $vimExe = Get-CmdVersion "vim" "--version"
     $cursorExe = if (Get-Command cursor -ErrorAction SilentlyContinue) { "installed" } else { "" }
     $sublExe = if (Get-Command subl -ErrorAction SilentlyContinue) { "installed" } else { "" }
+    $emacsVer = Get-CmdVersion "emacs" "--version"
+    $zedExe = if (Get-Command zed -ErrorAction SilentlyContinue) { "installed" } else { "" }
+    $windsurfExe = if (Get-Command windsurf -ErrorAction SilentlyContinue) { "installed" } else { "" }
+    $antigravExe = if (Get-Command antigravity -ErrorAction SilentlyContinue) { "installed" } else { "" }
+    $fleetExe = if (Get-Command fleet -ErrorAction SilentlyContinue) { "installed" } else { "" }
+    $ideaExe = if (Get-Command idea -ErrorAction SilentlyContinue) { "installed" } else { "" }
+    $pycharmExe = if (Get-Command pycharm -ErrorAction SilentlyContinue) { "installed" } else { "" }
+    $webstormExe = if (Get-Command webstorm -ErrorAction SilentlyContinue) { "installed" } else { "" }
+    $golandExe = if (Get-Command goland -ErrorAction SilentlyContinue) { "installed" } else { "" }
+    $clionExe = if (Get-Command clion -ErrorAction SilentlyContinue) { "installed" } else { "" }
+    $riderExe = if (Get-Command rider -ErrorAction SilentlyContinue) { "installed" } else { "" }
+    $rustroverExe = if (Get-Command rustrover -ErrorAction SilentlyContinue) { "installed" } else { "" }
+    $eclipseExe = if (Get-Command eclipse -ErrorAction SilentlyContinue) { "installed" } else { "" }
+    $netbeansExe = if (Get-Command netbeans -ErrorAction SilentlyContinue) { "installed" } else { "" }
+    $androidExe = if (Get-Command studio -ErrorAction SilentlyContinue) { "installed" } else { "" }
+    $notepadppExe = if (Get-Command notepad++ -ErrorAction SilentlyContinue) { "installed" } else { "" }
 
     # Tools
     $git = Get-CmdVersion "git" "--version"
@@ -752,10 +770,28 @@ function Start-SystemScan {
     Write-Host ""
 
     Write-Host "  IDEs and Editors:" -ForegroundColor Cyan
-    Show-ScanItem "VS Code"    $code      "latest"
-    Show-ScanItem "Neovim"     $nvim      "latest"
-    Show-ScanItem "Cursor"     $cursorExe "latest"
-    Show-ScanItem "Sublime"    $sublExe   "latest"
+    Show-ScanItem "VS Code"      $code         "latest"
+    Show-ScanItem "VSCodium"     $codium       "latest"
+    Show-ScanItem "Antigravity"  $antigravExe  "latest"
+    Show-ScanItem "Cursor"       $cursorExe    "latest"
+    Show-ScanItem "Zed"          $zedExe       "latest"
+    Show-ScanItem "Windsurf"     $windsurfExe  "latest"
+    Show-ScanItem "Sublime"      $sublExe      "latest"
+    Show-ScanItem "Vim"          $vimExe       "latest"
+    Show-ScanItem "Neovim"       $nvim         "latest"
+    Show-ScanItem "GNU Emacs"    $emacsVer     "latest"
+    Show-ScanItem "IntelliJ"     $ideaExe      "latest"
+    Show-ScanItem "PyCharm"      $pycharmExe   "latest"
+    Show-ScanItem "WebStorm"     $webstormExe  "latest"
+    Show-ScanItem "GoLand"       $golandExe    "latest"
+    Show-ScanItem "CLion"        $clionExe     "latest"
+    Show-ScanItem "Rider"        $riderExe     "latest"
+    Show-ScanItem "RustRover"    $rustroverExe "latest"
+    Show-ScanItem "Fleet"        $fleetExe     "latest"
+    Show-ScanItem "Eclipse"      $eclipseExe   "latest"
+    Show-ScanItem "NetBeans"     $netbeansExe  "latest"
+    Show-ScanItem "Android St."  $androidExe   "latest"
+    Show-ScanItem "Notepad++"    $notepadppExe "latest"
     Write-Host ""
 
     Write-Host "  Developer Tools:" -ForegroundColor Cyan
