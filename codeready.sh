@@ -884,18 +884,30 @@ install_framework() {
 # ================================================================
 show_profile_menu() {
     section "Quick Setup Profiles" >&2
-    echo -e "  ${BOLD}[1]${NC} Web Developer      ${GRAY}- Node.js, Python, PHP, TypeScript + VS Code, Sublime${NC}" >&2
-    echo -e "  ${BOLD}[2]${NC} Mobile Developer   ${GRAY}- Java, Kotlin, Dart + Android Studio, VS Code${NC}" >&2
-    echo -e "  ${BOLD}[3]${NC} Data Scientist     ${GRAY}- Python, Mojo + VS Code, PyCharm${NC}" >&2
-    echo -e "  ${BOLD}[4]${NC} Systems Programmer ${GRAY}- C/C++, Rust, Zig, Go + VS Code, CLion, Neovim${NC}" >&2
-    echo -e "  ${BOLD}[5]${NC} Full Stack .NET    ${GRAY}- C#/.NET, Node.js, TypeScript + VS Code, Rider${NC}" >&2
-    echo -e "  ${BOLD}[6]${NC} Game Developer     ${GRAY}- C/C++, C# + VS Code, Rider${NC}" >&2
-    echo -e "  ${BOLD}[7]${NC} AI / ML Engineer   ${GRAY}- Python, Mojo, Rust + VS Code, PyCharm, Cursor${NC}" >&2
     echo "" >&2
-    echo -e "  ${BOLD}[8]${NC} Custom Setup       ${GRAY}- Choose your own${NC}" >&2
-    echo -e "  ${RED}[9] INSTALL EVERYTHING ${GRAY}- All languages, IDEs, tools, frameworks${NC}" >&2
+    echo -e "  ${BOLD}${CYAN}--- Popular Stacks ---${NC}" >&2
+    echo -e "  ${BOLD}[1]${NC}  Web Frontend        ${GRAY}- Node.js, TypeScript + VS Code, Zed + React, Vue, Tailwind, Vite${NC}" >&2
+    echo -e "  ${BOLD}[2]${NC}  Web Full Stack       ${GRAY}- Node.js, Python, TypeScript + VS Code + React, Next.js, Express, Django${NC}" >&2
+    echo -e "  ${BOLD}[3]${NC}  Mobile Developer     ${GRAY}- Java, Kotlin, Dart/Flutter, Swift + Android Studio, VS Code${NC}" >&2
+    echo -e "  ${BOLD}[4]${NC}  Data Scientist       ${GRAY}- Python, R, Julia + VS Code, PyCharm + VenvStudio, uv, Conda, Streamlit${NC}" >&2
+    echo -e "  ${BOLD}[5]${NC}  AI / ML Engineer     ${GRAY}- Python, Mojo, Rust, Julia + VS Code, PyCharm, Cursor + VenvStudio, uv, FastAPI${NC}" >&2
+    echo -e "  ${BOLD}[6]${NC}  Systems Programmer   ${GRAY}- C/C++, Rust, Zig, Go + VS Code, CLion, Neovim + CMake, cargo-watch${NC}" >&2
+    echo -e "  ${BOLD}[7]${NC}  Full Stack .NET      ${GRAY}- C#/.NET, Node.js, TypeScript + Visual Studio, VS Code + React, Next.js${NC}" >&2
+    echo -e "  ${BOLD}[8]${NC}  Game Developer       ${GRAY}- C/C++, C#, Lua + Visual Studio, VS Code, Rider + CMake${NC}" >&2
     echo "" >&2
-    echo -e "  ${GRAY}You can select multiple profiles separated by spaces (e.g. 1 3 7)${NC}" >&2
+    echo -e "  ${BOLD}${CYAN}--- Specialized ---${NC}" >&2
+    echo -e "  ${BOLD}[9]${NC}  DevOps / Cloud       ${GRAY}- Python, Go, Rust + VS Code, Neovim + Docker, Terraform, kubectl, Helm${NC}" >&2
+    echo -e "  ${BOLD}[10]${NC} Blockchain / Web3    ${GRAY}- Solidity, Rust, TypeScript + VS Code, Cursor + Node.js, npm${NC}" >&2
+    echo -e "  ${BOLD}[11]${NC} Embedded / IoT       ${GRAY}- C/C++, Rust, Python, Lua + VS Code, CLion, Neovim + CMake${NC}" >&2
+    echo -e "  ${BOLD}[12]${NC} Scientific Computing ${GRAY}- Fortran, Python, R, Julia, Haskell + VS Code, Emacs + VenvStudio, uv${NC}" >&2
+    echo -e "  ${BOLD}[13]${NC} Functional Programmer ${GRAY}- Haskell, Elixir, Erlang, OCaml, Scala, Gleam + VS Code, Emacs, Neovim${NC}" >&2
+    echo -e "  ${BOLD}[14]${NC} JVM Ecosystem        ${GRAY}- Java, Kotlin, Scala, Groovy + IntelliJ, Eclipse, NetBeans${NC}" >&2
+    echo -e "  ${BOLD}[15]${NC} Minimalist / Terminal ${GRAY}- Go, Rust, Python + Neovim, Vim, Emacs + Git only${NC}" >&2
+    echo "" >&2
+    echo -e "  ${BOLD}[16]${NC} Custom Setup         ${GRAY}- Choose your own languages, versions, and IDEs${NC}" >&2
+    echo -e "  ${RED}[17] INSTALL EVERYTHING ${GRAY}- All languages, IDEs, tools, frameworks${NC}" >&2
+    echo "" >&2
+    echo -e "  ${GRAY}You can select multiple profiles separated by spaces (e.g. 1 5 9)${NC}" >&2
     echo "" >&2
     read -rp "  Select profile(s): " choice
     echo "$choice"
@@ -1201,15 +1213,23 @@ main() {
 
     for pc in $profile; do
         case "$pc" in
-            1) add_unique sel_langs "nodejs" "python" "php" "typescript"; add_unique sel_ides "vscode" "sublime"; add_unique sel_tools "git" "docker" "postman"; add_unique sel_fws "yarn" "pnpm" "vite" "react" "tailwind" "express" ;;
-            2) add_unique sel_langs "java" "kotlin" "dart"; add_unique sel_ides "android" "vscode"; add_unique sel_tools "git"; add_unique sel_fws "reactnative" "expo" ;;
-            3) add_unique sel_langs "python" "julia" "mojo"; add_unique sel_ides "vscode" "pycharm"; add_unique sel_tools "git" "docker"; add_unique sel_fws "venvstudio" "uv" "conda" "streamlit" "fastapi" ;;
-            4) add_unique sel_langs "cpp" "rust" "zig" "go"; add_unique sel_ides "vscode" "clion" "vim"; add_unique sel_tools "git" "cmake"; add_unique sel_fws "cargo-watch" "wasm-pack" ;;
-            5) add_unique sel_langs "csharp" "nodejs" "typescript"; add_unique sel_ides "vscode" "rider"; add_unique sel_tools "git" "docker" "postman"; add_unique sel_fws "yarn" "vite" "react" "nextjs" ;;
-            6) add_unique sel_langs "cpp" "csharp"; add_unique sel_ides "vscode" "rider"; add_unique sel_tools "git" "cmake" ;;
-            7) add_unique sel_langs "python" "julia" "mojo" "rust"; add_unique sel_ides "vscode" "pycharm" "cursor"; add_unique sel_tools "git" "docker"; add_unique sel_fws "venvstudio" "uv" "conda" "streamlit" "fastapi" ;;
-            8) is_custom=1 ;;
-            9) is_all=1 ;;
+            1)  add_unique sel_langs "nodejs" "typescript"; add_unique sel_ides "vscode" "zed"; add_unique sel_tools "git"; add_unique sel_fws "yarn" "pnpm" "vite" "react" "vue" "tailwind" ;;
+            2)  add_unique sel_langs "nodejs" "python" "typescript" "php"; add_unique sel_ides "vscode" "sublime"; add_unique sel_tools "git" "docker" "postman"; add_unique sel_fws "yarn" "pnpm" "vite" "react" "nextjs" "express" "django" "tailwind" ;;
+            3)  add_unique sel_langs "java" "kotlin" "dart" "swift"; add_unique sel_ides "android" "vscode"; add_unique sel_tools "git"; add_unique sel_fws "reactnative" "expo" ;;
+            4)  add_unique sel_langs "python" "r" "julia"; add_unique sel_ides "vscode" "pycharm"; add_unique sel_tools "git" "docker"; add_unique sel_fws "venvstudio" "uv" "conda" "streamlit" "fastapi" ;;
+            5)  add_unique sel_langs "python" "mojo" "rust" "julia"; add_unique sel_ides "vscode" "pycharm" "cursor"; add_unique sel_tools "git" "docker"; add_unique sel_fws "venvstudio" "uv" "conda" "streamlit" "fastapi" ;;
+            6)  add_unique sel_langs "cpp" "rust" "zig" "go"; add_unique sel_ides "vscode" "clion" "vim"; add_unique sel_tools "git" "cmake"; add_unique sel_fws "cargo-watch" "wasm-pack" ;;
+            7)  add_unique sel_langs "csharp" "nodejs" "typescript"; add_unique sel_ides "vs2026" "vscode" "rider"; add_unique sel_tools "git" "docker" "postman"; add_unique sel_fws "yarn" "vite" "react" "nextjs" "blazor" ;;
+            8)  add_unique sel_langs "cpp" "csharp" "lua"; add_unique sel_ides "vs2026" "vscode" "rider"; add_unique sel_tools "git" "cmake" ;;
+            9)  add_unique sel_langs "python" "go" "rust"; add_unique sel_ides "vscode" "vim"; add_unique sel_tools "git" "docker"; add_unique sel_fws "terraform" "kubectl" "helm" ;;
+            10) add_unique sel_langs "solidity" "rust" "typescript" "nodejs"; add_unique sel_ides "vscode" "cursor"; add_unique sel_tools "git"; add_unique sel_fws "npm" "yarn" ;;
+            11) add_unique sel_langs "cpp" "rust" "python" "lua"; add_unique sel_ides "vscode" "clion" "vim"; add_unique sel_tools "git" "cmake" ;;
+            12) add_unique sel_langs "fortran" "python" "r" "julia" "haskell"; add_unique sel_ides "vscode" "emacs"; add_unique sel_tools "git"; add_unique sel_fws "venvstudio" "uv" "conda" ;;
+            13) add_unique sel_langs "haskell" "elixir" "erlang" "ocaml" "scala" "gleam"; add_unique sel_ides "vscode" "emacs" "vim"; add_unique sel_tools "git" ;;
+            14) add_unique sel_langs "java" "kotlin" "scala" "groovy"; add_unique sel_ides "intellij" "eclipse" "netbeans"; add_unique sel_tools "git" "docker" ;;
+            15) add_unique sel_langs "go" "rust" "python"; add_unique sel_ides "vim" "classicvim" "emacs"; add_unique sel_tools "git" ;;
+            16) is_custom=1 ;;
+            17) is_all=1 ;;
         esac
     done
 

@@ -285,26 +285,46 @@ chmod +x codeready.sh
 
 ## Profiles
 
-CodeReady ships with **8 profiles** for common developer roles. You can select **one or multiple** profiles, or go fully custom.
+CodeReady ships with **15 profiles** for common developer roles, grouped by category. You can select **one or multiple** profiles, or go fully custom.
 
 ```
-Select profile(s): 1 3 7     <- combine multiple profiles
-Select profile(s): 9         <- install EVERYTHING (with safety warnings)
+Select profile(s): 2 5 9     <- combine multiple profiles
+Select profile(s): 17        <- install EVERYTHING (with safety warnings)
 ```
+
+### Popular Stacks
 
 | # | Profile | Languages | IDEs | Frameworks and Tools |
 |:-:|---------|-----------|------|--------------------|
-| **1** | **Web Developer** | Node.js, Python, PHP, TypeScript | VS Code, Sublime | Yarn, pnpm, Vite, React, Tailwind, Express |
-| **2** | **Mobile Developer** | Java, Kotlin, Dart/Flutter | Android Studio, VS Code | React Native, Expo |
-| **3** | **Data Scientist** | Python, Mojo | VS Code, PyCharm | VenvStudio, uv, Conda, Streamlit, FastAPI |
-| **4** | **Systems Programmer** | C/C++, Rust, Zig, Go | VS Code, CLion, Neovim | cargo-watch, wasm-pack |
-| **5** | **Full Stack .NET** | C#/.NET, Node.js, TypeScript | Visual Studio, VS Code | Yarn, Vite, React, Next.js |
-| **6** | **Game Developer** | C/C++, C# | Visual Studio, VS Code, Rider | CMake |
-| **7** | **AI / ML Engineer** | Python, Mojo, Rust | VS Code, PyCharm, Cursor | VenvStudio, uv, Conda, Streamlit, FastAPI |
-| **8** | **Custom Setup** | *You choose* | *You choose* | *You choose* |
-| **9** | **INSTALL EVERYTHING** | *All 39 languages* | *All 23 IDEs* | *All 38 frameworks* |
+| **1** | **Web Frontend** | Node.js, TypeScript | VS Code, Zed | Yarn, pnpm, Vite, React, Vue, Tailwind |
+| **2** | **Web Full Stack** | Node.js, Python, TypeScript, PHP | VS Code, Sublime | Yarn, pnpm, Vite, React, Next.js, Express, Django, Tailwind |
+| **3** | **Mobile Developer** | Java, Kotlin, Dart/Flutter, Swift | Android Studio, VS Code | React Native, Expo |
+| **4** | **Data Scientist** | Python, R, Julia | VS Code, PyCharm | VenvStudio, uv, Conda, Streamlit, FastAPI |
+| **5** | **AI / ML Engineer** | Python, Mojo, Rust, Julia | VS Code, PyCharm, Cursor | VenvStudio, uv, Conda, Streamlit, FastAPI |
+| **6** | **Systems Programmer** | C/C++, Rust, Zig, Go | VS Code, CLion, Neovim | CMake, cargo-watch, wasm-pack |
+| **7** | **Full Stack .NET** | C#/.NET, Node.js, TypeScript | Visual Studio, VS Code, Rider | Yarn, Vite, React, Next.js, Blazor |
+| **8** | **Game Developer** | C/C++, C#, Lua | Visual Studio, VS Code, Rider | CMake |
 
-> **Note:** Option 9 will warn you about estimated time (~45-90 min), disk usage (~30-50 GB), and system load before proceeding. Requires typing `YES` in uppercase to confirm.
+### Specialized
+
+| # | Profile | Languages | IDEs | Frameworks and Tools |
+|:-:|---------|-----------|------|--------------------|
+| **9** | **DevOps / Cloud** | Python, Go, Rust | VS Code, Neovim | Docker, Terraform, kubectl, Helm |
+| **10** | **Blockchain / Web3** | Solidity, Rust, TypeScript | VS Code, Cursor | npm, Yarn |
+| **11** | **Embedded / IoT** | C/C++, Rust, Python, Lua | VS Code, CLion, Neovim | CMake |
+| **12** | **Scientific Computing** | Fortran, Python, R, Julia, Haskell | VS Code, Emacs | VenvStudio, uv, Conda |
+| **13** | **Functional Programmer** | Haskell, Elixir, Erlang, OCaml, Scala, Gleam | VS Code, Emacs, Neovim | — |
+| **14** | **JVM Ecosystem** | Java, Kotlin, Scala, Groovy | IntelliJ, Eclipse, NetBeans | Docker |
+| **15** | **Minimalist / Terminal** | Go, Rust, Python | Neovim, Vim, Emacs | Git only |
+
+### Other Options
+
+| # | Option | Description |
+|:-:|--------|-------------|
+| **16** | **Custom Setup** | Choose your own languages, versions, IDEs, tools, and frameworks |
+| **17** | **INSTALL EVERYTHING** | All 39 languages, 23 IDEs, 38 frameworks (warns about time and disk) |
+
+> **Note:** Option 17 will warn you about estimated time, disk usage, and system load before proceeding. Requires typing `YES` in uppercase to confirm.
 
 ---
 

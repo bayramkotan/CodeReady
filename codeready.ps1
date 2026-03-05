@@ -523,18 +523,30 @@ function Install-Framework($fw) {
 # ================================================================
 function Show-ProfileMenu {
     Write-SectionHeader "Quick Setup Profiles"
-    Write-Host "  [1] Web Developer      - Node.js, Python, PHP, TypeScript + VS Code, Sublime" -ForegroundColor White
-    Write-Host "  [2] Mobile Developer   - Java, Kotlin, Dart + Android Studio, VS Code" -ForegroundColor White
-    Write-Host "  [3] Data Scientist     - Python, Mojo + VS Code, PyCharm" -ForegroundColor White
-    Write-Host "  [4] Systems Programmer - C/C++, Rust, Zig, Go + VS Code, CLion, Neovim" -ForegroundColor White
-    Write-Host "  [5] Full Stack .NET    - C#/.NET, Node.js, TypeScript + VS 2026, VS Code" -ForegroundColor White
-    Write-Host "  [6] Game Developer     - C/C++, C# + VS 2026, VS Code, Rider" -ForegroundColor White
-    Write-Host "  [7] AI / ML Engineer   - Python, Mojo, Rust + VS Code, PyCharm, Cursor" -ForegroundColor White
     Write-Host ""
-    Write-Host "  [8] Custom Setup       - Choose your own languages, versions, and IDEs" -ForegroundColor Yellow
-    Write-Host "  [9] INSTALL EVERYTHING - All languages, IDEs, tools, frameworks" -ForegroundColor Red
+    Write-Host "  --- Popular Stacks ---" -ForegroundColor Cyan
+    Write-Host "  [1]  Web Frontend        - Node.js, TypeScript + VS Code, Zed + React, Vue, Tailwind" -ForegroundColor White
+    Write-Host "  [2]  Web Full Stack       - Node.js, Python, TypeScript + VS Code + React, Next.js, Django" -ForegroundColor White
+    Write-Host "  [3]  Mobile Developer     - Java, Kotlin, Dart/Flutter, Swift + Android Studio, VS Code" -ForegroundColor White
+    Write-Host "  [4]  Data Scientist       - Python, R, Julia + VS Code, PyCharm + VenvStudio, uv, Conda" -ForegroundColor White
+    Write-Host "  [5]  AI / ML Engineer     - Python, Mojo, Rust, Julia + VS Code, PyCharm, Cursor" -ForegroundColor White
+    Write-Host "  [6]  Systems Programmer   - C/C++, Rust, Zig, Go + VS Code, CLion, Neovim + CMake" -ForegroundColor White
+    Write-Host "  [7]  Full Stack .NET      - C#/.NET, Node.js, TypeScript + VS 2026, VS Code + React, Next.js" -ForegroundColor White
+    Write-Host "  [8]  Game Developer       - C/C++, C#, Lua + VS 2026, VS Code, Rider + CMake" -ForegroundColor White
     Write-Host ""
-    Write-Host "  You can select multiple profiles separated by spaces (e.g. 1 3 7)" -ForegroundColor DarkGray
+    Write-Host "  --- Specialized ---" -ForegroundColor Cyan
+    Write-Host "  [9]  DevOps / Cloud       - Python, Go, Rust + VS Code, Neovim + Docker, Terraform, kubectl" -ForegroundColor White
+    Write-Host "  [10] Blockchain / Web3    - Solidity, Rust, TypeScript + VS Code, Cursor + npm" -ForegroundColor White
+    Write-Host "  [11] Embedded / IoT       - C/C++, Rust, Python, Lua + VS Code, CLion, Neovim + CMake" -ForegroundColor White
+    Write-Host "  [12] Scientific Computing - Fortran, Python, R, Julia, Haskell + VS Code, Emacs" -ForegroundColor White
+    Write-Host "  [13] Functional Prog.     - Haskell, Elixir, Erlang, OCaml, Scala, Gleam + VS Code, Emacs" -ForegroundColor White
+    Write-Host "  [14] JVM Ecosystem        - Java, Kotlin, Scala, Groovy + IntelliJ, Eclipse, NetBeans" -ForegroundColor White
+    Write-Host "  [15] Minimalist / Terminal - Go, Rust, Python + Neovim, Vim, Emacs + Git only" -ForegroundColor White
+    Write-Host ""
+    Write-Host "  [16] Custom Setup         - Choose your own languages, versions, and IDEs" -ForegroundColor Yellow
+    Write-Host "  [17] INSTALL EVERYTHING   - All languages, IDEs, tools, frameworks" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "  You can select multiple profiles separated by spaces (e.g. 1 5 9)" -ForegroundColor DarkGray
     Write-Host ""
     return (Read-Host "  Select profile(s)")
 }
@@ -884,15 +896,23 @@ function Main {
 
     foreach ($pc in $profileChoices) {
         switch ($pc) {
-            "1" { Add-ProfileItems @("nodejs","python","php","typescript") @("vscode","sublime") @("git","docker","postman","nvm") @("yarn","pnpm","vite","react","tailwind","express") }
-            "2" { Add-ProfileItems @("java","kotlin","dart") @("android","vscode") @("git") @("reactnative","expo") }
-            "3" { Add-ProfileItems @("python","julia","mojo") @("vscode","pycharm") @("git","docker") @("venvstudio","uv","conda","streamlit","fastapi") }
-            "4" { Add-ProfileItems @("cpp","rust","zig","go") @("vscode","clion","vim") @("git","cmake") @("cargo-watch","wasm-pack") }
-            "5" { Add-ProfileItems @("csharp","nodejs","typescript") @("vs2026","vscode") @("git","docker","postman") @("yarn","vite","react","nextjs") }
-            "6" { Add-ProfileItems @("cpp","csharp") @("vs2026","vscode","rider") @("git","cmake") @() }
-            "7" { Add-ProfileItems @("python","julia","mojo","rust") @("vscode","pycharm","cursor") @("git","docker") @("venvstudio","uv","conda","streamlit","fastapi") }
-            "8" { $isCustom = $true }
-            "9" { $isInstallAll = $true }
+            "1" { Add-ProfileItems @("nodejs","typescript") @("vscode","zed") @("git") @("yarn","pnpm","vite","react","vue","tailwind") }
+            "2" { Add-ProfileItems @("nodejs","python","typescript","php") @("vscode","sublime") @("git","docker","postman","nvm") @("yarn","pnpm","vite","react","nextjs","express","django","tailwind") }
+            "3" { Add-ProfileItems @("java","kotlin","dart","swift") @("android","vscode") @("git") @("reactnative","expo") }
+            "4" { Add-ProfileItems @("python","r","julia") @("vscode","pycharm") @("git","docker") @("venvstudio","uv","conda","streamlit","fastapi") }
+            "5" { Add-ProfileItems @("python","mojo","rust","julia") @("vscode","pycharm","cursor") @("git","docker") @("venvstudio","uv","conda","streamlit","fastapi") }
+            "6" { Add-ProfileItems @("cpp","rust","zig","go") @("vscode","clion","vim") @("git","cmake") @("cargo-watch","wasm-pack") }
+            "7" { Add-ProfileItems @("csharp","nodejs","typescript") @("vs2026","vscode","rider") @("git","docker","postman") @("yarn","vite","react","nextjs","blazor") }
+            "8" { Add-ProfileItems @("cpp","csharp","lua") @("vs2026","vscode","rider") @("git","cmake") @() }
+            "9" { Add-ProfileItems @("python","go","rust") @("vscode","vim") @("git","docker") @("terraform","kubectl","helm") }
+            "10" { Add-ProfileItems @("solidity","rust","typescript","nodejs") @("vscode","cursor") @("git") @("npm","yarn") }
+            "11" { Add-ProfileItems @("cpp","rust","python","lua") @("vscode","clion","vim") @("git","cmake") @() }
+            "12" { Add-ProfileItems @("fortran","python","r","julia","haskell") @("vscode","emacs") @("git") @("venvstudio","uv","conda") }
+            "13" { Add-ProfileItems @("haskell","elixir","erlang","ocaml","scala","gleam") @("vscode","emacs","vim") @("git") @() }
+            "14" { Add-ProfileItems @("java","kotlin","scala","groovy") @("intellij","eclipse","netbeans") @("git","docker") @() }
+            "15" { Add-ProfileItems @("go","rust","python") @("vim","classicvim","emacs") @("git") @() }
+            "16" { $isCustom = $true }
+            "17" { $isInstallAll = $true }
         }
     }
 
