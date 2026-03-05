@@ -10,6 +10,9 @@ VERSION="2.0.0"
 LOG_FILE="$HOME/codeready_install.log"
 INSTALLED=()
 FAILED=()
+HAS_MACPORTS=0
+HAS_NIX=0
+HAS_FLATPAK=0
 
 # --- Detect OS --------------------------------------------------
 detect_os() {
@@ -38,15 +41,14 @@ CYAN='\033[0;36m'; GRAY='\033[0;90m'; NC='\033[0m'; BOLD='\033[1m'
 
 print_banner() {
     clear
-    echo -e "${CYAN}"
-    cat << 'EOF'
-     CCCCC   OOO   DDDD   EEEEE  RRRR   EEEEE   AAA   DDDD   Y   Y
-    C       O   O  D   D  E      R   R  E      A   A  D   D   Y Y
-    C       O   O  D   D  EEE    RRRR   EEE    AAAAA  D   D    Y
-    C       O   O  D   D  E      R  R   E      A   A  D   D    Y
-     CCCCC   OOO   DDDD   EEEEE  R   R  EEEEE  A   A  DDDD     Y
-EOF
-    echo -e "                                                        v${VERSION}${NC}"
+    echo ""
+    echo -e "${CYAN}   ####  #####  ####  ###### ####  ###### #####  ####  #   #${NC}"
+    echo -e "${CYAN}  #      #   #  #   # #      #   # #      #   #  #   #  # #${NC}"
+    echo -e "${CYAN}  #      #   #  #   # ####   ####  ####   #####  #   #   #${NC}"
+    echo -e "${CYAN}  #      #   #  #   # #      #  #  #      #   #  #   #   #${NC}"
+    echo -e "${CYAN}   ####  #####  ####  ###### #   # ###### #   #  ####    #${NC}"
+    echo ""
+    echo -e "                                                     ${BOLD}v${VERSION}${NC}"
     echo -e "  ${GRAY}Developer Environment Setup Tool - Linux/macOS${NC}"
     echo -e "  ${GRAY}================================================${NC}"
     echo ""
@@ -56,6 +58,7 @@ step()    { echo -e "  ${YELLOW}[>]${NC} $1"; }
 ok()      { echo -e "  ${GREEN}[+]${NC} $1"; echo "[OK] $1" >> "$LOG_FILE"; INSTALLED+=("$1"); }
 fail()    { echo -e "  ${RED}[-]${NC} $1"; echo "[FAIL] $1" >> "$LOG_FILE"; FAILED+=("$1"); }
 info()    { echo -e "  ${CYAN}[i]${NC} ${GRAY}$1${NC}"; }
+warn()    { echo -e "  ${YELLOW}[!]${NC} ${YELLOW}$1${NC}"; echo "[WARN] $1" >> "$LOG_FILE"; }
 section() { echo ""; echo -e "  ${YELLOW}=== $1 ===${NC}"; echo ""; }
 
 # --- Package Manager Setup --------------------------------------
@@ -68,6 +71,27 @@ ensure_brew() {
     ok "Homebrew installed."
 }
 
+ensure_macports() {
+    step "Checking MacPorts..."
+    if command -v port &>/dev/null; then ok "MacPorts ready."; HAS_MACPORTS=1; return 0; fi
+    info "MacPorts not installed. Using Homebrew as primary."
+    HAS_MACPORTS=0
+}
+
+ensure_nix() {
+    step "Checking Nix..."
+    if command -v nix &>/dev/null; then ok "Nix ready."; HAS_NIX=1; return 0; fi
+    info "Nix not installed. Install with: sh <(curl -L https://nixos.org/nix/install) --daemon"
+    HAS_NIX=0
+}
+
+ensure_flatpak() {
+    step "Checking Flatpak..."
+    if command -v flatpak &>/dev/null; then ok "Flatpak ready."; HAS_FLATPAK=1; return 0; fi
+    info "Flatpak not installed."
+    HAS_FLATPAK=0
+}
+
 update_pkg() {
     step "Updating package manager..."
     case "$PKG" in
@@ -77,6 +101,19 @@ update_pkg() {
         zypper) sudo zypper refresh &>>"$LOG_FILE" ;;
         brew)   brew update &>>"$LOG_FILE" ;;
     esac
+    # Also check secondary package managers
+    ensure_nix
+    ensure_flatpak
+}
+
+# Helper: try nix as fallback
+nix_install() {
+    local name="$1" pkg="$2"
+    if [[ $HAS_NIX -eq 1 ]]; then
+        step "Installing $name via Nix..."
+        nix-env -iA nixpkgs."$pkg" &>>"$LOG_FILE" 2>&1 && ok "$name installed via Nix." && return 0
+    fi
+    return 1
 }
 
 # --- Generic installer ------------------------------------------
@@ -86,6 +123,59 @@ pkg_install() {
     if eval "$@" &>>"$LOG_FILE" 2>&1; then
         ok "$name installed."
     else
+        fail "$name"
+    fi
+}
+
+# Check if a command already exists — skip if installed
+is_cmd() { command -v "$1" &>/dev/null; }
+
+skip_installed() {
+    local name="$1" cmd="$2"
+    if is_cmd "$cmd"; then
+        ok "$name is already installed. Skipping."
+        INSTALLED+=("$name (already installed)")
+        return 0
+    fi
+    return 1
+}
+
+# Safe apt repo add — tracks what we add so we can clean up on failure
+ADDED_REPOS=()
+ADDED_KEYRINGS=()
+
+safe_add_repo() {
+    local list_file="$1" repo_line="$2" keyring="$3" key_url="$4"
+    # Add GPG key
+    if [[ -n "$key_url" && -n "$keyring" ]]; then
+        curl -fsSL "$key_url" 2>>"$LOG_FILE" | sudo gpg --dearmor -o "$keyring" 2>>"$LOG_FILE"
+        sudo chmod a+r "$keyring"
+        ADDED_KEYRINGS+=("$keyring")
+    fi
+    # Add repo
+    echo "$repo_line" | sudo tee "$list_file" > /dev/null
+    ADDED_REPOS+=("$list_file")
+    sudo apt update &>>"$LOG_FILE" 2>&1
+}
+
+# Remove repo and keyring if install failed — don't leave broken repos
+cleanup_repo() {
+    local list_file="$1" keyring="$2"
+    [[ -f "$list_file" ]] && sudo rm -f "$list_file" 2>/dev/null
+    [[ -f "$keyring" ]] && sudo rm -f "$keyring" 2>/dev/null
+    sudo apt update &>>"$LOG_FILE" 2>&1
+}
+
+# Safe install via apt repo: add repo, try install, cleanup if fails
+safe_repo_install() {
+    local name="$1" list_file="$2" repo_line="$3" keyring="$4" key_url="$5" pkg_name="$6"
+    step "Installing $name via official repo..."
+    safe_add_repo "$list_file" "$repo_line" "$keyring" "$key_url"
+    if sudo apt install -y "$pkg_name" &>>"$LOG_FILE" 2>&1; then
+        ok "$name installed."
+    else
+        warn "Failed to install $name — cleaning up broken repo..."
+        cleanup_repo "$list_file" "$keyring"
         fail "$name"
     fi
 }
@@ -121,12 +211,12 @@ number_menu() {
 version_menu() {
     local lang_name="$1"; shift
     local -a labels=("$@")
-    echo ""
-    echo -e "  ${CYAN}$lang_name - Select version:${NC}"
+    echo "" >&2
+    echo -e "  ${CYAN}$lang_name - Select version:${NC}" >&2
     for ((i=0; i<${#labels[@]}; i++)); do
         local tag=""
         [[ $i -eq 0 ]] && tag=" (latest)"
-        echo "    [$((i+1))] ${labels[$i]}$tag"
+        echo "    [$((i+1))] ${labels[$i]}$tag" >&2
     done
     read -rp "    Version (default=1): " choice
     [[ -z "$choice" ]] && choice=1
@@ -139,6 +229,7 @@ version_menu() {
 
 install_python() {
     local ver="${1:-3.14}"
+    skip_installed "Python $ver" "python3" && return
     case "$PKG" in
         brew)   pkg_install "Python $ver" "brew install python@$ver" ;;
         apt)    pkg_install "Python $ver" "sudo apt install -y python${ver} python3-pip python3-venv || sudo apt install -y python3 python3-pip python3-venv" ;;
@@ -150,6 +241,7 @@ install_python() {
 
 install_nodejs() {
     local ver="${1:-24}"
+    if is_cmd node; then ok "Node.js is already installed. Skipping."; INSTALLED+=("Node.js (already installed)"); return; fi
     step "Installing Node.js $ver via nvm..."
     if [[ ! -d "$HOME/.nvm" ]]; then
         curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash &>>"$LOG_FILE"
@@ -169,6 +261,7 @@ install_nodejs() {
 }
 
 install_java() {
+    skip_installed "JDK" "java" && return
     local ver="${1:-25}"
     case "$PKG" in
         brew)   pkg_install "JDK $ver" "brew install --cask temurin@$ver || brew install --cask temurin" ;;
@@ -180,6 +273,7 @@ install_java() {
 }
 
 install_csharp() {
+    skip_installed ".NET SDK" "dotnet" && return
     local ver="${1:-9}"
     case "$PKG" in
         brew)   pkg_install ".NET $ver SDK" "brew install dotnet-sdk" ;;
@@ -201,6 +295,7 @@ install_cpp() {
 }
 
 install_go() {
+    skip_installed "Go" "go" && return
     local ver="${1:-1.23}"
     case "$PKG" in
         brew) pkg_install "Go $ver" "brew install go" ;;
@@ -230,6 +325,7 @@ install_rust() {
 }
 
 install_php() {
+    skip_installed "PHP" "php" && return
     local ver="${1:-8.4}"
     case "$PKG" in
         brew)   pkg_install "PHP $ver" "brew install php@$ver composer || brew install php composer" ;;
@@ -240,6 +336,7 @@ install_php() {
 }
 
 install_ruby() {
+    skip_installed "Ruby" "ruby" && return
     local ver="${1:-3.3}"
     case "$PKG" in
         brew)   pkg_install "Ruby $ver" "brew install ruby@$ver || brew install ruby" ;;
@@ -250,6 +347,7 @@ install_ruby() {
 }
 
 install_kotlin() {
+    skip_installed "Kotlin" "kotlin" && return
     case "$PKG" in
         brew) pkg_install "Kotlin" "brew install kotlin" ;;
         *)    if command -v snap &>/dev/null; then
@@ -264,6 +362,7 @@ install_kotlin() {
 }
 
 install_dart() {
+    skip_installed "Dart/Flutter" "flutter" && return
     local variant="${1:-flutter}"
     case "$PKG" in
         brew)
@@ -283,6 +382,7 @@ install_dart() {
 }
 
 install_swift() {
+    skip_installed "Swift" "swift" && return
     case "$PKG" in
         brew) if command -v swift &>/dev/null; then ok "Swift available (via Xcode)."; else info "Install Xcode: xcode-select --install"; fail "Swift"; fi ;;
         apt)  pkg_install "Swift" "sudo apt install -y swift || (curl -fsSL https://swift.org/install.sh | bash)" ;;
@@ -291,6 +391,7 @@ install_swift() {
 }
 
 install_zig() {
+    skip_installed "Zig" "zig" && return
     case "$PKG" in
         brew)   pkg_install "Zig" "brew install zig" ;;
         apt)    if command -v snap &>/dev/null; then
@@ -344,6 +445,7 @@ install_wasm() {
 }
 
 install_typescript() {
+    skip_installed "TypeScript" "tsc" && return
     step "Installing TypeScript globally via npm..."
     if command -v npm &>/dev/null; then
         npm install -g typescript ts-node &>>"$LOG_FILE" 2>&1 && ok "TypeScript installed." || fail "TypeScript"
@@ -354,6 +456,7 @@ install_typescript() {
 }
 
 install_elixir() {
+    skip_installed "Elixir" "elixir" && return
     case "$PKG" in
         brew)   pkg_install "Elixir" "brew install elixir" ;;
         apt)    pkg_install "Elixir" "sudo apt install -y elixir" ;;
@@ -363,6 +466,7 @@ install_elixir() {
 }
 
 install_scala() {
+    skip_installed "Scala" "scala" && return
     case "$PKG" in
         brew) pkg_install "Scala" "brew install scala" ;;
         *)    if command -v cs &>/dev/null || command -v coursier &>/dev/null; then
@@ -392,72 +496,350 @@ install_julia() {
     esac
 }
 
+# --- NEW LANGUAGES (v2.1) ---
+
+install_r() {
+    skip_installed "R" "R" && return
+    case "$PKG" in
+        brew)   pkg_install "R" "brew install r" ;;
+        apt)    pkg_install "R" "sudo apt install -y r-base r-base-dev" ;;
+        dnf)    pkg_install "R" "sudo dnf install -y R" ;;
+        pacman) pkg_install "R" "sudo pacman -S --noconfirm r" ;;
+        zypper) pkg_install "R" "sudo zypper install -y R-base R-base-devel" ;;
+    esac
+}
+
+install_lua() {
+    skip_installed "Lua" "lua" && return
+    case "$PKG" in
+        brew)   pkg_install "Lua" "brew install lua luarocks" ;;
+        apt)    pkg_install "Lua" "sudo apt install -y lua5.4 liblua5.4-dev luarocks" ;;
+        dnf)    pkg_install "Lua" "sudo dnf install -y lua lua-devel luarocks" ;;
+        pacman) pkg_install "Lua" "sudo pacman -S --noconfirm lua luarocks" ;;
+    esac
+}
+
+install_haskell() {
+    step "Installing Haskell via GHCup..."
+    if command -v ghc &>/dev/null; then ok "Haskell already installed."; return; fi
+    curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | BOOTSTRAP_HASKELL_NONINTERACTIVE=1 sh &>>"$LOG_FILE" 2>&1
+    [ -f "$HOME/.ghcup/env" ] && source "$HOME/.ghcup/env" 2>/dev/null
+    ok "Haskell (GHC + Cabal + Stack) installed via GHCup."
+}
+
+install_perl() {
+    skip_installed "Perl" "perl" && return
+    case "$PKG" in
+        brew)   pkg_install "Perl" "brew install perl" ;;
+        apt)    pkg_install "Perl" "sudo apt install -y perl cpanminus" ;;
+        dnf)    pkg_install "Perl" "sudo dnf install -y perl perl-App-cpanminus" ;;
+        pacman) pkg_install "Perl" "sudo pacman -S --noconfirm perl cpanminus" ;;
+    esac
+}
+
+install_erlang() {
+    skip_installed "Erlang" "erl" && return
+    case "$PKG" in
+        brew)   pkg_install "Erlang" "brew install erlang" ;;
+        apt)    pkg_install "Erlang" "sudo apt install -y erlang" ;;
+        dnf)    pkg_install "Erlang" "sudo dnf install -y erlang" ;;
+        pacman) pkg_install "Erlang" "sudo pacman -S --noconfirm erlang" ;;
+    esac
+}
+
+install_ocaml() {
+    skip_installed "OCaml" "ocaml" && return
+    step "Installing OCaml via opam..."
+    case "$PKG" in
+        brew)   pkg_install "OCaml" "brew install ocaml opam" ;;
+        *)
+            if command -v opam &>/dev/null; then ok "OCaml (opam) already installed."; return; fi
+            case "$PKG" in
+                apt)    sudo apt install -y opam &>>"$LOG_FILE" ;;
+                dnf)    sudo dnf install -y opam &>>"$LOG_FILE" ;;
+                pacman) sudo pacman -S --noconfirm opam &>>"$LOG_FILE" ;;
+            esac
+            opam init -y &>>"$LOG_FILE" 2>&1
+            ok "OCaml installed via opam." ;;
+    esac
+}
+
+install_fortran() {
+    skip_installed "Fortran" "gfortran" && return
+    case "$PKG" in
+        brew)   pkg_install "Fortran (GFortran)" "brew install gcc" ;;
+        apt)    pkg_install "Fortran (GFortran)" "sudo apt install -y gfortran" ;;
+        dnf)    pkg_install "Fortran (GFortran)" "sudo dnf install -y gcc-gfortran" ;;
+        pacman) pkg_install "Fortran (GFortran)" "sudo pacman -S --noconfirm gcc-fortran" ;;
+        zypper) pkg_install "Fortran (GFortran)" "sudo zypper install -y gcc-fortran" ;;
+    esac
+}
+
+install_d() {
+    skip_installed "D" "ldc2" && return
+    case "$PKG" in
+        brew)   pkg_install "D (LDC)" "brew install ldc dub" ;;
+        apt)    pkg_install "D (LDC)" "sudo apt install -y ldc dub" ;;
+        dnf)    pkg_install "D (LDC)" "sudo dnf install -y ldc dub" ;;
+        pacman) pkg_install "D (LDC)" "sudo pacman -S --noconfirm ldc dub" ;;
+        *)      info "D language: visit https://dlang.org/install.html"; fail "D (manual)" ;;
+    esac
+}
+
+install_nim() {
+    step "Installing Nim via choosenim..."
+    if command -v nim &>/dev/null; then ok "Nim already installed."; return; fi
+    curl https://nim-lang.org/choosenim/init.sh -sSf | sh -s -- -y &>>"$LOG_FILE" 2>&1
+    export PATH="$HOME/.nimble/bin:$PATH"
+    ok "Nim installed via choosenim."
+}
+
+install_crystal() {
+    skip_installed "Crystal" "crystal" && return
+    case "$PKG" in
+        brew)   pkg_install "Crystal" "brew install crystal" ;;
+        apt)    step "Installing Crystal..."
+                curl -fsSL https://crystal-lang.org/install.sh | sudo bash &>>"$LOG_FILE" 2>&1
+                ok "Crystal installed." ;;
+        pacman) pkg_install "Crystal" "sudo pacman -S --noconfirm crystal shards" ;;
+        *)      info "Crystal: visit https://crystal-lang.org/install/"; fail "Crystal (manual)" ;;
+    esac
+}
+
+install_v() {
+    step "Installing V language..."
+    if command -v v &>/dev/null; then ok "V already installed."; return; fi
+    case "$PKG" in
+        brew) pkg_install "V" "brew install vlang" ;;
+        *)
+            git clone --depth 1 https://github.com/vlang/v /tmp/vlang &>>"$LOG_FILE" 2>&1
+            cd /tmp/vlang && make &>>"$LOG_FILE" 2>&1
+            sudo mv /tmp/vlang/v /usr/local/bin/v 2>/dev/null
+            cd - &>/dev/null
+            ok "V language installed." ;;
+    esac
+}
+
+install_gleam() {
+    skip_installed "Gleam" "gleam" && return
+    case "$PKG" in
+        brew) pkg_install "Gleam" "brew install gleam" ;;
+        *)
+            step "Installing Gleam..."
+            curl -fsSL https://gleam.run/install.sh | sh &>>"$LOG_FILE" 2>&1
+            ok "Gleam installed." ;;
+    esac
+}
+
+install_carbon() {
+    info "Carbon is in early development (experimental). Visit: https://github.com/carbon-language/carbon-lang"
+    info "You can explore via Compiler Explorer: https://carbon.compiler-explorer.com"
+    fail "Carbon (experimental, no installer yet)"
+}
+
+install_solidity() {
+    skip_installed "Solidity" "solcjs" && return
+    step "Installing Solidity compiler (solc)..."
+    if command -v npm &>/dev/null; then
+        npm install -g solc &>>"$LOG_FILE" 2>&1 && ok "Solidity (solcjs) installed via npm." || fail "Solidity"
+    else
+        case "$PKG" in
+            brew) pkg_install "Solidity" "brew install solidity" ;;
+            *)    if command -v snap &>/dev/null; then
+                      pkg_install "Solidity" "sudo snap install solc"
+                  else
+                      info "Solidity: npm install -g solc (needs Node.js)"; fail "Solidity (needs npm)"
+                  fi ;;
+        esac
+    fi
+}
+
+install_groovy() {
+    skip_installed "Groovy" "groovy" && return
+    case "$PKG" in
+        brew) pkg_install "Groovy" "brew install groovy" ;;
+        *)    if command -v sdk &>/dev/null || [ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]; then
+                  [ -s "$HOME/.sdkman/bin/sdkman-init.sh" ] && source "$HOME/.sdkman/bin/sdkman-init.sh"
+                  sdk install groovy &>>"$LOG_FILE" 2>&1 && ok "Groovy installed via SDKMAN." || fail "Groovy"
+              else
+                  step "Installing Groovy via SDKMAN..."
+                  curl -s "https://get.sdkman.io" | bash &>>"$LOG_FILE"
+                  source "$HOME/.sdkman/bin/sdkman-init.sh" 2>/dev/null
+                  sdk install groovy &>>"$LOG_FILE" 2>&1 && ok "Groovy installed." || fail "Groovy"
+              fi ;;
+    esac
+}
+
+install_ada() {
+    skip_installed "Ada" "gnat" && return
+    case "$PKG" in
+        brew)   pkg_install "Ada (GNAT)" "brew install gnat" ;;
+        apt)    pkg_install "Ada (GNAT)" "sudo apt install -y gnat" ;;
+        dnf)    pkg_install "Ada (GNAT)" "sudo dnf install -y gcc-gnat" ;;
+        pacman) pkg_install "Ada (GNAT)" "sudo pacman -S --noconfirm gcc-ada" ;;
+        *)      info "Ada: visit https://www.adacore.com/download"; fail "Ada (manual)" ;;
+    esac
+}
+
+install_cobol() {
+    skip_installed "COBOL" "cobc" && return
+    case "$PKG" in
+        brew)   pkg_install "COBOL (GnuCOBOL)" "brew install gnucobol" ;;
+        apt)    pkg_install "COBOL (GnuCOBOL)" "sudo apt install -y gnucobol" ;;
+        dnf)    pkg_install "COBOL (GnuCOBOL)" "sudo dnf install -y gnucobol" ;;
+        pacman) pkg_install "COBOL (GnuCOBOL)" "sudo pacman -S --noconfirm gnucobol" ;;
+        *)      info "COBOL: visit https://gnucobol.sourceforge.io"; fail "COBOL (manual)" ;;
+    esac
+}
+
+install_lisp() {
+    skip_installed "Common Lisp" "sbcl" && return
+    case "$PKG" in
+        brew)   pkg_install "Common Lisp (SBCL)" "brew install sbcl" ;;
+        apt)    pkg_install "Common Lisp (SBCL)" "sudo apt install -y sbcl" ;;
+        dnf)    pkg_install "Common Lisp (SBCL)" "sudo dnf install -y sbcl" ;;
+        pacman) pkg_install "Common Lisp (SBCL)" "sudo pacman -S --noconfirm sbcl" ;;
+    esac
+}
+
+install_racket() {
+    skip_installed "Racket" "racket" && return
+    case "$PKG" in
+        brew)   pkg_install "Racket" "brew install racket" ;;
+        apt)    pkg_install "Racket" "sudo apt install -y racket" ;;
+        dnf)    pkg_install "Racket" "sudo dnf install -y racket" ;;
+        pacman) pkg_install "Racket" "sudo pacman -S --noconfirm racket" ;;
+    esac
+}
+
+install_objc() {
+    case "$PKG" in
+        brew) info "Objective-C available via Xcode: xcode-select --install"
+              if command -v clang &>/dev/null; then ok "Objective-C (Clang) available."; else fail "Objective-C"; fi ;;
+        apt)  pkg_install "Objective-C (GNUstep)" "sudo apt install -y gobjc gnustep-devel" ;;
+        dnf)  pkg_install "Objective-C (GNUstep)" "sudo dnf install -y gcc-objc gnustep-base-devel" ;;
+        *)    info "Objective-C: use Xcode (macOS) or GNUstep (Linux)"; fail "Objective-C (manual)" ;;
+    esac
+}
+
 # ================================================================
-# IDE INSTALLERS
+# IDE INSTALLERS (skip if installed, flatpak > apt/repo > snap)
 # ================================================================
+
+# Helper: try flatpak first, then snap as last resort
+flatpak_or_snap() {
+    local name="$1" flatpak_id="$2" snap_name="$3"
+    if command -v flatpak &>/dev/null; then
+        pkg_install "$name" "flatpak install -y flathub $flatpak_id"
+    elif command -v snap &>/dev/null; then
+        pkg_install "$name" "sudo snap install $snap_name --classic"
+    else
+        info "Download $name manually."; fail "$name (manual)"
+    fi
+}
+
 install_ide() {
     local key="$1"
     case "$key" in
         vscode)
+            skip_installed "VS Code" "code" && return
             case "$PKG" in
                 brew) pkg_install "VS Code" "brew install --cask visual-studio-code" ;;
-                *)    if command -v snap &>/dev/null; then pkg_install "VS Code" "sudo snap install code --classic"
-                      else info "Download VS Code: https://code.visualstudio.com"; fail "VS Code (manual)"; fi ;;
+                apt)
+                    safe_repo_install "VS Code" \
+                        "/etc/apt/sources.list.d/vscode.list" \
+                        "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-archive-keyring.gpg] https://packages.microsoft.com/repos/code stable main" \
+                        "/usr/share/keyrings/microsoft-archive-keyring.gpg" \
+                        "https://packages.microsoft.com/keys/microsoft.asc" \
+                        "code" ;;
+                dnf)
+                    step "Installing VS Code via Microsoft repo..."
+                    sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc 2>>"$LOG_FILE"
+                    echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" | sudo tee /etc/yum.repos.d/vscode.repo > /dev/null
+                    if sudo dnf install -y code &>>"$LOG_FILE"; then ok "VS Code installed."
+                    else sudo rm -f /etc/yum.repos.d/vscode.repo 2>/dev/null; fail "VS Code"; fi ;;
+                *) flatpak_or_snap "VS Code" "com.visualstudio.code" "code" ;;
             esac ;;
-        vs2026)     info "Visual Studio 2026 is Windows-only. Use VS Code or Rider." ;;
+        vscodium)
+            skip_installed "VSCodium" "codium" && return
+            case "$PKG" in
+                brew) pkg_install "VSCodium" "brew install --cask vscodium" ;;
+                apt)
+                    step "Installing VSCodium via repo..."
+                    curl -fsSL https://gitlab.com/nicedoc/vscodium/-/raw/master/install.sh | sudo bash &>>"$LOG_FILE" 2>&1
+                    sudo apt update &>>"$LOG_FILE" && sudo apt install -y codium &>>"$LOG_FILE" && ok "VSCodium installed." || fail "VSCodium" ;;
+                *) flatpak_or_snap "VSCodium" "com.vscodium.codium" "codium" ;;
+            esac ;;
+        vs2026) info "Visual Studio is Windows-only. Use VS Code or Rider." ;;
         intellij)
+            skip_installed "IntelliJ IDEA" "idea" && return
             case "$PKG" in
                 brew) pkg_install "IntelliJ IDEA" "brew install --cask intellij-idea-ce" ;;
-                *)    if command -v snap &>/dev/null; then pkg_install "IntelliJ IDEA" "sudo snap install intellij-idea-community --classic"
-                      else info "Download: https://www.jetbrains.com/idea/download/"; fail "IntelliJ (manual)"; fi ;;
+                *) flatpak_or_snap "IntelliJ IDEA" "com.jetbrains.IntelliJ-IDEA-Community" "intellij-idea-community" ;;
             esac ;;
         pycharm)
+            skip_installed "PyCharm" "pycharm" && return
             case "$PKG" in
                 brew) pkg_install "PyCharm" "brew install --cask pycharm-ce" ;;
-                *)    if command -v snap &>/dev/null; then pkg_install "PyCharm" "sudo snap install pycharm-community --classic"
-                      else fail "PyCharm (manual)"; fi ;;
+                *) flatpak_or_snap "PyCharm" "com.jetbrains.PyCharm-Community" "pycharm-community" ;;
             esac ;;
         webstorm)
+            skip_installed "WebStorm" "webstorm" && return
             case "$PKG" in
                 brew) pkg_install "WebStorm" "brew install --cask webstorm" ;;
-                *)    if command -v snap &>/dev/null; then pkg_install "WebStorm" "sudo snap install webstorm --classic"; else fail "WebStorm (manual)"; fi ;;
+                *) flatpak_or_snap "WebStorm" "com.jetbrains.WebStorm" "webstorm" ;;
             esac ;;
         goland)
+            skip_installed "GoLand" "goland" && return
             case "$PKG" in
                 brew) pkg_install "GoLand" "brew install --cask goland" ;;
-                *)    if command -v snap &>/dev/null; then pkg_install "GoLand" "sudo snap install goland --classic"; else fail "GoLand (manual)"; fi ;;
+                *) flatpak_or_snap "GoLand" "com.jetbrains.GoLand" "goland" ;;
             esac ;;
         clion)
+            skip_installed "CLion" "clion" && return
             case "$PKG" in
                 brew) pkg_install "CLion" "brew install --cask clion" ;;
-                *)    if command -v snap &>/dev/null; then pkg_install "CLion" "sudo snap install clion --classic"; else fail "CLion (manual)"; fi ;;
+                *) flatpak_or_snap "CLion" "com.jetbrains.CLion" "clion" ;;
             esac ;;
         rider)
+            skip_installed "Rider" "rider" && return
             case "$PKG" in
                 brew) pkg_install "Rider" "brew install --cask rider" ;;
-                *)    if command -v snap &>/dev/null; then pkg_install "Rider" "sudo snap install rider --classic"; else fail "Rider (manual)"; fi ;;
+                *) flatpak_or_snap "Rider" "com.jetbrains.Rider" "rider" ;;
             esac ;;
         rustrover)
+            skip_installed "RustRover" "rustrover" && return
             case "$PKG" in
                 brew) pkg_install "RustRover" "brew install --cask rustrover" ;;
-                *)    if command -v snap &>/dev/null; then pkg_install "RustRover" "sudo snap install rustrover --classic"; else fail "RustRover (manual)"; fi ;;
+                *) flatpak_or_snap "RustRover" "com.jetbrains.RustRover" "rustrover" ;;
             esac ;;
         eclipse)
+            skip_installed "Eclipse" "eclipse" && return
             case "$PKG" in
                 brew) pkg_install "Eclipse" "brew install --cask eclipse-jee" ;;
-                *)    if command -v snap &>/dev/null; then pkg_install "Eclipse" "sudo snap install eclipse --classic"; else fail "Eclipse (manual)"; fi ;;
+                *) flatpak_or_snap "Eclipse" "org.eclipse.Java" "eclipse" ;;
             esac ;;
         android)
+            skip_installed "Android Studio" "studio" && return
             case "$PKG" in
                 brew) pkg_install "Android Studio" "brew install --cask android-studio" ;;
-                *)    if command -v snap &>/dev/null; then pkg_install "Android Studio" "sudo snap install android-studio --classic"; else fail "Android Studio (manual)"; fi ;;
+                *) flatpak_or_snap "Android Studio" "com.google.AndroidStudio" "android-studio" ;;
             esac ;;
         sublime)
+            skip_installed "Sublime Text" "subl" && return
             case "$PKG" in
                 brew) pkg_install "Sublime Text" "brew install --cask sublime-text" ;;
-                *)    if command -v snap &>/dev/null; then pkg_install "Sublime Text" "sudo snap install sublime-text --classic"; else fail "Sublime Text (manual)"; fi ;;
+                apt)
+                    safe_repo_install "Sublime Text" \
+                        "/etc/apt/sources.list.d/sublime-text.list" \
+                        "deb [arch=amd64 signed-by=/usr/share/keyrings/sublimehq-archive-keyring.gpg] https://download.sublimetext.com/ apt/stable/" \
+                        "/usr/share/keyrings/sublimehq-archive-keyring.gpg" \
+                        "https://download.sublimetext.com/sublimehq-pub.gpg" \
+                        "sublime-text" ;;
+                *) flatpak_or_snap "Sublime Text" "com.sublimetext.three" "sublime-text" ;;
             esac ;;
         vim)
+            skip_installed "Neovim" "nvim" && return
             case "$PKG" in
                 brew)   pkg_install "Neovim" "brew install neovim" ;;
                 apt)    pkg_install "Neovim" "sudo apt install -y neovim" ;;
@@ -465,18 +847,57 @@ install_ide() {
                 pacman) pkg_install "Neovim" "sudo pacman -S --noconfirm neovim" ;;
                 zypper) pkg_install "Neovim" "sudo zypper install -y neovim" ;;
             esac ;;
-        notepadpp)  info "Notepad++ is Windows-only." ;;
+        classicvim)
+            skip_installed "Vim" "vim" && return
+            case "$PKG" in
+                brew)   pkg_install "Vim" "brew install vim" ;;
+                apt)    pkg_install "Vim" "sudo apt install -y vim" ;;
+                dnf)    pkg_install "Vim" "sudo dnf install -y vim-enhanced" ;;
+                pacman) pkg_install "Vim" "sudo pacman -S --noconfirm vim" ;;
+                zypper) pkg_install "Vim" "sudo zypper install -y vim" ;;
+            esac ;;
+        emacs)
+            skip_installed "GNU Emacs" "emacs" && return
+            case "$PKG" in
+                brew)   pkg_install "GNU Emacs" "brew install --cask emacs" ;;
+                apt)    pkg_install "GNU Emacs" "sudo apt install -y emacs" ;;
+                dnf)    pkg_install "GNU Emacs" "sudo dnf install -y emacs" ;;
+                pacman) pkg_install "GNU Emacs" "sudo pacman -S --noconfirm emacs" ;;
+                zypper) pkg_install "GNU Emacs" "sudo zypper install -y emacs" ;;
+            esac ;;
+        antigravity)
+            skip_installed "Antigravity" "antigravity" && return
+            case "$PKG" in
+                brew) pkg_install "Antigravity" "brew install --cask antigravity" ;;
+                *)    info "Download Antigravity: https://antigravity.app"; fail "Antigravity (manual)" ;;
+            esac ;;
+        netbeans)
+            skip_installed "NetBeans" "netbeans" && return
+            case "$PKG" in
+                brew) pkg_install "NetBeans" "brew install --cask netbeans" ;;
+                *) flatpak_or_snap "NetBeans" "org.apache.netbeans" "netbeans" ;;
+            esac ;;
+        fleet)
+            skip_installed "Fleet" "fleet" && return
+            case "$PKG" in
+                brew) pkg_install "JetBrains Fleet" "brew install --cask jetbrains-fleet" ;;
+                *) flatpak_or_snap "JetBrains Fleet" "com.jetbrains.Fleet" "fleet" ;;
+            esac ;;
+        notepadpp) info "Notepad++ is Windows-only." ;;
         cursor)
+            skip_installed "Cursor" "cursor" && return
             case "$PKG" in
                 brew) pkg_install "Cursor" "brew install --cask cursor" ;;
                 *)    info "Download Cursor: https://cursor.sh"; fail "Cursor (manual)" ;;
             esac ;;
         windsurf)
+            skip_installed "Windsurf" "windsurf" && return
             case "$PKG" in
                 brew) pkg_install "Windsurf" "brew install --cask windsurf" ;;
                 *)    info "Download Windsurf: https://codeium.com/windsurf"; fail "Windsurf (manual)" ;;
             esac ;;
         zed)
+            skip_installed "Zed" "zed" && return
             case "$PKG" in
                 brew) pkg_install "Zed" "brew install --cask zed" ;;
                 *)    step "Installing Zed..."
@@ -493,6 +914,7 @@ install_tool() {
     local key="$1"
     case "$key" in
         git)
+            skip_installed "Git" "git" && return
             case "$PKG" in
                 brew) pkg_install "Git" "brew install git" ;;
                 apt)  pkg_install "Git" "sudo apt install -y git" ;;
@@ -501,18 +923,45 @@ install_tool() {
                 zypper) pkg_install "Git" "sudo zypper install -y git" ;;
             esac ;;
         docker)
+            skip_installed "Docker" "docker" && return
             case "$PKG" in
                 brew) pkg_install "Docker" "brew install --cask docker" ;;
-                apt)  pkg_install "Docker" "sudo apt install -y ca-certificates curl && sudo install -m 0755 -d /etc/apt/keyrings && curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc && sudo chmod a+r /etc/apt/keyrings/docker.asc && echo \"deb [arch=\$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \$(. /etc/os-release && echo \$VERSION_CODENAME) stable\" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null && sudo apt update && sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin && sudo usermod -aG docker \$USER" ;;
+                apt)
+                    step "Installing Docker..."
+                    sudo apt install -y ca-certificates curl &>>"$LOG_FILE"
+                    sudo install -m 0755 -d /etc/apt/keyrings
+                    local DISTRO CODENAME
+                    if grep -qi "debian" /etc/os-release; then DISTRO="debian"; else DISTRO="ubuntu"; fi
+                    CODENAME=$(. /etc/os-release && echo "$VERSION_CODENAME")
+                    if [[ "$DISTRO" == "debian" && ("$CODENAME" == "trixie" || "$CODENAME" == "sid" || -z "$CODENAME") ]]; then
+                        CODENAME="bookworm"
+                    fi
+                    local docker_keyring="/etc/apt/keyrings/docker.asc"
+                    local docker_list="/etc/apt/sources.list.d/docker.list"
+                    curl -fsSL "https://download.docker.com/linux/${DISTRO}/gpg" -o "$docker_keyring" 2>>"$LOG_FILE"
+                    sudo chmod a+r "$docker_keyring"
+                    echo "deb [arch=$(dpkg --print-architecture) signed-by=${docker_keyring}] https://download.docker.com/linux/${DISTRO} ${CODENAME} stable" | sudo tee "$docker_list" > /dev/null
+                    sudo apt update &>>"$LOG_FILE" 2>&1
+                    if sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin &>>"$LOG_FILE" 2>&1; then
+                        sudo usermod -aG docker "$USER" 2>/dev/null
+                        ok "Docker installed."
+                    else
+                        warn "Docker install failed — cleaning up repo to prevent system issues..."
+                        cleanup_repo "$docker_list" "$docker_keyring"
+                        fail "Docker"
+                    fi
+                    ;;
                 dnf)  pkg_install "Docker" "sudo dnf install -y docker && sudo systemctl enable --now docker && sudo usermod -aG docker \$USER" ;;
                 pacman) pkg_install "Docker" "sudo pacman -S --noconfirm docker docker-compose && sudo systemctl enable --now docker && sudo usermod -aG docker \$USER" ;;
             esac ;;
         postman)
+            skip_installed "Postman" "postman" && return
             case "$PKG" in
                 brew) pkg_install "Postman" "brew install --cask postman" ;;
-                *)    if command -v snap &>/dev/null; then pkg_install "Postman" "sudo snap install postman"; else fail "Postman (manual)"; fi ;;
+                *) flatpak_or_snap "Postman" "com.getpostman.Postman" "postman" ;;
             esac ;;
         cmake)
+            skip_installed "CMake" "cmake" && return
             case "$PKG" in
                 brew)   pkg_install "CMake" "brew install cmake" ;;
                 apt)    pkg_install "CMake" "sudo apt install -y cmake" ;;
@@ -635,27 +1084,291 @@ install_framework() {
 # PROFILES
 # ================================================================
 show_profile_menu() {
-    section "Quick Setup Profiles"
-    echo -e "  ${BOLD}[1]${NC} Web Developer      ${GRAY}- Node.js, Python, PHP, TypeScript + VS Code, Sublime${NC}"
-    echo -e "  ${BOLD}[2]${NC} Mobile Developer   ${GRAY}- Java, Kotlin, Dart + Android Studio, VS Code${NC}"
-    echo -e "  ${BOLD}[3]${NC} Data Scientist     ${GRAY}- Python, Mojo + VS Code, PyCharm${NC}"
-    echo -e "  ${BOLD}[4]${NC} Systems Programmer ${GRAY}- C/C++, Rust, Zig, Go + VS Code, CLion, Neovim${NC}"
-    echo -e "  ${BOLD}[5]${NC} Full Stack .NET    ${GRAY}- C#/.NET, Node.js, TypeScript + VS Code, Rider${NC}"
-    echo -e "  ${BOLD}[6]${NC} Game Developer     ${GRAY}- C/C++, C# + VS Code, Rider${NC}"
-    echo -e "  ${BOLD}[7]${NC} AI / ML Engineer   ${GRAY}- Python, Mojo, Rust + VS Code, PyCharm, Cursor${NC}"
-    echo ""
-    echo -e "  ${BOLD}[8]${NC} Custom Setup       ${GRAY}- Choose your own${NC}"
-    echo -e "  ${RED}[9] INSTALL EVERYTHING ${GRAY}- All languages, IDEs, tools, frameworks${NC}"
-    echo ""
-    echo -e "  ${GRAY}You can select multiple profiles separated by spaces (e.g. 1 3 7)${NC}"
-    echo ""
+    section "Quick Setup Profiles" >&2
+    echo "" >&2
+    echo -e "  ${BOLD}${CYAN}--- Popular Stacks ---${NC}" >&2
+    echo -e "  ${BOLD}[1]${NC}  Web Frontend        ${GRAY}- Node.js, TypeScript + VS Code, Zed + React, Vue, Tailwind, Vite${NC}" >&2
+    echo -e "  ${BOLD}[2]${NC}  Web Full Stack       ${GRAY}- Node.js, Python, TypeScript + VS Code + React, Next.js, Express, Django${NC}" >&2
+    echo -e "  ${BOLD}[3]${NC}  Mobile Developer     ${GRAY}- Java, Kotlin, Dart/Flutter, Swift + Android Studio, VS Code${NC}" >&2
+    echo -e "  ${BOLD}[4]${NC}  Data Scientist       ${GRAY}- Python, R, Julia + VS Code, PyCharm + VenvStudio, uv, Conda, Streamlit${NC}" >&2
+    echo -e "  ${BOLD}[5]${NC}  AI / ML Engineer     ${GRAY}- Python, Mojo, Rust, Julia + VS Code, PyCharm, Cursor + VenvStudio, uv, FastAPI${NC}" >&2
+    echo -e "  ${BOLD}[6]${NC}  Systems Programmer   ${GRAY}- C/C++, Rust, Zig, Go + VS Code, CLion, Neovim + CMake, cargo-watch${NC}" >&2
+    echo -e "  ${BOLD}[7]${NC}  Full Stack .NET      ${GRAY}- C#/.NET, Node.js, TypeScript + Visual Studio, VS Code + React, Next.js${NC}" >&2
+    echo -e "  ${BOLD}[8]${NC}  Game Developer       ${GRAY}- C/C++, C#, Lua + Visual Studio, VS Code, Rider + CMake${NC}" >&2
+    echo "" >&2
+    echo -e "  ${BOLD}${CYAN}--- Specialized ---${NC}" >&2
+    echo -e "  ${BOLD}[9]${NC}  DevOps / Cloud       ${GRAY}- Python, Go, Rust + VS Code, Neovim + Docker, Terraform, kubectl, Helm${NC}" >&2
+    echo -e "  ${BOLD}[10]${NC} Blockchain / Web3    ${GRAY}- Solidity, Rust, TypeScript + VS Code, Cursor + Node.js, npm${NC}" >&2
+    echo -e "  ${BOLD}[11]${NC} Embedded / IoT       ${GRAY}- C/C++, Rust, Python, Lua + VS Code, CLion, Neovim + CMake${NC}" >&2
+    echo -e "  ${BOLD}[12]${NC} Scientific Computing ${GRAY}- Fortran, Python, R, Julia, Haskell + VS Code, Emacs + VenvStudio, uv${NC}" >&2
+    echo -e "  ${BOLD}[13]${NC} Functional Programmer ${GRAY}- Haskell, Elixir, Erlang, OCaml, Scala, Gleam + VS Code, Emacs, Neovim${NC}" >&2
+    echo -e "  ${BOLD}[14]${NC} JVM Ecosystem        ${GRAY}- Java, Kotlin, Scala, Groovy + IntelliJ, Eclipse, NetBeans${NC}" >&2
+    echo -e "  ${BOLD}[15]${NC} Minimalist / Terminal ${GRAY}- Go, Rust, Python + Neovim, Vim, Emacs + Git only${NC}" >&2
+    echo "" >&2
+    echo -e "  ${BOLD}[16]${NC} Custom Setup         ${GRAY}- Choose your own languages, versions, and IDEs${NC}" >&2
+    echo -e "  ${RED}[17] INSTALL EVERYTHING ${GRAY}- All languages, IDEs, tools, frameworks${NC}" >&2
+    echo "" >&2
+    echo -e "  ${GRAY}You can select multiple profiles separated by spaces (e.g. 1 5 9)${NC}" >&2
+    echo "" >&2
     read -rp "  Select profile(s): " choice
     echo "$choice"
 }
 
 # ================================================================
-# MAIN
+# SYSTEM SCAN - Auto-detect installed software and versions
 # ================================================================
+get_cmd_version() {
+    local cmd="$1" flag="${2:---version}"
+    if command -v "$cmd" &>/dev/null; then
+        local ver
+        ver=$("$cmd" $flag 2>&1 | head -1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+        [[ -n "$ver" ]] && echo "$ver" || echo "installed"
+    else
+        echo ""
+    fi
+}
+
+system_scan() {
+    section "System Scan"
+    echo -e "  ${GRAY}Scanning your system for installed software...${NC}"
+    echo ""
+
+    # Detect languages
+    local py_ver=$(get_cmd_version python3)
+    [[ -z "$py_ver" ]] && py_ver=$(get_cmd_version python)
+    local node_ver=""
+    if [[ -s "$HOME/.nvm/nvm.sh" ]]; then
+        source "$HOME/.nvm/nvm.sh" 2>/dev/null
+        node_ver=$(get_cmd_version node "-v" | sed 's/^v//')
+    else
+        node_ver=$(get_cmd_version node "-v" | sed 's/^v//')
+    fi
+    local java_ver=$(java -version 2>&1 | head -1 | grep -oP '\d+[\.\d]*' | head -1)
+    local dotnet_ver=$(get_cmd_version dotnet "--version")
+    local gcc_ver=$(get_cmd_version gcc "--version")
+    local go_ver=$(get_cmd_version go "version" | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    [[ -z "$go_ver" ]] && go_ver=$(go version 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local rust_ver=""
+    [[ -s "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env" 2>/dev/null
+    rust_ver=$(get_cmd_version rustc "--version")
+    local php_ver=$(get_cmd_version php "--version")
+    local ruby_ver=$(get_cmd_version ruby "--version")
+    local kotlin_ver=$(get_cmd_version kotlin "-version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local dart_ver=$(get_cmd_version dart "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local zig_ver=$(get_cmd_version zig "version")
+    local ts_ver=$(get_cmd_version tsc "--version")
+    local elixir_ver=$(get_cmd_version elixir "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local scala_ver=$(get_cmd_version scala "-version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local julia_ver=$(get_cmd_version julia "--version")
+    local swift_ver=$(get_cmd_version swift "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local mojo_ver=$(get_cmd_version mojo "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local flutter_ver=$(get_cmd_version flutter "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local wasmtime_ver=$(get_cmd_version wasmtime "--version")
+    local wasmer_ver=$(get_cmd_version wasmer "--version")
+    local r_ver=$(get_cmd_version R "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local lua_ver=$(get_cmd_version lua "-v" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local ghc_ver=$(get_cmd_version ghc "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local perl_ver=$(get_cmd_version perl "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local erlang_ver=$(erl -eval 'erlang:display(erlang:system_info(otp_release)), halt().' -noshell 2>/dev/null | tr -d '"')
+    local ocaml_ver=$(get_cmd_version ocaml "--version")
+    local gfortran_ver=$(get_cmd_version gfortran "--version")
+    local dmd_ver=$(get_cmd_version ldc2 "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local nim_ver=$(get_cmd_version nim "--version")
+    local crystal_ver=$(get_cmd_version crystal "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local vlang_ver=$(get_cmd_version v "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local gleam_ver=$(get_cmd_version gleam "--version")
+    local solc_ver=$(get_cmd_version solcjs "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local groovy_ver=$(get_cmd_version groovy "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local gnat_ver=$(get_cmd_version gnat "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local cobc_ver=$(get_cmd_version cobc "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local sbcl_ver=$(get_cmd_version sbcl "--version")
+    local racket_ver=$(get_cmd_version racket "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local objc_ver="" && command -v gobjc &>/dev/null && objc_ver="installed"
+    [[ -z "$objc_ver" ]] && command -v clang &>/dev/null && objc_ver="via clang"
+
+    # Detect IDEs/Editors
+    local code_ver=$(get_cmd_version code "--version" 2>/dev/null | head -1)
+    local codium_ver=$(get_cmd_version codium "--version" 2>/dev/null | head -1)
+    local nvim_ver=$(get_cmd_version nvim "--version")
+    local vim_ver=$(get_cmd_version vim "--version" 2>&1 | grep -oP '\d+\.\d+' | head -1)
+    local cursor_ver="" && command -v cursor &>/dev/null && cursor_ver="installed"
+    local sublime_ver="" && command -v subl &>/dev/null && sublime_ver="installed"
+    local emacs_ver=$(get_cmd_version emacs "--version")
+    local zed_ver="" && command -v zed &>/dev/null && zed_ver="installed"
+    local windsurf_ver="" && command -v windsurf &>/dev/null && windsurf_ver="installed"
+    local antigravity_ver="" && command -v antigravity &>/dev/null && antigravity_ver="installed"
+    local fleet_ver="" && command -v fleet &>/dev/null && fleet_ver="installed"
+    local idea_ver="" && (command -v idea &>/dev/null || command -v intellij-idea-community &>/dev/null) && idea_ver="installed"
+    local pycharm_ver="" && command -v pycharm &>/dev/null && pycharm_ver="installed"
+    local webstorm_ver="" && command -v webstorm &>/dev/null && webstorm_ver="installed"
+    local goland_ver="" && command -v goland &>/dev/null && goland_ver="installed"
+    local clion_ver="" && command -v clion &>/dev/null && clion_ver="installed"
+    local rider_ver="" && command -v rider &>/dev/null && rider_ver="installed"
+    local rustrover_ver="" && command -v rustrover &>/dev/null && rustrover_ver="installed"
+    local eclipse_ver="" && command -v eclipse &>/dev/null && eclipse_ver="installed"
+    local netbeans_ver="" && command -v netbeans &>/dev/null && netbeans_ver="installed"
+    local android_ver="" && (command -v studio &>/dev/null || command -v android-studio &>/dev/null) && android_ver="installed"
+    local notepadpp_ver="" && command -v notepad++ &>/dev/null && notepadpp_ver="installed"
+
+    # Detect tools
+    local git_ver=$(get_cmd_version git "--version")
+    local docker_ver=$(get_cmd_version docker "--version")
+    local cmake_ver=$(get_cmd_version cmake "--version")
+    local gh_ver=$(get_cmd_version gh "--version")
+
+    # Detect package managers / frameworks
+    local npm_ver=$(get_cmd_version npm "--version")
+    local yarn_ver=$(get_cmd_version yarn "--version")
+    local pnpm_ver=$(get_cmd_version pnpm "--version")
+    local bun_ver=$(get_cmd_version bun "--version")
+    local uv_ver=$(get_cmd_version uv "--version")
+    local poetry_ver=$(get_cmd_version poetry "--version")
+    local conda_ver=$(get_cmd_version conda "--version")
+    local pip_ver=$(get_cmd_version pip3 "--version")
+    [[ -z "$pip_ver" ]] && pip_ver=$(get_cmd_version pip "--version")
+    local terraform_ver=$(get_cmd_version terraform "--version")
+    local kubectl_ver=$(get_cmd_version kubectl "version --client --short" 2>/dev/null | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local helm_ver=$(get_cmd_version helm "version --short" 2>/dev/null | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+
+    # Latest versions (our recommendations)
+    declare -A LATEST=(
+        [python]="latest" [nodejs]="latest" [java]="latest" [dotnet]="latest" [gcc]="—"
+        [go]="latest" [rust]="latest" [php]="latest" [ruby]="latest" [kotlin]="latest"
+        [dart]="latest" [zig]="latest" [typescript]="latest" [elixir]="latest"
+        [scala]="latest" [julia]="latest" [swift]="latest"
+        [vscode]="latest" [nvim]="latest" [git]="latest" [docker]="latest"
+        [cmake]="latest" [gh]="latest"
+        [npm]="latest" [yarn]="latest" [pnpm]="latest" [bun]="latest"
+        [uv]="latest" [poetry]="latest" [conda]="latest"
+        [terraform]="latest" [kubectl]="latest" [helm]="latest"
+    )
+
+    # Display function
+    show_item() {
+        local name="$1" current="$2" recommended="$3" width=16
+        local padded
+        padded=$(printf "%-${width}s" "$name")
+        if [[ -z "$current" ]]; then
+            echo -e "    ${GRAY}${padded}${NC}  ${GRAY}—  not installed${NC}"
+        elif [[ "$recommended" == "latest" || "$recommended" == "—" ]]; then
+            echo -e "    ${GREEN}${padded}${NC}  ${GREEN}${current}${NC}  ${GREEN}✓${NC}"
+        elif [[ "$current" == "$recommended"* ]]; then
+            echo -e "    ${GREEN}${padded}${NC}  ${GREEN}${current}${NC}  ${GREEN}✓ up to date${NC}"
+        else
+            echo -e "    ${YELLOW}${padded}${NC}  ${YELLOW}${current}${NC}  ${CYAN}⬆ ${recommended} available${NC}"
+        fi
+    }
+
+    # Print scan results
+    echo -e "  ${BOLD}${CYAN}Languages and Runtimes:${NC}"
+    show_item "Python"     "$py_ver"     "${LATEST[python]}"
+    show_item "Node.js"    "$node_ver"   "${LATEST[nodejs]}"
+    show_item "Java (JDK)" "$java_ver"   "${LATEST[java]}"
+    show_item ".NET SDK"   "$dotnet_ver" "${LATEST[dotnet]}"
+    show_item "C/C++ (GCC)" "$gcc_ver"   "${LATEST[gcc]}"
+    show_item "Go"         "$go_ver"     "${LATEST[go]}"
+    show_item "Rust"       "$rust_ver"   "${LATEST[rust]}"
+    show_item "PHP"        "$php_ver"    "${LATEST[php]}"
+    show_item "Ruby"       "$ruby_ver"   "${LATEST[ruby]}"
+    show_item "Kotlin"     "$kotlin_ver" "${LATEST[kotlin]}"
+    show_item "Dart"       "$dart_ver"   "${LATEST[dart]}"
+    show_item "Swift"      "$swift_ver"  "${LATEST[swift]}"
+    show_item "Zig"        "$zig_ver"    "${LATEST[zig]}"
+    show_item "Mojo"       "$mojo_ver"   "latest"
+    show_item "TypeScript" "$ts_ver"     "${LATEST[typescript]}"
+    show_item "Elixir"     "$elixir_ver" "${LATEST[elixir]}"
+    show_item "Scala"      "$scala_ver"  "${LATEST[scala]}"
+    show_item "Julia"      "$julia_ver"  "${LATEST[julia]}"
+    local wasm_label=""
+    [[ -n "$wasmtime_ver" ]] && wasm_label="wasmtime $wasmtime_ver"
+    [[ -n "$wasmer_ver" ]] && wasm_label="${wasm_label:+$wasm_label, }wasmer $wasmer_ver"
+    show_item "WebAssembly" "$wasm_label" "latest"
+    show_item "Flutter"    "$flutter_ver" "latest"
+    show_item "R"          "$r_ver"       "latest"
+    show_item "Lua"        "$lua_ver"     "latest"
+    show_item "Haskell"    "$ghc_ver"     "latest"
+    show_item "Perl"       "$perl_ver"    "latest"
+    show_item "Erlang"     "$erlang_ver"  "latest"
+    show_item "OCaml"      "$ocaml_ver"   "latest"
+    show_item "Fortran"    "$gfortran_ver" "latest"
+    show_item "D (LDC)"    "$dmd_ver"     "latest"
+    show_item "Nim"        "$nim_ver"     "latest"
+    show_item "Crystal"    "$crystal_ver" "latest"
+    show_item "V"          "$vlang_ver"   "latest"
+    show_item "Gleam"      "$gleam_ver"   "latest"
+    show_item "Solidity"   "$solc_ver"    "latest"
+    show_item "Groovy"     "$groovy_ver"  "latest"
+    show_item "Ada (GNAT)" "$gnat_ver"    "latest"
+    show_item "COBOL"      "$cobc_ver"    "latest"
+    show_item "Lisp (SBCL)" "$sbcl_ver"  "latest"
+    show_item "Racket"     "$racket_ver"  "latest"
+    show_item "Obj-C"      "$objc_ver"    "latest"
+    echo ""
+
+    echo -e "  ${BOLD}${CYAN}IDEs and Editors:${NC}"
+    show_item "VS Code"      "$code_ver"        "latest"
+    show_item "VSCodium"     "$codium_ver"      "latest"
+    show_item "Antigravity"  "$antigravity_ver" "latest"
+    show_item "Cursor"       "$cursor_ver"      "latest"
+    show_item "Zed"          "$zed_ver"         "latest"
+    show_item "Windsurf"     "$windsurf_ver"    "latest"
+    show_item "Sublime"      "$sublime_ver"     "latest"
+    show_item "Vim"          "$vim_ver"         "latest"
+    show_item "Neovim"       "$nvim_ver"        "latest"
+    show_item "GNU Emacs"    "$emacs_ver"       "latest"
+    show_item "IntelliJ"     "$idea_ver"        "latest"
+    show_item "PyCharm"      "$pycharm_ver"     "latest"
+    show_item "WebStorm"     "$webstorm_ver"    "latest"
+    show_item "GoLand"       "$goland_ver"      "latest"
+    show_item "CLion"        "$clion_ver"       "latest"
+    show_item "Rider"        "$rider_ver"       "latest"
+    show_item "RustRover"    "$rustrover_ver"   "latest"
+    show_item "Fleet"        "$fleet_ver"       "latest"
+    show_item "Eclipse"      "$eclipse_ver"     "latest"
+    show_item "NetBeans"     "$netbeans_ver"    "latest"
+    show_item "Android St."  "$android_ver"     "latest"
+    show_item "Notepad++"    "$notepadpp_ver"   "latest"
+    echo ""
+
+    echo -e "  ${BOLD}${CYAN}Developer Tools:${NC}"
+    show_item "Git"        "$git_ver"    "${LATEST[git]}"
+    show_item "Docker"     "$docker_ver" "${LATEST[docker]}"
+    show_item "CMake"      "$cmake_ver"  "${LATEST[cmake]}"
+    show_item "GitHub CLI" "$gh_ver"     "${LATEST[gh]}"
+    echo ""
+
+    echo -e "  ${BOLD}${CYAN}Package Managers:${NC}"
+    show_item "npm"        "$npm_ver"    "${LATEST[npm]}"
+    show_item "Yarn"       "$yarn_ver"   "${LATEST[yarn]}"
+    show_item "pnpm"       "$pnpm_ver"   "${LATEST[pnpm]}"
+    show_item "Bun"        "$bun_ver"    "${LATEST[bun]}"
+    show_item "uv"         "$uv_ver"     "${LATEST[uv]}"
+    show_item "Poetry"     "$poetry_ver" "${LATEST[poetry]}"
+    show_item "Conda"      "$conda_ver"  "${LATEST[conda]}"
+    show_item "Terraform"  "$terraform_ver" "${LATEST[terraform]}"
+    show_item "kubectl"    "$kubectl_ver" "${LATEST[kubectl]}"
+    show_item "Helm"       "$helm_ver"   "${LATEST[helm]}"
+    echo ""
+
+    # Count stats
+    local installed_count=0 update_count=0 missing_count=0
+    for v in "$py_ver" "$node_ver" "$java_ver" "$dotnet_ver" "$gcc_ver" "$go_ver" "$rust_ver" "$php_ver" "$ruby_ver" "$git_ver" "$docker_ver" "$code_ver" "$npm_ver"; do
+        if [[ -n "$v" ]]; then
+            ((installed_count++))
+        else
+            ((missing_count++))
+        fi
+    done
+
+    echo -e "  ${BOLD}────────────────────────────────────────${NC}"
+    echo -e "  ${GREEN}✓ ${installed_count} installed${NC}  ${GRAY}|${NC}  ${GRAY}— ${missing_count} not found${NC}"
+    echo ""
+
+    # Offer auto-upgrade
+    read -rp "  Continue to profile selection? (Y/n): " scan_choice
+    [[ "$scan_choice" == "n" || "$scan_choice" == "N" ]] && { info "Exited."; exit 0; }
+    echo ""
+}
 main() {
     print_banner
     echo "CodeReady v2 Install Log - $(date)" > "$LOG_FILE"
@@ -664,14 +1377,23 @@ main() {
     detect_os
 
     section "Package Manager Setup"
-    if [[ "$OS_TYPE" == "macos" ]]; then ensure_brew; else update_pkg; fi
+    if [[ "$OS_TYPE" == "macos" ]]; then
+        ensure_brew
+        ensure_macports
+        ensure_nix
+    else
+        update_pkg
+    fi
+
+    # System scan - show what's installed
+    system_scan
 
     # Language, IDE, Tool keys
-    local LANG_KEYS=("python" "nodejs" "java" "csharp" "cpp" "go" "rust" "php" "ruby" "kotlin" "dart" "swift" "zig" "mojo" "wasm" "typescript" "elixir" "scala" "julia")
-    local LANG_LABELS=("Python - General purpose, AI/ML" "Node.js - JavaScript/TypeScript runtime" "Java (JDK) - Enterprise, Android" "C# / .NET SDK - Microsoft ecosystem" "C/C++ - Systems programming" "Go - Cloud, microservices" "Rust - Memory safety, systems" "PHP - Web, CMS" "Ruby - Web, scripting" "Kotlin - Android, JVM" "Dart/Flutter - Mobile, web UI" "Swift - Apple ecosystem" "Zig - Next-gen systems, C interop" "Mojo - AI/GPU programming" "WebAssembly (WASI) - Portable binary" "TypeScript - Typed JavaScript" "Elixir - Functional, concurrent" "Scala - JVM functional/OOP" "Julia - Scientific computing, high-performance")
+    local LANG_KEYS=("python" "nodejs" "java" "csharp" "cpp" "go" "rust" "php" "ruby" "kotlin" "dart" "swift" "zig" "mojo" "wasm" "typescript" "elixir" "scala" "julia" "r" "lua" "haskell" "perl" "erlang" "ocaml" "fortran" "d" "nim" "crystal" "v" "gleam" "carbon" "solidity" "groovy" "ada" "cobol" "lisp" "racket" "objc")
+    local LANG_LABELS=("Python - General purpose, AI/ML" "Node.js - JavaScript/TypeScript runtime" "Java (JDK) - Enterprise, Android" "C# / .NET SDK - Microsoft ecosystem" "C/C++ - Systems programming" "Go - Cloud, microservices" "Rust - Memory safety, systems" "PHP - Web, CMS" "Ruby - Web, scripting" "Kotlin - Android, JVM" "Dart/Flutter - Mobile, web UI" "Swift - Apple ecosystem" "Zig - Next-gen systems, C interop" "Mojo - AI/GPU programming" "WebAssembly (WASI) - Portable binary" "TypeScript - Typed JavaScript" "Elixir - Functional, concurrent" "Scala - JVM functional/OOP" "Julia - Scientific computing" "R - Statistics, data science" "Lua - Scripting, game engines" "Haskell - Pure functional, fintech" "Perl - Text processing, sysadmin" "Erlang - Telecom, distributed systems" "OCaml - Fintech, compilers" "Fortran - Scientific computing, HPC" "D - Systems programming, C++ alt" "Nim - Python-like syntax, compiled" "Crystal - Ruby-like, compiled" "V - Simple systems language" "Gleam - Type-safe BEAM language" "Carbon - Experimental C++ successor" "Solidity - Ethereum smart contracts" "Groovy - JVM scripting, Gradle" "Ada - Safety-critical systems" "COBOL - Banking, legacy systems" "Common Lisp (SBCL) - AI, macros" "Racket - PL research, education" "Objective-C - Legacy Apple dev")
 
-    local IDE_KEYS=("vscode" "intellij" "pycharm" "webstorm" "goland" "clion" "rider" "rustrover" "eclipse" "android" "sublime" "vim" "cursor" "windsurf" "zed")
-    local IDE_LABELS=("VS Code - Lightweight, extensible" "IntelliJ IDEA Community - Java, Kotlin" "PyCharm Community - Python IDE" "WebStorm - JS/TS IDE (paid)" "GoLand - Go IDE (paid)" "CLion - C/C++ IDE (paid)" "Rider - .NET IDE (paid)" "RustRover - Rust IDE" "Eclipse IDE - Java, multi-language" "Android Studio - Android dev" "Sublime Text - Fast editor" "Neovim - Terminal editor" "Cursor - AI-powered editor" "Windsurf - AI-powered IDE" "Zed - High-performance editor")
+    local IDE_KEYS=("vscode" "vscodium" "antigravity" "cursor" "zed" "windsurf" "sublime" "classicvim" "vim" "emacs" "notepadpp" "intellij" "pycharm" "webstorm" "goland" "clion" "rider" "rustrover" "fleet" "eclipse" "netbeans" "android")
+    local IDE_LABELS=("VS Code - Lightweight, extensible" "VSCodium - VS Code without telemetry" "Antigravity - AI-native code editor" "Cursor - AI-powered code editor" "Zed - High-performance editor" "Windsurf - AI-powered IDE" "Sublime Text - Fast, lightweight" "Vim - Classic terminal editor" "Neovim - Modern terminal editor" "GNU Emacs - Extensible text editor" "Notepad++ - Windows code editor" "IntelliJ IDEA Community - Java, Kotlin" "PyCharm Community - Python IDE" "WebStorm - JS/TS IDE (paid)" "GoLand - Go IDE (paid)" "CLion - C/C++ IDE (paid)" "Rider - .NET IDE (paid)" "RustRover - Rust IDE" "JetBrains Fleet - Lightweight multi-lang" "Eclipse IDE - Java, multi-language" "Apache NetBeans - Java, PHP, HTML5" "Android Studio - Android development")
 
     local TOOL_KEYS=("git" "docker" "postman" "cmake" "gh" "pyenv")
     local TOOL_LABELS=("Git - Version control" "Docker - Containers" "Postman - API testing" "CMake - Build system" "GitHub CLI - GitHub from terminal" "pyenv - Python version manager")
@@ -698,15 +1420,23 @@ main() {
 
     for pc in $profile; do
         case "$pc" in
-            1) add_unique sel_langs "nodejs" "python" "php" "typescript"; add_unique sel_ides "vscode" "sublime"; add_unique sel_tools "git" "docker" "postman"; add_unique sel_fws "yarn" "pnpm" "vite" "react" "tailwind" "express" ;;
-            2) add_unique sel_langs "java" "kotlin" "dart"; add_unique sel_ides "android" "vscode"; add_unique sel_tools "git"; add_unique sel_fws "reactnative" "expo" ;;
-            3) add_unique sel_langs "python" "julia" "mojo"; add_unique sel_ides "vscode" "pycharm"; add_unique sel_tools "git" "docker"; add_unique sel_fws "venvstudio" "uv" "conda" "streamlit" "fastapi" ;;
-            4) add_unique sel_langs "cpp" "rust" "zig" "go"; add_unique sel_ides "vscode" "clion" "vim"; add_unique sel_tools "git" "cmake"; add_unique sel_fws "cargo-watch" "wasm-pack" ;;
-            5) add_unique sel_langs "csharp" "nodejs" "typescript"; add_unique sel_ides "vscode" "rider"; add_unique sel_tools "git" "docker" "postman"; add_unique sel_fws "yarn" "vite" "react" "nextjs" ;;
-            6) add_unique sel_langs "cpp" "csharp"; add_unique sel_ides "vscode" "rider"; add_unique sel_tools "git" "cmake" ;;
-            7) add_unique sel_langs "python" "julia" "mojo" "rust"; add_unique sel_ides "vscode" "pycharm" "cursor"; add_unique sel_tools "git" "docker"; add_unique sel_fws "venvstudio" "uv" "conda" "streamlit" "fastapi" ;;
-            8) is_custom=1 ;;
-            9) is_all=1 ;;
+            1)  add_unique sel_langs "nodejs" "typescript"; add_unique sel_ides "vscode" "zed"; add_unique sel_tools "git"; add_unique sel_fws "yarn" "pnpm" "vite" "react" "vue" "tailwind" ;;
+            2)  add_unique sel_langs "nodejs" "python" "typescript" "php"; add_unique sel_ides "vscode" "sublime"; add_unique sel_tools "git" "docker" "postman"; add_unique sel_fws "yarn" "pnpm" "vite" "react" "nextjs" "express" "django" "tailwind" ;;
+            3)  add_unique sel_langs "java" "kotlin" "dart" "swift"; add_unique sel_ides "android" "vscode"; add_unique sel_tools "git"; add_unique sel_fws "reactnative" "expo" ;;
+            4)  add_unique sel_langs "python" "r" "julia"; add_unique sel_ides "vscode" "pycharm"; add_unique sel_tools "git" "docker"; add_unique sel_fws "venvstudio" "uv" "conda" "streamlit" "fastapi" ;;
+            5)  add_unique sel_langs "python" "mojo" "rust" "julia"; add_unique sel_ides "vscode" "pycharm" "cursor"; add_unique sel_tools "git" "docker"; add_unique sel_fws "venvstudio" "uv" "conda" "streamlit" "fastapi" ;;
+            6)  add_unique sel_langs "cpp" "rust" "zig" "go"; add_unique sel_ides "vscode" "clion" "vim"; add_unique sel_tools "git" "cmake"; add_unique sel_fws "cargo-watch" "wasm-pack" ;;
+            7)  add_unique sel_langs "csharp" "nodejs" "typescript"; add_unique sel_ides "vs2026" "vscode" "rider"; add_unique sel_tools "git" "docker" "postman"; add_unique sel_fws "yarn" "vite" "react" "nextjs" "blazor" ;;
+            8)  add_unique sel_langs "cpp" "csharp" "lua"; add_unique sel_ides "vs2026" "vscode" "rider"; add_unique sel_tools "git" "cmake" ;;
+            9)  add_unique sel_langs "python" "go" "rust"; add_unique sel_ides "vscode" "vim"; add_unique sel_tools "git" "docker"; add_unique sel_fws "terraform" "kubectl" "helm" ;;
+            10) add_unique sel_langs "solidity" "rust" "typescript" "nodejs"; add_unique sel_ides "vscode" "cursor"; add_unique sel_tools "git"; add_unique sel_fws "npm" "yarn" ;;
+            11) add_unique sel_langs "cpp" "rust" "python" "lua"; add_unique sel_ides "vscode" "clion" "vim"; add_unique sel_tools "git" "cmake" ;;
+            12) add_unique sel_langs "fortran" "python" "r" "julia" "haskell"; add_unique sel_ides "vscode" "emacs"; add_unique sel_tools "git"; add_unique sel_fws "venvstudio" "uv" "conda" ;;
+            13) add_unique sel_langs "haskell" "elixir" "erlang" "ocaml" "scala" "gleam"; add_unique sel_ides "vscode" "emacs" "vim"; add_unique sel_tools "git" ;;
+            14) add_unique sel_langs "java" "kotlin" "scala" "groovy"; add_unique sel_ides "intellij" "eclipse" "netbeans"; add_unique sel_tools "git" "docker" ;;
+            15) add_unique sel_langs "go" "rust" "python"; add_unique sel_ides "vim" "classicvim" "emacs"; add_unique sel_tools "git" ;;
+            16) is_custom=1 ;;
+            17) is_all=1 ;;
         esac
     done
 
@@ -717,8 +1447,8 @@ main() {
         echo -e "  ${RED}============================================================${NC}"
         echo ""
         echo -e "  ${YELLOW}This includes:${NC}"
-        echo -e "    - 18 programming languages and runtimes"
-        echo -e "    - 17 IDEs and editors"
+        echo -e "    - 39 programming languages and runtimes"
+        echo -e "    - 23 IDEs and editors"
         echo -e "    - 9 developer tools"
         echo -e "    - 38 frameworks, libraries and package managers"
         echo ""
@@ -828,6 +1558,26 @@ main() {
             elixir)     install_elixir ;;
             scala)      install_scala ;;
             julia)      install_julia ;;
+            r)          install_r ;;
+            lua)        install_lua ;;
+            haskell)    install_haskell ;;
+            perl)       install_perl ;;
+            erlang)     install_erlang ;;
+            ocaml)      install_ocaml ;;
+            fortran)    install_fortran ;;
+            d)          install_d ;;
+            nim)        install_nim ;;
+            crystal)    install_crystal ;;
+            v)          install_v ;;
+            gleam)      install_gleam ;;
+            carbon)     install_carbon ;;
+            solidity)   install_solidity ;;
+            groovy)     install_groovy ;;
+            ada)        install_ada ;;
+            cobol)      install_cobol ;;
+            lisp)       install_lisp ;;
+            racket)     install_racket ;;
+            objc)       install_objc ;;
             julia)
                 local julv=("1.12" "1.10")
                 local juli; juli=$(version_menu "Julia" "Julia 1.12 (Latest)" "Julia 1.10 (LTS)")
@@ -864,7 +1614,22 @@ main() {
     echo -e "  ${CYAN}Total: ${#INSTALLED[@]} succeeded, ${#FAILED[@]} failed${NC}"
     echo -e "  ${GRAY}Log: $LOG_FILE${NC}"
     echo ""
-    [[ ${#INSTALLED[@]} -gt 0 ]] && echo -e "  ${YELLOW}Restart your terminal for PATH changes.${NC}"
+    if [[ ${#INSTALLED[@]} -gt 0 ]]; then
+        # Reload shell config so everything works immediately
+        echo ""
+        step "Reloading shell configuration..."
+        [[ -f "$HOME/.bashrc" ]] && source "$HOME/.bashrc" 2>/dev/null
+        [[ -f "$HOME/.zshrc" ]] && source "$HOME/.zshrc" 2>/dev/null
+        [[ -f "$HOME/.profile" ]] && source "$HOME/.profile" 2>/dev/null
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" 2>/dev/null
+        [ -s "$HOME/.cargo/env" ] && . "$HOME/.cargo/env" 2>/dev/null
+        [ -s "$HOME/.sdkman/bin/sdkman-init.sh" ] && . "$HOME/.sdkman/bin/sdkman-init.sh" 2>/dev/null
+        export PATH="$HOME/.local/bin:$PATH"
+        ok "Shell configuration reloaded."
+        echo ""
+        echo -e "  ${YELLOW}If commands still not found, run: source ~/.bashrc${NC}"
+    fi
     echo ""
 }
 

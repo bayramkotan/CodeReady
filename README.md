@@ -1,8 +1,14 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/CodeReady-v2.1.0-00d4ff?style=for-the-badge&labelColor=0a0a0a" alt="Version" />
+  <img src="https://img.shields.io/badge/CodeReady-v2.1-00d4ff?style=for-the-badge&labelColor=0a0a0a" alt="Version" />
+  <img src="https://img.shields.io/badge/Languages-39-ff6b35?style=for-the-badge&labelColor=0a0a0a" alt="Languages" />
+  <img src="https://img.shields.io/badge/IDEs-23-06d6a0?style=for-the-badge&labelColor=0a0a0a" alt="IDEs" />
+  <img src="https://img.shields.io/badge/Frameworks-38+-7b2fbe?style=for-the-badge&labelColor=0a0a0a" alt="Frameworks" />
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white" alt="Windows" />
-  <img src="https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Linux" />
   <img src="https://img.shields.io/badge/macOS-000000?style=for-the-badge&logo=apple&logoColor=white" alt="macOS" />
+  <img src="https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Linux" />
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License" />
 </p>
 
@@ -16,10 +22,11 @@
 <p align="center">
   <a href="#-quick-start">Quick Start</a> &bull;
   <a href="#-system-scan">System Scan</a> &bull;
-  <a href="#-features">Features</a> &bull;
-  <a href="#-supported-software">Supported Software</a> &bull;
+  <a href="#-languages">Languages</a> &bull;
+  <a href="#-ides--editors">IDEs</a> &bull;
+  <a href="#-frameworks--tools">Frameworks</a> &bull;
   <a href="#-profiles">Profiles</a> &bull;
-  <a href="#-how-it-works">How It Works</a>
+  <a href="#%EF%B8%8F-package-managers">Package Managers</a>
 </p>
 
 ---
@@ -28,18 +35,19 @@
 
 Setting up a new development machine is painful. You spend hours downloading compilers, configuring IDEs, installing package managers, and getting frameworks working. **CodeReady automates all of it** with a single interactive script.
 
-- **System scan first** — detects what's already installed and shows upgrade recommendations
+- **System scan first** — detects what's already installed, skips what you have, suggests upgrades
 - **Version selection** — choose between multiple versions for each language (latest, LTS, older)
-- **Multi-profile support** — combine Web Dev + Data Science + AI/ML in one go
-- **Cross-platform** — same experience on Windows, macOS, and Linux
-- **82+ packages** — languages, IDEs, tools, frameworks, all in one place
-- **Auto shell reload** — installed tools work immediately, no terminal restart needed
+- **15 profiles** — Web, Mobile, AI/ML, DevOps, Blockchain, Scientific, Functional, and more
+- **Multi-profile** — combine profiles: `1 5 9` = Web Frontend + AI/ML + DevOps
+- **Cross-platform** — Windows, macOS, Linux with the same experience
+- **Safe installs** — failed installs auto-cleanup, never leaves broken repos on your system
+- **109+ packages** — languages, IDEs, tools, frameworks, all in one place
 
 ---
 
 ## System Scan
 
-CodeReady scans your system **before** installing anything. It detects every language, IDE, tool, and package manager already on your machine, compares versions, and shows you exactly what's outdated.
+CodeReady scans your system **before** installing anything. It detects every language, IDE, tool, and package manager already on your machine, and shows you what's outdated.
 
 ```
 === System Scan ===
@@ -49,29 +57,22 @@ CodeReady scans your system **before** installing anything. It detects every lan
     Python            3.x.x       ⬆ upgrade available
     Node.js           2x.x.x      ✓ up to date
     Java (JDK)        —  not installed
-    Go                1.x.x       ⬆ upgrade available
     Rust              1.x.x       ✓
     ...
 
   IDEs and Editors:
     VS Code           x.xx        ✓
-    Neovim            —  not installed
-
-  Developer Tools:
-    Git               x.xx.x      ✓
-    Docker            —  not installed
-
-  Package Managers:
-    npm               x.x.x       ✓
-    uv                —  not installed
+    Neovim            0.x.x       ✓
+    Cursor            —  not installed
+    ...
 
   ────────────────────────────────────────
-  ✓ 8 installed  |  — 5 not found
+  ✓ 12 installed  |  — 8 not found
 
   Continue to profile selection? (Y/n):
 ```
 
-After the scan, you proceed to profile selection where CodeReady installs only what's missing or outdated.
+Already installed? **Skipped.** No redundant re-installs.
 
 ---
 
@@ -96,188 +97,253 @@ chmod +x codeready.sh
 
 ---
 
-## Features
+## Languages
 
-| Feature | Description |
-|---------|-------------|
-| **System Scan** | Detects installed software and versions before installing anything |
-| **Upgrade Detection** | Compares your versions with latest — shows what needs updating |
-| **Interactive Menus** | Number-based selection with multi-select support |
-| **Version Selection** | Pick specific versions for each language (latest, LTS, or older) |
-| **8 Quick Profiles** | Pre-configured setups for common developer roles |
-| **Multi-Profile** | Select `1 3 7` to combine Web Dev + Data Science + AI/ML |
-| **Install Everything** | Option 9 installs all 82+ packages (with safety warnings) |
-| **Smart Deduplication** | Combining profiles never installs the same package twice |
-| **Auto Package Manager** | Detects and installs winget/Chocolatey (Win) or Homebrew/apt/dnf/pacman (Unix) |
-| **Auto Shell Reload** | Sources `.bashrc`/`.zshrc` after install — tools work immediately |
-| **Failure Resilience** | Failed installs don't block remaining items |
-| **Installation Log** | Full log saved to `~/codeready_install.log` |
-| **Pure ASCII** | No encoding issues on any terminal or locale |
+**39 programming languages and runtimes** across every major paradigm.
+
+### Mainstream
+
+<p>
+  <img src="https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white" />
+  <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black" />
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" />
+  <img src="https://img.shields.io/badge/Java-ED8B00?style=flat-square&logo=openjdk&logoColor=white" />
+  <img src="https://img.shields.io/badge/C%23-512BD4?style=flat-square&logo=csharp&logoColor=white" />
+  <img src="https://img.shields.io/badge/C%2B%2B-00599C?style=flat-square&logo=cplusplus&logoColor=white" />
+  <img src="https://img.shields.io/badge/C-A8B9CC?style=flat-square&logo=c&logoColor=black" />
+  <img src="https://img.shields.io/badge/Go-00ADD8?style=flat-square&logo=go&logoColor=white" />
+  <img src="https://img.shields.io/badge/Rust-000000?style=flat-square&logo=rust&logoColor=white" />
+  <img src="https://img.shields.io/badge/PHP-777BB4?style=flat-square&logo=php&logoColor=white" />
+  <img src="https://img.shields.io/badge/Ruby-CC342D?style=flat-square&logo=ruby&logoColor=white" />
+  <img src="https://img.shields.io/badge/Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white" />
+  <img src="https://img.shields.io/badge/Swift-F05138?style=flat-square&logo=swift&logoColor=white" />
+  <img src="https://img.shields.io/badge/Dart-0175C2?style=flat-square&logo=dart&logoColor=white" />
+  <img src="https://img.shields.io/badge/Flutter-02569B?style=flat-square&logo=flutter&logoColor=white" />
+</p>
+
+### Scientific & Data
+
+<p>
+  <img src="https://img.shields.io/badge/R-276DC3?style=flat-square&logo=r&logoColor=white" />
+  <img src="https://img.shields.io/badge/Julia-9558B2?style=flat-square&logo=julia&logoColor=white" />
+  <img src="https://img.shields.io/badge/Fortran-734F96?style=flat-square&logo=fortran&logoColor=white" />
+  <img src="https://img.shields.io/badge/Haskell-5D4F85?style=flat-square&logo=haskell&logoColor=white" />
+  <img src="https://img.shields.io/badge/Mojo-FF7000?style=flat-square&logoColor=white" />
+</p>
+
+### Functional & Concurrent
+
+<p>
+  <img src="https://img.shields.io/badge/Elixir-4B275F?style=flat-square&logo=elixir&logoColor=white" />
+  <img src="https://img.shields.io/badge/Erlang-A90533?style=flat-square&logo=erlang&logoColor=white" />
+  <img src="https://img.shields.io/badge/Scala-DC322F?style=flat-square&logo=scala&logoColor=white" />
+  <img src="https://img.shields.io/badge/OCaml-EC6813?style=flat-square&logo=ocaml&logoColor=white" />
+  <img src="https://img.shields.io/badge/Common_Lisp-3FB68B?style=flat-square" />
+  <img src="https://img.shields.io/badge/Racket-9F1D20?style=flat-square" />
+  <img src="https://img.shields.io/badge/Gleam-FFAFF3?style=flat-square&logoColor=black" />
+</p>
+
+### Systems & Next-Gen
+
+<p>
+  <img src="https://img.shields.io/badge/Zig-F7A41D?style=flat-square&logo=zig&logoColor=black" />
+  <img src="https://img.shields.io/badge/Nim-FFE953?style=flat-square&logo=nim&logoColor=black" />
+  <img src="https://img.shields.io/badge/Crystal-000000?style=flat-square&logo=crystal&logoColor=white" />
+  <img src="https://img.shields.io/badge/V-5D87BF?style=flat-square" />
+  <img src="https://img.shields.io/badge/D-B03931?style=flat-square&logo=d&logoColor=white" />
+  <img src="https://img.shields.io/badge/Carbon-0078D4?style=flat-square" />
+  <img src="https://img.shields.io/badge/Ada-02f88c?style=flat-square" />
+  <img src="https://img.shields.io/badge/WebAssembly-654FF0?style=flat-square&logo=webassembly&logoColor=white" />
+</p>
+
+### Scripting & Legacy
+
+<p>
+  <img src="https://img.shields.io/badge/Lua-2C2D72?style=flat-square&logo=lua&logoColor=white" />
+  <img src="https://img.shields.io/badge/Perl-39457E?style=flat-square&logo=perl&logoColor=white" />
+  <img src="https://img.shields.io/badge/Groovy-4298B8?style=flat-square&logo=apachegroovy&logoColor=white" />
+  <img src="https://img.shields.io/badge/Solidity-363636?style=flat-square&logo=solidity&logoColor=white" />
+  <img src="https://img.shields.io/badge/COBOL-005CA5?style=flat-square" />
+  <img src="https://img.shields.io/badge/Objective--C-438EFF?style=flat-square" />
+</p>
+
+> **Version selection** is available for Python, Node.js, Java, .NET, Go, PHP, Ruby, Zig, and Julia. Other languages install the latest stable release.
 
 ---
 
-## Supported Software
+## IDEs & Editors
 
-### Programming Languages and Runtimes — 18 languages
+**23 editors and IDEs** — from AI-powered to classic terminal editors.
 
-| Language | Version Selection | Win | Mac | Linux | Notes |
-|----------|-------------------|:---:|:---:|:-----:|-------|
-| **Python** | Multiple versions (latest + older) | ✅ | ✅ | ✅ | Via system pkg or official installer |
-| **Node.js** | LTS + Current versions | ✅ | ✅ | ✅ | Via nvm (preferred) |
-| **Java (JDK)** | Latest + LTS versions | ✅ | ✅ | ✅ | Eclipse Temurin / OpenJDK |
-| **C# / .NET** | Latest + LTS versions | ✅ | ✅ | ✅ | Microsoft .NET SDK |
-| **C / C++** | GCC, Clang/LLVM, MSVC | ✅ | ✅ | ✅ | MinGW on Windows |
-| **Go** | Multiple recent versions | ✅ | ✅ | ✅ | Official binary |
-| **Rust** | Always latest via rustup | ✅ | ✅ | ✅ | Managed by rustup |
-| **PHP** | Multiple recent versions | ✅ | ✅ | ✅ | Includes Composer |
-| **Ruby** | Multiple recent versions | ✅ | ✅ | ✅ | |
-| **Kotlin** | Latest | ✅ | ✅ | ✅ | Via SDKMAN or snap |
-| **Dart / Flutter** | Latest | ✅ | ✅ | ✅ | Flutter includes Dart |
-| **Swift** | Latest | ✅ | ✅ | ⚠️ | macOS via Xcode, Linux partial |
-| **Zig** | Multiple recent versions | ✅ | ✅ | ✅ | Next-gen systems language |
-| **Mojo** | Latest | WSL | ✅ | ✅ | AI/GPU programming by Modular |
-| **WebAssembly** | Wasmtime / Wasmer | ✅ | ✅ | ✅ | WASI runtimes |
-| **TypeScript** | Latest (via npm) | ✅ | ✅ | ✅ | Requires Node.js |
-| **Elixir** | Latest | ✅ | ✅ | ✅ | Functional, concurrent |
-| **Scala** | Latest | ✅ | ✅ | ✅ | JVM functional/OOP |
+### AI-Powered & Modern
 
-> **Version selection** is available for Python, Node.js, Java, .NET, Go, PHP, Ruby, and Zig. You pick your preferred version during setup. Other languages install the latest stable release.
+<p>
+  <img src="https://img.shields.io/badge/VS_Code-007ACC?style=flat-square&logo=visualstudiocode&logoColor=white" />
+  <img src="https://img.shields.io/badge/VSCodium-2F80ED?style=flat-square&logo=vscodium&logoColor=white" />
+  <img src="https://img.shields.io/badge/Cursor-000000?style=flat-square&logoColor=white" />
+  <img src="https://img.shields.io/badge/Windsurf-09B6A2?style=flat-square" />
+  <img src="https://img.shields.io/badge/Antigravity-FF4500?style=flat-square" />
+  <img src="https://img.shields.io/badge/Zed-084CCF?style=flat-square" />
+</p>
 
-### IDEs and Editors — 17 editors
+### JetBrains Suite
 
-| IDE | License | Win | Mac | Linux |
-|-----|---------|:---:|:---:|:-----:|
-| **VS Code** | Free | ✅ | ✅ | ✅ |
-| **Visual Studio** Community | Free | ✅ | — | — |
-| **IntelliJ IDEA** Community | Free | ✅ | ✅ | ✅ |
-| **PyCharm** Community | Free | ✅ | ✅ | ✅ |
-| **WebStorm** | Paid | ✅ | ✅ | ✅ |
-| **GoLand** | Paid | ✅ | ✅ | ✅ |
-| **CLion** | Paid | ✅ | ✅ | ✅ |
-| **Rider** | Paid | ✅ | ✅ | ✅ |
-| **RustRover** | Free | ✅ | ✅ | ✅ |
-| **Eclipse IDE** | Free | ✅ | ✅ | ✅ |
-| **Android Studio** | Free | ✅ | ✅ | ✅ |
-| **Sublime Text** | Freemium | ✅ | ✅ | ✅ |
-| **Neovim** | Free | ✅ | ✅ | ✅ |
-| **Notepad++** | Free | ✅ | — | — |
-| **Cursor** | Freemium | ✅ | ✅ | ✅ |
-| **Windsurf** | Free | ✅ | ✅ | ✅ |
-| **Zed** | Free | ✅ | ✅ | ✅ |
+<p>
+  <img src="https://img.shields.io/badge/IntelliJ_IDEA-000000?style=flat-square&logo=intellijidea&logoColor=white" />
+  <img src="https://img.shields.io/badge/PyCharm-000000?style=flat-square&logo=pycharm&logoColor=white" />
+  <img src="https://img.shields.io/badge/WebStorm-000000?style=flat-square&logo=webstorm&logoColor=white" />
+  <img src="https://img.shields.io/badge/GoLand-000000?style=flat-square&logo=goland&logoColor=white" />
+  <img src="https://img.shields.io/badge/CLion-000000?style=flat-square&logo=clion&logoColor=white" />
+  <img src="https://img.shields.io/badge/Rider-000000?style=flat-square&logo=rider&logoColor=white" />
+  <img src="https://img.shields.io/badge/RustRover-000000?style=flat-square" />
+  <img src="https://img.shields.io/badge/Fleet-000000?style=flat-square" />
+</p>
 
-### Developer Tools — 9 tools
+### Classic & Terminal
 
-| Tool | Description |
-|------|-------------|
-| **Git** | Distributed version control |
-| **Docker Desktop** | Container platform |
-| **Postman** | API testing and development |
-| **CMake** | Cross-platform build system |
-| **GitHub CLI** | GitHub from the command line |
-| **NVM** | Node.js version manager |
-| **pyenv** | Python version manager |
-| **WSL 2** | Linux subsystem for Windows |
-| **Windows Terminal** | Modern terminal app |
+<p>
+  <img src="https://img.shields.io/badge/Visual_Studio-5C2D91?style=flat-square&logo=visualstudio&logoColor=white" />
+  <img src="https://img.shields.io/badge/Sublime_Text-FF9800?style=flat-square&logo=sublimetext&logoColor=white" />
+  <img src="https://img.shields.io/badge/Vim-019733?style=flat-square&logo=vim&logoColor=white" />
+  <img src="https://img.shields.io/badge/Neovim-57A143?style=flat-square&logo=neovim&logoColor=white" />
+  <img src="https://img.shields.io/badge/GNU_Emacs-7F5AB6?style=flat-square&logo=gnuemacs&logoColor=white" />
+  <img src="https://img.shields.io/badge/Notepad++-90E59A?style=flat-square&logo=notepadplusplus&logoColor=black" />
+  <img src="https://img.shields.io/badge/Eclipse-2C2255?style=flat-square&logo=eclipseide&logoColor=white" />
+  <img src="https://img.shields.io/badge/NetBeans-1B6AC6?style=flat-square&logo=apachenetbeans&logoColor=white" />
+  <img src="https://img.shields.io/badge/Android_Studio-3DDC84?style=flat-square&logo=androidstudio&logoColor=white" />
+</p>
 
-### Frameworks, Libraries and Package Managers — 38 items
+---
 
-#### Package Managers
+## Frameworks & Tools
 
-| Name | Ecosystem | Description |
-|------|-----------|-------------|
-| [**VenvStudio**](https://github.com/bayramkotan/VenvStudio) | Python | GUI virtual environment manager with modern PySide6 interface |
-| **uv** | Python | Ultra-fast package manager written in Rust by Astral |
-| **Poetry** | Python | Dependency management and packaging |
-| **pipx** | Python | Install CLI tools in isolated environments |
-| **Miniconda** | Python/R | Data science package and environment manager |
-| **npm** | Node.js | Default Node.js package manager |
-| **Yarn** | Node.js | Fast, reliable package manager |
-| **pnpm** | Node.js | Disk-efficient package manager |
-| **Bun** | Node.js | Ultra-fast JavaScript runtime and package manager |
+**38+ frameworks, libraries, and package managers** — currently installed, with [many more planned](codeready_todo.md).
 
-#### Web Frameworks — Frontend
+### Package Managers
 
-| Name | Language | Description |
-|------|----------|-------------|
-| **React** | JS/TS | Facebook UI library (create-react-app) |
-| **Next.js** | JS/TS | React fullstack framework with SSR/SSG |
-| **Vue CLI** | JS/TS | Progressive JavaScript framework |
-| **Nuxt** | JS/TS | Vue fullstack framework |
-| **Angular CLI** | TS | Google enterprise web framework |
-| **SvelteKit** | JS/TS | Lightweight compiled reactive framework |
-| **Vite** | JS/TS | Next-generation frontend build tool |
-| **Astro** | JS/TS | Content-focused web framework |
+<p>
+  <img src="https://img.shields.io/badge/npm-CB3837?style=flat-square&logo=npm&logoColor=white" />
+  <img src="https://img.shields.io/badge/Yarn-2C8EBB?style=flat-square&logo=yarn&logoColor=white" />
+  <img src="https://img.shields.io/badge/pnpm-F69220?style=flat-square&logo=pnpm&logoColor=white" />
+  <img src="https://img.shields.io/badge/Bun-000000?style=flat-square&logo=bun&logoColor=white" />
+  <a href="https://github.com/bayramkotan/VenvStudio"><img src="https://img.shields.io/badge/VenvStudio-4B8BBE?style=flat-square&logo=python&logoColor=white" /></a>
+  <img src="https://img.shields.io/badge/uv-DE5FE9?style=flat-square" />
+  <img src="https://img.shields.io/badge/Poetry-60A5FA?style=flat-square&logo=poetry&logoColor=white" />
+  <img src="https://img.shields.io/badge/Conda-44A833?style=flat-square&logo=anaconda&logoColor=white" />
+  <img src="https://img.shields.io/badge/pipx-2CFFAA?style=flat-square" />
+</p>
 
-#### Web Frameworks — Backend
+### Web Frameworks
 
-| Name | Language | Description |
-|------|----------|-------------|
-| **Express.js** | Node.js | Minimal and flexible web framework |
-| **NestJS** | Node.js/TS | Progressive server-side framework |
-| **Remix** | JS/TS | Full-stack web framework |
-| **Django** | Python | Batteries-included web framework |
-| **Flask** | Python | Lightweight WSGI web framework |
-| **FastAPI** | Python | Modern async API framework with auto-docs |
-| **Streamlit** | Python | Data app framework for ML/AI dashboards |
+<p>
+  <img src="https://img.shields.io/badge/React-61DAFB?style=flat-square&logo=react&logoColor=black" />
+  <img src="https://img.shields.io/badge/Next.js-000000?style=flat-square&logo=nextdotjs&logoColor=white" />
+  <img src="https://img.shields.io/badge/Vue-4FC08D?style=flat-square&logo=vuedotjs&logoColor=white" />
+  <img src="https://img.shields.io/badge/Nuxt-00DC82?style=flat-square&logo=nuxtdotjs&logoColor=black" />
+  <img src="https://img.shields.io/badge/Angular-DD0031?style=flat-square&logo=angular&logoColor=white" />
+  <img src="https://img.shields.io/badge/Svelte-FF3E00?style=flat-square&logo=svelte&logoColor=white" />
+  <img src="https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white" />
+  <img src="https://img.shields.io/badge/Astro-BC52EE?style=flat-square&logo=astro&logoColor=white" />
+  <img src="https://img.shields.io/badge/Remix-000000?style=flat-square&logo=remix&logoColor=white" />
+</p>
 
-#### CSS and UI Frameworks
+### Backend Frameworks
 
-| Name | Description |
-|------|-------------|
-| **Tailwind CSS** | Utility-first CSS framework |
-| **Bootstrap** | Popular responsive CSS framework |
+<p>
+  <img src="https://img.shields.io/badge/Express-000000?style=flat-square&logo=express&logoColor=white" />
+  <img src="https://img.shields.io/badge/NestJS-E0234E?style=flat-square&logo=nestjs&logoColor=white" />
+  <img src="https://img.shields.io/badge/Django-092E20?style=flat-square&logo=django&logoColor=white" />
+  <img src="https://img.shields.io/badge/Flask-000000?style=flat-square&logo=flask&logoColor=white" />
+  <img src="https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white" />
+  <img src="https://img.shields.io/badge/Streamlit-FF4B4B?style=flat-square&logo=streamlit&logoColor=white" />
+</p>
 
-#### Mobile and Cross-Platform
+### CSS, Mobile & Cross-Platform
 
-| Name | Description |
-|------|-------------|
-| **React Native CLI** | Cross-platform mobile apps with React |
-| **Expo CLI** | Managed React Native toolchain |
-| **Ionic CLI** | Hybrid mobile framework |
-| **Electron Forge** | Desktop apps with web technologies |
-| **Tauri CLI** | Lightweight desktop apps with Rust backend |
+<p>
+  <img src="https://img.shields.io/badge/Tailwind-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" />
+  <img src="https://img.shields.io/badge/Bootstrap-7952B3?style=flat-square&logo=bootstrap&logoColor=white" />
+  <img src="https://img.shields.io/badge/React_Native-61DAFB?style=flat-square&logo=react&logoColor=black" />
+  <img src="https://img.shields.io/badge/Expo-000020?style=flat-square&logo=expo&logoColor=white" />
+  <img src="https://img.shields.io/badge/Electron-47848F?style=flat-square&logo=electron&logoColor=white" />
+  <img src="https://img.shields.io/badge/Tauri-24C8D8?style=flat-square&logo=tauri&logoColor=white" />
+  <img src="https://img.shields.io/badge/Ionic-3880FF?style=flat-square&logo=ionic&logoColor=white" />
+</p>
 
-#### Language Ecosystems
+### DevOps & Infrastructure
 
-| Name | Ecosystem | Description |
-|------|-----------|-------------|
-| **cargo-watch** | Rust | Auto-rebuild on file changes |
-| **wasm-pack** | Rust/WASM | Build Rust-generated WebAssembly packages |
-| **Blazor** | .NET | C# web UI framework (included in .NET SDK) |
-| **.NET MAUI** | .NET | Cross-platform native UI framework |
+<p>
+  <img src="https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white" />
+  <img src="https://img.shields.io/badge/Terraform-7B42BC?style=flat-square&logo=terraform&logoColor=white" />
+  <img src="https://img.shields.io/badge/Kubernetes-326CE5?style=flat-square&logo=kubernetes&logoColor=white" />
+  <img src="https://img.shields.io/badge/Helm-0F1689?style=flat-square&logo=helm&logoColor=white" />
+  <img src="https://img.shields.io/badge/Git-F05032?style=flat-square&logo=git&logoColor=white" />
+  <img src="https://img.shields.io/badge/GitHub_CLI-181717?style=flat-square&logo=github&logoColor=white" />
+  <img src="https://img.shields.io/badge/CMake-064F8C?style=flat-square&logo=cmake&logoColor=white" />
+  <img src="https://img.shields.io/badge/Postman-FF6C37?style=flat-square&logo=postman&logoColor=white" />
+</p>
 
-#### DevOps and Infrastructure
+### Language Ecosystems
 
-| Name | Description |
-|------|-------------|
-| **Terraform** | Infrastructure as code by HashiCorp |
-| **kubectl** | Kubernetes command-line tool |
-| **Helm** | Kubernetes package manager |
+<p>
+  <img src="https://img.shields.io/badge/cargo--watch-000000?style=flat-square&logo=rust&logoColor=white" />
+  <img src="https://img.shields.io/badge/wasm--pack-654FF0?style=flat-square&logo=webassembly&logoColor=white" />
+  <img src="https://img.shields.io/badge/Blazor-512BD4?style=flat-square&logo=blazor&logoColor=white" />
+  <img src="https://img.shields.io/badge/.NET_MAUI-512BD4?style=flat-square&logo=dotnet&logoColor=white" />
+</p>
 
 ---
 
 ## Profiles
 
-CodeReady ships with **8 profiles** for common developer roles. You can select **one or multiple** profiles, or go fully custom.
+**15 profiles** for common developer roles. Select **one or multiple**, or go fully custom.
 
 ```
-Select profile(s): 1 3 7     <- combine multiple profiles
-Select profile(s): 9         <- install EVERYTHING (with safety warnings)
+Select profile(s): 2 5 9     <- combine Web Full Stack + AI/ML + DevOps
+Select profile(s): 17        <- install EVERYTHING (with safety warnings)
 ```
 
-| # | Profile | Languages | IDEs | Frameworks and Tools |
-|:-:|---------|-----------|------|--------------------|
-| **1** | **Web Developer** | Node.js, Python, PHP, TypeScript | VS Code, Sublime | Yarn, pnpm, Vite, React, Tailwind, Express |
-| **2** | **Mobile Developer** | Java, Kotlin, Dart/Flutter | Android Studio, VS Code | React Native, Expo |
-| **3** | **Data Scientist** | Python, Mojo | VS Code, PyCharm | VenvStudio, uv, Conda, Streamlit, FastAPI |
-| **4** | **Systems Programmer** | C/C++, Rust, Zig, Go | VS Code, CLion, Neovim | cargo-watch, wasm-pack |
-| **5** | **Full Stack .NET** | C#/.NET, Node.js, TypeScript | Visual Studio, VS Code | Yarn, Vite, React, Next.js |
-| **6** | **Game Developer** | C/C++, C# | Visual Studio, VS Code, Rider | CMake |
-| **7** | **AI / ML Engineer** | Python, Mojo, Rust | VS Code, PyCharm, Cursor | VenvStudio, uv, Conda, Streamlit, FastAPI |
-| **8** | **Custom Setup** | *You choose* | *You choose* | *You choose* |
-| **9** | **INSTALL EVERYTHING** | *All 18 languages* | *All 17 IDEs* | *All 38 frameworks* |
+### Popular Stacks
 
-> **Note:** Option 9 will warn you about estimated time (~45-90 min), disk usage (~30-50 GB), and system load before proceeding. Requires typing `YES` in uppercase to confirm.
+| # | Profile | What You Get |
+|:-:|---------|-------------|
+| **1** | **Web Frontend** | ![Node.js](https://img.shields.io/badge/-Node.js-339933?style=flat-square&logo=nodedotjs&logoColor=white) ![TypeScript](https://img.shields.io/badge/-TS-3178C6?style=flat-square&logo=typescript&logoColor=white) ![React](https://img.shields.io/badge/-React-61DAFB?style=flat-square&logo=react&logoColor=black) ![Vue](https://img.shields.io/badge/-Vue-4FC08D?style=flat-square&logo=vuedotjs&logoColor=white) ![Tailwind](https://img.shields.io/badge/-Tailwind-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white) ![Vite](https://img.shields.io/badge/-Vite-646CFF?style=flat-square&logo=vite&logoColor=white) |
+| **2** | **Web Full Stack** | ![Node.js](https://img.shields.io/badge/-Node.js-339933?style=flat-square&logo=nodedotjs&logoColor=white) ![Python](https://img.shields.io/badge/-Python-3776AB?style=flat-square&logo=python&logoColor=white) ![React](https://img.shields.io/badge/-React-61DAFB?style=flat-square&logo=react&logoColor=black) ![Next.js](https://img.shields.io/badge/-Next.js-000?style=flat-square&logo=nextdotjs&logoColor=white) ![Django](https://img.shields.io/badge/-Django-092E20?style=flat-square&logo=django&logoColor=white) ![Express](https://img.shields.io/badge/-Express-000?style=flat-square&logo=express&logoColor=white) |
+| **3** | **Mobile Developer** | ![Kotlin](https://img.shields.io/badge/-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white) ![Flutter](https://img.shields.io/badge/-Flutter-02569B?style=flat-square&logo=flutter&logoColor=white) ![Swift](https://img.shields.io/badge/-Swift-F05138?style=flat-square&logo=swift&logoColor=white) ![Android Studio](https://img.shields.io/badge/-Android_Studio-3DDC84?style=flat-square&logo=androidstudio&logoColor=white) |
+| **4** | **Data Scientist** | ![Python](https://img.shields.io/badge/-Python-3776AB?style=flat-square&logo=python&logoColor=white) ![R](https://img.shields.io/badge/-R-276DC3?style=flat-square&logo=r&logoColor=white) ![Julia](https://img.shields.io/badge/-Julia-9558B2?style=flat-square&logo=julia&logoColor=white) ![Streamlit](https://img.shields.io/badge/-Streamlit-FF4B4B?style=flat-square&logo=streamlit&logoColor=white) ![Conda](https://img.shields.io/badge/-Conda-44A833?style=flat-square&logo=anaconda&logoColor=white) |
+| **5** | **AI / ML Engineer** | ![Python](https://img.shields.io/badge/-Python-3776AB?style=flat-square&logo=python&logoColor=white) ![Mojo](https://img.shields.io/badge/-Mojo-FF7000?style=flat-square) ![Rust](https://img.shields.io/badge/-Rust-000?style=flat-square&logo=rust&logoColor=white) ![Cursor](https://img.shields.io/badge/-Cursor-000?style=flat-square) ![FastAPI](https://img.shields.io/badge/-FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white) |
+| **6** | **Systems Programmer** | ![C++](https://img.shields.io/badge/-C++-00599C?style=flat-square&logo=cplusplus&logoColor=white) ![Rust](https://img.shields.io/badge/-Rust-000?style=flat-square&logo=rust&logoColor=white) ![Zig](https://img.shields.io/badge/-Zig-F7A41D?style=flat-square&logo=zig&logoColor=black) ![Go](https://img.shields.io/badge/-Go-00ADD8?style=flat-square&logo=go&logoColor=white) ![CMake](https://img.shields.io/badge/-CMake-064F8C?style=flat-square&logo=cmake&logoColor=white) |
+| **7** | **Full Stack .NET** | ![C#](https://img.shields.io/badge/-C%23-512BD4?style=flat-square&logo=csharp&logoColor=white) ![Node.js](https://img.shields.io/badge/-Node.js-339933?style=flat-square&logo=nodedotjs&logoColor=white) ![React](https://img.shields.io/badge/-React-61DAFB?style=flat-square&logo=react&logoColor=black) ![Blazor](https://img.shields.io/badge/-Blazor-512BD4?style=flat-square&logo=blazor&logoColor=white) ![Visual Studio](https://img.shields.io/badge/-VS-5C2D91?style=flat-square&logo=visualstudio&logoColor=white) |
+| **8** | **Game Developer** | ![C++](https://img.shields.io/badge/-C++-00599C?style=flat-square&logo=cplusplus&logoColor=white) ![C#](https://img.shields.io/badge/-C%23-512BD4?style=flat-square&logo=csharp&logoColor=white) ![Lua](https://img.shields.io/badge/-Lua-2C2D72?style=flat-square&logo=lua&logoColor=white) ![Rider](https://img.shields.io/badge/-Rider-000?style=flat-square&logo=rider&logoColor=white) |
+
+### Specialized
+
+| # | Profile | What You Get |
+|:-:|---------|-------------|
+| **9** | **DevOps / Cloud** | ![Go](https://img.shields.io/badge/-Go-00ADD8?style=flat-square&logo=go&logoColor=white) ![Rust](https://img.shields.io/badge/-Rust-000?style=flat-square&logo=rust&logoColor=white) ![Docker](https://img.shields.io/badge/-Docker-2496ED?style=flat-square&logo=docker&logoColor=white) ![Terraform](https://img.shields.io/badge/-Terraform-7B42BC?style=flat-square&logo=terraform&logoColor=white) ![K8s](https://img.shields.io/badge/-K8s-326CE5?style=flat-square&logo=kubernetes&logoColor=white) ![Helm](https://img.shields.io/badge/-Helm-0F1689?style=flat-square&logo=helm&logoColor=white) |
+| **10** | **Blockchain / Web3** | ![Solidity](https://img.shields.io/badge/-Solidity-363636?style=flat-square&logo=solidity&logoColor=white) ![Rust](https://img.shields.io/badge/-Rust-000?style=flat-square&logo=rust&logoColor=white) ![TypeScript](https://img.shields.io/badge/-TS-3178C6?style=flat-square&logo=typescript&logoColor=white) ![Cursor](https://img.shields.io/badge/-Cursor-000?style=flat-square) |
+| **11** | **Embedded / IoT** | ![C++](https://img.shields.io/badge/-C++-00599C?style=flat-square&logo=cplusplus&logoColor=white) ![Rust](https://img.shields.io/badge/-Rust-000?style=flat-square&logo=rust&logoColor=white) ![Python](https://img.shields.io/badge/-Python-3776AB?style=flat-square&logo=python&logoColor=white) ![Lua](https://img.shields.io/badge/-Lua-2C2D72?style=flat-square&logo=lua&logoColor=white) |
+| **12** | **Scientific Computing** | ![Fortran](https://img.shields.io/badge/-Fortran-734F96?style=flat-square&logo=fortran&logoColor=white) ![Python](https://img.shields.io/badge/-Python-3776AB?style=flat-square&logo=python&logoColor=white) ![R](https://img.shields.io/badge/-R-276DC3?style=flat-square&logo=r&logoColor=white) ![Julia](https://img.shields.io/badge/-Julia-9558B2?style=flat-square&logo=julia&logoColor=white) ![Haskell](https://img.shields.io/badge/-Haskell-5D4F85?style=flat-square&logo=haskell&logoColor=white) |
+| **13** | **Functional** | ![Haskell](https://img.shields.io/badge/-Haskell-5D4F85?style=flat-square&logo=haskell&logoColor=white) ![Elixir](https://img.shields.io/badge/-Elixir-4B275F?style=flat-square&logo=elixir&logoColor=white) ![Erlang](https://img.shields.io/badge/-Erlang-A90533?style=flat-square&logo=erlang&logoColor=white) ![OCaml](https://img.shields.io/badge/-OCaml-EC6813?style=flat-square&logo=ocaml&logoColor=white) ![Scala](https://img.shields.io/badge/-Scala-DC322F?style=flat-square&logo=scala&logoColor=white) ![Gleam](https://img.shields.io/badge/-Gleam-FFAFF3?style=flat-square) |
+| **14** | **JVM Ecosystem** | ![Java](https://img.shields.io/badge/-Java-ED8B00?style=flat-square&logo=openjdk&logoColor=white) ![Kotlin](https://img.shields.io/badge/-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white) ![Scala](https://img.shields.io/badge/-Scala-DC322F?style=flat-square&logo=scala&logoColor=white) ![Groovy](https://img.shields.io/badge/-Groovy-4298B8?style=flat-square&logo=apachegroovy&logoColor=white) ![IntelliJ](https://img.shields.io/badge/-IntelliJ-000?style=flat-square&logo=intellijidea&logoColor=white) |
+| **15** | **Minimalist** | ![Go](https://img.shields.io/badge/-Go-00ADD8?style=flat-square&logo=go&logoColor=white) ![Rust](https://img.shields.io/badge/-Rust-000?style=flat-square&logo=rust&logoColor=white) ![Neovim](https://img.shields.io/badge/-Neovim-57A143?style=flat-square&logo=neovim&logoColor=white) ![Vim](https://img.shields.io/badge/-Vim-019733?style=flat-square&logo=vim&logoColor=white) ![Emacs](https://img.shields.io/badge/-Emacs-7F5AB6?style=flat-square&logo=gnuemacs&logoColor=white) |
+
+| **16** | **Custom** | Choose your own languages, IDEs, tools, and frameworks |
+| **17** | **EVERYTHING** | All 39 languages, 23 IDEs, 38+ frameworks (with safety warnings) |
+
+---
+
+## Package Managers
+
+CodeReady uses the best available package manager on each platform.
+
+| Platform | Priority Order |
+|----------|---------------|
+| ![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows&logoColor=white) | **winget** → **Scoop** → **Chocolatey** |
+| ![macOS](https://img.shields.io/badge/macOS-000?style=flat-square&logo=apple&logoColor=white) | **Homebrew** → **MacPorts** → **Nix** |
+| ![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black) | **apt/dnf/pacman/zypper** → **Nix** → **Flatpak** → snap |
+
+Special installers: `nvm` for Node.js, `rustup` for Rust, `SDKMAN` for Kotlin/Groovy, `GHCup` for Haskell, `choosenim` for Nim, `opam` for OCaml.
 
 ---
 
@@ -299,15 +365,13 @@ Select profile(s): 9         <- install EVERYTHING (with safety warnings)
  └─────────────────────────────────────────────────────────┘
 ```
 
-### Installation Strategy
+### Safety Features
 
-| Platform | Primary | Fallback | Special |
-|----------|---------|----------|---------|
-| **Windows** | winget | Chocolatey | MSI/EXE direct download |
-| **macOS** | Homebrew | Cask for GUI apps | Xcode CLI tools |
-| **Linux** | apt / dnf / pacman / zypper | snap | Official installers |
-
-Special installers are used where appropriate: `nvm` for Node.js, `rustup` for Rust, `SDKMAN` for Kotlin, official binaries for Go and Zig.
+- **Skip installed** — already have it? Skipped automatically
+- **Safe repo install** — if a repo-based install fails, the repo and GPG key are cleaned up
+- **Debian/Ubuntu detection** — Docker and other repo tools use the correct distro name
+- **Non-blocking failures** — one failed package doesn't stop the rest
+- **Full log** — everything is logged to `~/codeready_install.log`
 
 ---
 
@@ -315,10 +379,10 @@ Special installers are used where appropriate: `nvm` for Node.js, `rustup` for R
 
 ```
 CodeReady/
-├── codeready.bat       # Windows launcher (auto-elevates to Admin)
-├── codeready.ps1       # Windows PowerShell script
-├── codeready.sh        # Linux/macOS bash script
-├── codeready_todo.md   # Development roadmap
+├── codeready.bat           # Windows launcher (auto-elevates to Admin)
+├── codeready.ps1           # Windows PowerShell script
+├── codeready.sh            # Linux/macOS bash script
+├── codeready_todo.md       # Development roadmap
 └── README.md
 ```
 
@@ -328,9 +392,9 @@ CodeReady/
 
 | Platform | Requirements |
 |----------|-------------|
-| **Windows** | Windows 10/11, Administrator privileges, Internet connection |
-| **macOS** | macOS 12+, Internet connection |
-| **Linux** | Ubuntu 20.04+ / Debian 11+ / Fedora 36+ / Arch / openSUSE, sudo access, Internet |
+| ![Windows](https://img.shields.io/badge/-Win-0078D6?style=flat-square&logo=windows&logoColor=white) | Windows 10/11, Administrator privileges, Internet |
+| ![macOS](https://img.shields.io/badge/-Mac-000?style=flat-square&logo=apple&logoColor=white) | macOS 12+, Internet |
+| ![Linux](https://img.shields.io/badge/-Linux-FCC624?style=flat-square&logo=linux&logoColor=black) | Ubuntu 20.04+ / Debian 11+ / Fedora 36+ / Arch / openSUSE, sudo, Internet |
 
 ---
 
@@ -338,12 +402,12 @@ CodeReady/
 
 | Problem | Solution |
 |---------|----------|
-| PowerShell encoding errors | Script uses pure ASCII — ensure file is saved as UTF-8 without BOM |
-| Permission denied (Linux) | Run `chmod +x codeready.sh` first |
-| Package not found | Some packages vary by OS. Check `~/codeready_install.log` for details |
-| Command not found after install | CodeReady auto-reloads your shell, but if needed run `source ~/.bashrc` (or `~/.zshrc`) |
-| Mojo on Windows | Mojo requires WSL. Install WSL 2 first, then install Mojo inside WSL |
-| System scan shows wrong version | Some tools report versions differently. Check with `<tool> --version` manually |
+| PowerShell encoding errors | Script uses pure ASCII — save as UTF-8 without BOM |
+| Permission denied (Linux) | `chmod +x codeready.sh` |
+| Package not found | Check `~/codeready_install.log` for details |
+| Command not found after install | Run `source ~/.bashrc` or restart terminal |
+| Mojo on Windows | Install WSL 2 first, then Mojo inside WSL |
+| Docker fails on Debian | CodeReady auto-detects debian/trixie — uses bookworm repo as fallback |
 
 ---
 
@@ -353,9 +417,10 @@ Found a bug? Want to add a new language or framework? Pull requests are welcome!
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/new-language`)
-3. Commit your changes (`git commit -m 'Add support for Haskell'`)
-4. Push to the branch (`git push origin feature/new-language`)
-5. Open a Pull Request
+3. Commit your changes
+4. Push and open a Pull Request
+
+See [codeready_todo.md](codeready_todo.md) for the full roadmap.
 
 ---
 
@@ -367,5 +432,5 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 <p align="center">
   <b>Made with care for developers who value their time.</b><br/>
-  <sub>If CodeReady saved you time, consider giving it a star on GitHub!</sub>
+  <sub>If CodeReady saved you time, consider giving it a ⭐ on GitHub!</sub>
 </p>
