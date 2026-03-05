@@ -657,9 +657,11 @@ function Get-CmdVersion($cmd, $flag) {
     if (-not $flag) { $flag = "--version" }
     if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) { return "" }
     try {
-        $out = & $cmd $flag 2>&1 | Select-Object -First 1
-        if ($out -match '(\d+\.\d+[\.\d]*)') { return $Matches[1] }
-        return "installed"
+        $lines = & $cmd $flag 2>&1 | Select-Object -First 3
+        foreach ($line in $lines) {
+            if ($line -match '(\d+\.\d+[\.\d]*)') { return $Matches[1] }
+        }
+        return "found"
     } catch { return "" }
 }
 
@@ -669,15 +671,17 @@ function Show-ScanItem($name, $current, $recommended) {
         Write-Host "    $padded  " -NoNewline -ForegroundColor DarkGray
         Write-Host "- not installed" -ForegroundColor DarkGray
     }
+    elseif ($current -eq "found" -or $current -eq "installed") {
+        Write-Host "    $padded  " -NoNewline -ForegroundColor Green
+        Write-Host "yes" -ForegroundColor Green
+    }
     elseif ($recommended -eq "latest" -or $recommended -eq "-") {
         Write-Host "    $padded  " -NoNewline -ForegroundColor Green
-        Write-Host "$current" -NoNewline -ForegroundColor Green
-        Write-Host "  OK" -ForegroundColor Green
+        Write-Host "$current" -ForegroundColor Green
     }
     elseif ($current.StartsWith($recommended)) {
         Write-Host "    $padded  " -NoNewline -ForegroundColor Green
-        Write-Host "$current" -NoNewline -ForegroundColor Green
-        Write-Host "  up to date" -ForegroundColor Green
+        Write-Host "$current  up to date" -ForegroundColor Green
     }
     else {
         Write-Host "    $padded  " -NoNewline -ForegroundColor Yellow
@@ -738,24 +742,48 @@ function Start-SystemScan {
     $codium = Get-CmdVersion "codium" "--version"
     $nvim = Get-CmdVersion "nvim" "--version"
     $vimExe = Get-CmdVersion "vim" "--version"
-    $cursorExe = if (Get-Command cursor -ErrorAction SilentlyContinue) { "installed" } else { "" }
-    $sublExe = if (Get-Command subl -ErrorAction SilentlyContinue) { "installed" } else { "" }
+    $cursorExe = Get-CmdVersion "cursor" "--version"
+    $sublExe = Get-CmdVersion "subl" "--version"
     $emacsVer = Get-CmdVersion "emacs" "--version"
-    $zedExe = if (Get-Command zed -ErrorAction SilentlyContinue) { "installed" } else { "" }
-    $windsurfExe = if (Get-Command windsurf -ErrorAction SilentlyContinue) { "installed" } else { "" }
-    $antigravExe = if (Get-Command antigravity -ErrorAction SilentlyContinue) { "installed" } else { "" }
-    $fleetExe = if (Get-Command fleet -ErrorAction SilentlyContinue) { "installed" } else { "" }
-    $ideaExe = if ((Get-Command idea -ErrorAction SilentlyContinue) -or (Test-Path "${env:ProgramFiles}\JetBrains\IntelliJ IDEA*\bin\idea64.exe") -or (Get-ChildItem "${env:LOCALAPPDATA}\Programs\IntelliJ IDEA*" -ErrorAction SilentlyContinue)) { "installed" } else { "" }
-    $pycharmExe = if ((Get-Command pycharm -ErrorAction SilentlyContinue) -or (Test-Path "${env:ProgramFiles}\JetBrains\PyCharm*\bin\pycharm64.exe") -or (Get-ChildItem "${env:LOCALAPPDATA}\Programs\PyCharm*" -ErrorAction SilentlyContinue)) { "installed" } else { "" }
-    $webstormExe = if ((Get-Command webstorm -ErrorAction SilentlyContinue) -or (Test-Path "${env:ProgramFiles}\JetBrains\WebStorm*\bin\webstorm64.exe")) { "installed" } else { "" }
-    $golandExe = if ((Get-Command goland -ErrorAction SilentlyContinue) -or (Test-Path "${env:ProgramFiles}\JetBrains\GoLand*\bin\goland64.exe")) { "installed" } else { "" }
-    $clionExe = if ((Get-Command clion -ErrorAction SilentlyContinue) -or (Test-Path "${env:ProgramFiles}\JetBrains\CLion*\bin\clion64.exe")) { "installed" } else { "" }
-    $riderExe = if ((Get-Command rider -ErrorAction SilentlyContinue) -or (Test-Path "${env:ProgramFiles}\JetBrains\Rider*\bin\rider64.exe")) { "installed" } else { "" }
-    $rustroverExe = if ((Get-Command rustrover -ErrorAction SilentlyContinue) -or (Test-Path "${env:ProgramFiles}\JetBrains\RustRover*\bin\rustrover64.exe")) { "installed" } else { "" }
-    $eclipseExe = if ((Get-Command eclipse -ErrorAction SilentlyContinue) -or (Test-Path "${env:ProgramFiles}\Eclipse\eclipse.exe") -or (Test-Path "C:\Eclipse\eclipse.exe")) { "installed" } else { "" }
-    $netbeansExe = if ((Get-Command netbeans -ErrorAction SilentlyContinue) -or (Test-Path "${env:ProgramFiles}\NetBeans*\bin\netbeans64.exe")) { "installed" } else { "" }
-    $androidExe = if ((Get-Command studio -ErrorAction SilentlyContinue) -or (Get-Command "android-studio" -ErrorAction SilentlyContinue) -or (Test-Path "${env:ProgramFiles}\Android\Android Studio\bin\studio64.exe") -or (Test-Path "${env:LOCALAPPDATA}\Programs\Android Studio\bin\studio64.exe")) { "installed" } else { "" }
-    $notepadppExe = if ((Get-Command "notepad++" -ErrorAction SilentlyContinue) -or (Test-Path "${env:ProgramFiles}\Notepad++\notepad++.exe") -or (Test-Path "${env:ProgramFiles(x86)}\Notepad++\notepad++.exe")) { "installed" } else { "" }
+    $zedExe = Get-CmdVersion "zed" "--version"
+    $windsurfExe = Get-CmdVersion "windsurf" "--version"
+    $antigravExe = Get-CmdVersion "antigravity" "--version"
+    $fleetExe = Get-CmdVersion "fleet" "--version"
+
+    # JetBrains & other IDEs - check command first, then file paths
+    $ideaExe = Get-CmdVersion "idea" "--version"
+    if (-not $ideaExe) { if ((Test-Path "${env:ProgramFiles}\JetBrains\IntelliJ IDEA*\bin\idea64.exe" -ErrorAction SilentlyContinue) -or (Get-ChildItem "${env:LOCALAPPDATA}\Programs\IntelliJ IDEA*" -ErrorAction SilentlyContinue)) { $ideaExe = "found" } }
+
+    $pycharmExe = Get-CmdVersion "pycharm" "--version"
+    if (-not $pycharmExe) { if ((Test-Path "${env:ProgramFiles}\JetBrains\PyCharm*\bin\pycharm64.exe" -ErrorAction SilentlyContinue) -or (Get-ChildItem "${env:LOCALAPPDATA}\Programs\PyCharm*" -ErrorAction SilentlyContinue)) { $pycharmExe = "found" } }
+
+    $webstormExe = Get-CmdVersion "webstorm" "--version"
+    if (-not $webstormExe) { if (Test-Path "${env:ProgramFiles}\JetBrains\WebStorm*\bin\webstorm64.exe" -ErrorAction SilentlyContinue) { $webstormExe = "found" } }
+
+    $golandExe = Get-CmdVersion "goland" "--version"
+    if (-not $golandExe) { if (Test-Path "${env:ProgramFiles}\JetBrains\GoLand*\bin\goland64.exe" -ErrorAction SilentlyContinue) { $golandExe = "found" } }
+
+    $clionExe = Get-CmdVersion "clion" "--version"
+    if (-not $clionExe) { if (Test-Path "${env:ProgramFiles}\JetBrains\CLion*\bin\clion64.exe" -ErrorAction SilentlyContinue) { $clionExe = "found" } }
+
+    $riderExe = Get-CmdVersion "rider" "--version"
+    if (-not $riderExe) { if (Test-Path "${env:ProgramFiles}\JetBrains\Rider*\bin\rider64.exe" -ErrorAction SilentlyContinue) { $riderExe = "found" } }
+
+    $rustroverExe = Get-CmdVersion "rustrover" "--version"
+    if (-not $rustroverExe) { if (Test-Path "${env:ProgramFiles}\JetBrains\RustRover*\bin\rustrover64.exe" -ErrorAction SilentlyContinue) { $rustroverExe = "found" } }
+
+    $eclipseExe = Get-CmdVersion "eclipse" "--version"
+    if (-not $eclipseExe) { if ((Test-Path "${env:ProgramFiles}\Eclipse\eclipse.exe" -ErrorAction SilentlyContinue) -or (Test-Path "C:\Eclipse\eclipse.exe" -ErrorAction SilentlyContinue)) { $eclipseExe = "found" } }
+
+    $netbeansExe = Get-CmdVersion "netbeans" "--version"
+    if (-not $netbeansExe) { if (Test-Path "${env:ProgramFiles}\NetBeans*\bin\netbeans64.exe" -ErrorAction SilentlyContinue) { $netbeansExe = "found" } }
+
+    $androidExe = Get-CmdVersion "studio" "--version"
+    if (-not $androidExe) { if ((Test-Path "${env:ProgramFiles}\Android\Android Studio\bin\studio64.exe" -ErrorAction SilentlyContinue) -or (Test-Path "${env:LOCALAPPDATA}\Programs\Android Studio\bin\studio64.exe" -ErrorAction SilentlyContinue)) { $androidExe = "found" } }
+
+    $notepadppExe = ""
+    if ((Test-Path "${env:ProgramFiles}\Notepad++\notepad++.exe" -ErrorAction SilentlyContinue) -or (Test-Path "${env:ProgramFiles(x86)}\Notepad++\notepad++.exe" -ErrorAction SilentlyContinue)) { $notepadppExe = "found" }
+    if (-not $notepadppExe) { $notepadppExe = Get-CmdVersion "notepad++" "--version" }
 
     # Tools
     $git = Get-CmdVersion "git" "--version"

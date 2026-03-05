@@ -1119,13 +1119,10 @@ show_profile_menu() {
 # ================================================================
 get_cmd_version() {
     local cmd="$1" flag="${2:---version}"
-    if command -v "$cmd" &>/dev/null; then
-        local ver
-        ver=$("$cmd" $flag 2>&1 | head -1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
-        [[ -n "$ver" ]] && echo "$ver" || echo "installed"
-    else
-        echo ""
-    fi
+    if ! command -v "$cmd" &>/dev/null; then echo ""; return; fi
+    local ver
+    ver=$("$cmd" $flag 2>&1 | head -3 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    [[ -n "$ver" ]] && echo "$ver" || echo "found"
 }
 
 system_scan() {
@@ -1250,10 +1247,12 @@ system_scan() {
         padded=$(printf "%-${width}s" "$name")
         if [[ -z "$current" ]]; then
             echo -e "    ${GRAY}${padded}${NC}  ${GRAY}—  not installed${NC}"
+        elif [[ "$current" == "installed" || "$current" == "found" ]]; then
+            echo -e "    ${GREEN}${padded}${NC}  ${GREEN}yes${NC}"
         elif [[ "$recommended" == "latest" || "$recommended" == "—" ]]; then
-            echo -e "    ${GREEN}${padded}${NC}  ${GREEN}${current}${NC}  ${GREEN}✓${NC}"
+            echo -e "    ${GREEN}${padded}${NC}  ${GREEN}${current}${NC}"
         elif [[ "$current" == "$recommended"* ]]; then
-            echo -e "    ${GREEN}${padded}${NC}  ${GREEN}${current}${NC}  ${GREEN}✓ up to date${NC}"
+            echo -e "    ${GREEN}${padded}${NC}  ${GREEN}${current}${NC}  ${GREEN}up to date${NC}"
         else
             echo -e "    ${YELLOW}${padded}${NC}  ${YELLOW}${current}${NC}  ${CYAN}⬆ ${recommended} available${NC}"
         fi
