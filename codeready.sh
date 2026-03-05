@@ -391,6 +391,217 @@ install_julia() {
     esac
 }
 
+# --- NEW LANGUAGES (v2.1) ---
+
+install_r() {
+    case "$PKG" in
+        brew)   pkg_install "R" "brew install r" ;;
+        apt)    pkg_install "R" "sudo apt install -y r-base r-base-dev" ;;
+        dnf)    pkg_install "R" "sudo dnf install -y R" ;;
+        pacman) pkg_install "R" "sudo pacman -S --noconfirm r" ;;
+        zypper) pkg_install "R" "sudo zypper install -y R-base R-base-devel" ;;
+    esac
+}
+
+install_lua() {
+    case "$PKG" in
+        brew)   pkg_install "Lua" "brew install lua luarocks" ;;
+        apt)    pkg_install "Lua" "sudo apt install -y lua5.4 liblua5.4-dev luarocks" ;;
+        dnf)    pkg_install "Lua" "sudo dnf install -y lua lua-devel luarocks" ;;
+        pacman) pkg_install "Lua" "sudo pacman -S --noconfirm lua luarocks" ;;
+    esac
+}
+
+install_haskell() {
+    step "Installing Haskell via GHCup..."
+    if command -v ghc &>/dev/null; then ok "Haskell already installed."; return; fi
+    curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | BOOTSTRAP_HASKELL_NONINTERACTIVE=1 sh &>>"$LOG_FILE" 2>&1
+    [ -f "$HOME/.ghcup/env" ] && source "$HOME/.ghcup/env" 2>/dev/null
+    ok "Haskell (GHC + Cabal + Stack) installed via GHCup."
+}
+
+install_perl() {
+    case "$PKG" in
+        brew)   pkg_install "Perl" "brew install perl" ;;
+        apt)    pkg_install "Perl" "sudo apt install -y perl cpanminus" ;;
+        dnf)    pkg_install "Perl" "sudo dnf install -y perl perl-App-cpanminus" ;;
+        pacman) pkg_install "Perl" "sudo pacman -S --noconfirm perl cpanminus" ;;
+    esac
+}
+
+install_erlang() {
+    case "$PKG" in
+        brew)   pkg_install "Erlang" "brew install erlang" ;;
+        apt)    pkg_install "Erlang" "sudo apt install -y erlang" ;;
+        dnf)    pkg_install "Erlang" "sudo dnf install -y erlang" ;;
+        pacman) pkg_install "Erlang" "sudo pacman -S --noconfirm erlang" ;;
+    esac
+}
+
+install_ocaml() {
+    step "Installing OCaml via opam..."
+    case "$PKG" in
+        brew)   pkg_install "OCaml" "brew install ocaml opam" ;;
+        *)
+            if command -v opam &>/dev/null; then ok "OCaml (opam) already installed."; return; fi
+            case "$PKG" in
+                apt)    sudo apt install -y opam &>>"$LOG_FILE" ;;
+                dnf)    sudo dnf install -y opam &>>"$LOG_FILE" ;;
+                pacman) sudo pacman -S --noconfirm opam &>>"$LOG_FILE" ;;
+            esac
+            opam init -y &>>"$LOG_FILE" 2>&1
+            ok "OCaml installed via opam." ;;
+    esac
+}
+
+install_fortran() {
+    case "$PKG" in
+        brew)   pkg_install "Fortran (GFortran)" "brew install gcc" ;;
+        apt)    pkg_install "Fortran (GFortran)" "sudo apt install -y gfortran" ;;
+        dnf)    pkg_install "Fortran (GFortran)" "sudo dnf install -y gcc-gfortran" ;;
+        pacman) pkg_install "Fortran (GFortran)" "sudo pacman -S --noconfirm gcc-fortran" ;;
+        zypper) pkg_install "Fortran (GFortran)" "sudo zypper install -y gcc-fortran" ;;
+    esac
+}
+
+install_d() {
+    case "$PKG" in
+        brew)   pkg_install "D (LDC)" "brew install ldc dub" ;;
+        apt)    pkg_install "D (LDC)" "sudo apt install -y ldc dub" ;;
+        dnf)    pkg_install "D (LDC)" "sudo dnf install -y ldc dub" ;;
+        pacman) pkg_install "D (LDC)" "sudo pacman -S --noconfirm ldc dub" ;;
+        *)      info "D language: visit https://dlang.org/install.html"; fail "D (manual)" ;;
+    esac
+}
+
+install_nim() {
+    step "Installing Nim via choosenim..."
+    if command -v nim &>/dev/null; then ok "Nim already installed."; return; fi
+    curl https://nim-lang.org/choosenim/init.sh -sSf | sh -s -- -y &>>"$LOG_FILE" 2>&1
+    export PATH="$HOME/.nimble/bin:$PATH"
+    ok "Nim installed via choosenim."
+}
+
+install_crystal() {
+    case "$PKG" in
+        brew)   pkg_install "Crystal" "brew install crystal" ;;
+        apt)    step "Installing Crystal..."
+                curl -fsSL https://crystal-lang.org/install.sh | sudo bash &>>"$LOG_FILE" 2>&1
+                ok "Crystal installed." ;;
+        pacman) pkg_install "Crystal" "sudo pacman -S --noconfirm crystal shards" ;;
+        *)      info "Crystal: visit https://crystal-lang.org/install/"; fail "Crystal (manual)" ;;
+    esac
+}
+
+install_v() {
+    step "Installing V language..."
+    if command -v v &>/dev/null; then ok "V already installed."; return; fi
+    case "$PKG" in
+        brew) pkg_install "V" "brew install vlang" ;;
+        *)
+            git clone --depth 1 https://github.com/vlang/v /tmp/vlang &>>"$LOG_FILE" 2>&1
+            cd /tmp/vlang && make &>>"$LOG_FILE" 2>&1
+            sudo mv /tmp/vlang/v /usr/local/bin/v 2>/dev/null
+            cd - &>/dev/null
+            ok "V language installed." ;;
+    esac
+}
+
+install_gleam() {
+    case "$PKG" in
+        brew) pkg_install "Gleam" "brew install gleam" ;;
+        *)
+            step "Installing Gleam..."
+            curl -fsSL https://gleam.run/install.sh | sh &>>"$LOG_FILE" 2>&1
+            ok "Gleam installed." ;;
+    esac
+}
+
+install_carbon() {
+    info "Carbon is in early development (experimental). Visit: https://github.com/carbon-language/carbon-lang"
+    info "You can explore via Compiler Explorer: https://carbon.compiler-explorer.com"
+    fail "Carbon (experimental, no installer yet)"
+}
+
+install_solidity() {
+    step "Installing Solidity compiler (solc)..."
+    if command -v npm &>/dev/null; then
+        npm install -g solc &>>"$LOG_FILE" 2>&1 && ok "Solidity (solcjs) installed via npm." || fail "Solidity"
+    else
+        case "$PKG" in
+            brew) pkg_install "Solidity" "brew install solidity" ;;
+            *)    if command -v snap &>/dev/null; then
+                      pkg_install "Solidity" "sudo snap install solc"
+                  else
+                      info "Solidity: npm install -g solc (needs Node.js)"; fail "Solidity (needs npm)"
+                  fi ;;
+        esac
+    fi
+}
+
+install_groovy() {
+    case "$PKG" in
+        brew) pkg_install "Groovy" "brew install groovy" ;;
+        *)    if command -v sdk &>/dev/null || [ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]; then
+                  [ -s "$HOME/.sdkman/bin/sdkman-init.sh" ] && source "$HOME/.sdkman/bin/sdkman-init.sh"
+                  sdk install groovy &>>"$LOG_FILE" 2>&1 && ok "Groovy installed via SDKMAN." || fail "Groovy"
+              else
+                  step "Installing Groovy via SDKMAN..."
+                  curl -s "https://get.sdkman.io" | bash &>>"$LOG_FILE"
+                  source "$HOME/.sdkman/bin/sdkman-init.sh" 2>/dev/null
+                  sdk install groovy &>>"$LOG_FILE" 2>&1 && ok "Groovy installed." || fail "Groovy"
+              fi ;;
+    esac
+}
+
+install_ada() {
+    case "$PKG" in
+        brew)   pkg_install "Ada (GNAT)" "brew install gnat" ;;
+        apt)    pkg_install "Ada (GNAT)" "sudo apt install -y gnat" ;;
+        dnf)    pkg_install "Ada (GNAT)" "sudo dnf install -y gcc-gnat" ;;
+        pacman) pkg_install "Ada (GNAT)" "sudo pacman -S --noconfirm gcc-ada" ;;
+        *)      info "Ada: visit https://www.adacore.com/download"; fail "Ada (manual)" ;;
+    esac
+}
+
+install_cobol() {
+    case "$PKG" in
+        brew)   pkg_install "COBOL (GnuCOBOL)" "brew install gnucobol" ;;
+        apt)    pkg_install "COBOL (GnuCOBOL)" "sudo apt install -y gnucobol" ;;
+        dnf)    pkg_install "COBOL (GnuCOBOL)" "sudo dnf install -y gnucobol" ;;
+        pacman) pkg_install "COBOL (GnuCOBOL)" "sudo pacman -S --noconfirm gnucobol" ;;
+        *)      info "COBOL: visit https://gnucobol.sourceforge.io"; fail "COBOL (manual)" ;;
+    esac
+}
+
+install_lisp() {
+    case "$PKG" in
+        brew)   pkg_install "Common Lisp (SBCL)" "brew install sbcl" ;;
+        apt)    pkg_install "Common Lisp (SBCL)" "sudo apt install -y sbcl" ;;
+        dnf)    pkg_install "Common Lisp (SBCL)" "sudo dnf install -y sbcl" ;;
+        pacman) pkg_install "Common Lisp (SBCL)" "sudo pacman -S --noconfirm sbcl" ;;
+    esac
+}
+
+install_racket() {
+    case "$PKG" in
+        brew)   pkg_install "Racket" "brew install racket" ;;
+        apt)    pkg_install "Racket" "sudo apt install -y racket" ;;
+        dnf)    pkg_install "Racket" "sudo dnf install -y racket" ;;
+        pacman) pkg_install "Racket" "sudo pacman -S --noconfirm racket" ;;
+    esac
+}
+
+install_objc() {
+    case "$PKG" in
+        brew) info "Objective-C available via Xcode: xcode-select --install"
+              if command -v clang &>/dev/null; then ok "Objective-C (Clang) available."; else fail "Objective-C"; fi ;;
+        apt)  pkg_install "Objective-C (GNUstep)" "sudo apt install -y gobjc gnustep-devel" ;;
+        dnf)  pkg_install "Objective-C (GNUstep)" "sudo dnf install -y gcc-objc gnustep-base-devel" ;;
+        *)    info "Objective-C: use Xcode (macOS) or GNUstep (Linux)"; fail "Objective-C (manual)" ;;
+    esac
+}
+
 # ================================================================
 # IDE INSTALLERS
 # ================================================================
@@ -703,6 +914,26 @@ system_scan() {
     local flutter_ver=$(get_cmd_version flutter "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
     local wasmtime_ver=$(get_cmd_version wasmtime "--version")
     local wasmer_ver=$(get_cmd_version wasmer "--version")
+    local r_ver=$(get_cmd_version R "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local lua_ver=$(get_cmd_version lua "-v" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local ghc_ver=$(get_cmd_version ghc "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local perl_ver=$(get_cmd_version perl "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local erlang_ver=$(erl -eval 'erlang:display(erlang:system_info(otp_release)), halt().' -noshell 2>/dev/null | tr -d '"')
+    local ocaml_ver=$(get_cmd_version ocaml "--version")
+    local gfortran_ver=$(get_cmd_version gfortran "--version")
+    local dmd_ver=$(get_cmd_version ldc2 "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local nim_ver=$(get_cmd_version nim "--version")
+    local crystal_ver=$(get_cmd_version crystal "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local vlang_ver=$(get_cmd_version v "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local gleam_ver=$(get_cmd_version gleam "--version")
+    local solc_ver=$(get_cmd_version solcjs "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local groovy_ver=$(get_cmd_version groovy "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local gnat_ver=$(get_cmd_version gnat "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local cobc_ver=$(get_cmd_version cobc "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local sbcl_ver=$(get_cmd_version sbcl "--version")
+    local racket_ver=$(get_cmd_version racket "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
+    local objc_ver="" && command -v gobjc &>/dev/null && objc_ver="installed"
+    [[ -z "$objc_ver" ]] && command -v clang &>/dev/null && objc_ver="via clang"
 
     # Detect IDEs/Editors
     local code_ver=$(get_cmd_version code "--version" 2>/dev/null | head -1)
@@ -784,6 +1015,25 @@ system_scan() {
     [[ -n "$wasmer_ver" ]] && wasm_label="${wasm_label:+$wasm_label, }wasmer $wasmer_ver"
     show_item "WebAssembly" "$wasm_label" "latest"
     show_item "Flutter"    "$flutter_ver" "latest"
+    show_item "R"          "$r_ver"       "latest"
+    show_item "Lua"        "$lua_ver"     "latest"
+    show_item "Haskell"    "$ghc_ver"     "latest"
+    show_item "Perl"       "$perl_ver"    "latest"
+    show_item "Erlang"     "$erlang_ver"  "latest"
+    show_item "OCaml"      "$ocaml_ver"   "latest"
+    show_item "Fortran"    "$gfortran_ver" "latest"
+    show_item "D (LDC)"    "$dmd_ver"     "latest"
+    show_item "Nim"        "$nim_ver"     "latest"
+    show_item "Crystal"    "$crystal_ver" "latest"
+    show_item "V"          "$vlang_ver"   "latest"
+    show_item "Gleam"      "$gleam_ver"   "latest"
+    show_item "Solidity"   "$solc_ver"    "latest"
+    show_item "Groovy"     "$groovy_ver"  "latest"
+    show_item "Ada (GNAT)" "$gnat_ver"    "latest"
+    show_item "COBOL"      "$cobc_ver"    "latest"
+    show_item "Lisp (SBCL)" "$sbcl_ver"  "latest"
+    show_item "Racket"     "$racket_ver"  "latest"
+    show_item "Obj-C"      "$objc_ver"    "latest"
     echo ""
 
     echo -e "  ${BOLD}${CYAN}IDEs and Editors:${NC}"
@@ -846,8 +1096,8 @@ main() {
     system_scan
 
     # Language, IDE, Tool keys
-    local LANG_KEYS=("python" "nodejs" "java" "csharp" "cpp" "go" "rust" "php" "ruby" "kotlin" "dart" "swift" "zig" "mojo" "wasm" "typescript" "elixir" "scala" "julia")
-    local LANG_LABELS=("Python - General purpose, AI/ML" "Node.js - JavaScript/TypeScript runtime" "Java (JDK) - Enterprise, Android" "C# / .NET SDK - Microsoft ecosystem" "C/C++ - Systems programming" "Go - Cloud, microservices" "Rust - Memory safety, systems" "PHP - Web, CMS" "Ruby - Web, scripting" "Kotlin - Android, JVM" "Dart/Flutter - Mobile, web UI" "Swift - Apple ecosystem" "Zig - Next-gen systems, C interop" "Mojo - AI/GPU programming" "WebAssembly (WASI) - Portable binary" "TypeScript - Typed JavaScript" "Elixir - Functional, concurrent" "Scala - JVM functional/OOP" "Julia - Scientific computing, high-performance")
+    local LANG_KEYS=("python" "nodejs" "java" "csharp" "cpp" "go" "rust" "php" "ruby" "kotlin" "dart" "swift" "zig" "mojo" "wasm" "typescript" "elixir" "scala" "julia" "r" "lua" "haskell" "perl" "erlang" "ocaml" "fortran" "d" "nim" "crystal" "v" "gleam" "carbon" "solidity" "groovy" "ada" "cobol" "lisp" "racket" "objc")
+    local LANG_LABELS=("Python - General purpose, AI/ML" "Node.js - JavaScript/TypeScript runtime" "Java (JDK) - Enterprise, Android" "C# / .NET SDK - Microsoft ecosystem" "C/C++ - Systems programming" "Go - Cloud, microservices" "Rust - Memory safety, systems" "PHP - Web, CMS" "Ruby - Web, scripting" "Kotlin - Android, JVM" "Dart/Flutter - Mobile, web UI" "Swift - Apple ecosystem" "Zig - Next-gen systems, C interop" "Mojo - AI/GPU programming" "WebAssembly (WASI) - Portable binary" "TypeScript - Typed JavaScript" "Elixir - Functional, concurrent" "Scala - JVM functional/OOP" "Julia - Scientific computing" "R - Statistics, data science" "Lua - Scripting, game engines" "Haskell - Pure functional, fintech" "Perl - Text processing, sysadmin" "Erlang - Telecom, distributed systems" "OCaml - Fintech, compilers" "Fortran - Scientific computing, HPC" "D - Systems programming, C++ alt" "Nim - Python-like syntax, compiled" "Crystal - Ruby-like, compiled" "V - Simple systems language" "Gleam - Type-safe BEAM language" "Carbon - Experimental C++ successor" "Solidity - Ethereum smart contracts" "Groovy - JVM scripting, Gradle" "Ada - Safety-critical systems" "COBOL - Banking, legacy systems" "Common Lisp (SBCL) - AI, macros" "Racket - PL research, education" "Objective-C - Legacy Apple dev")
 
     local IDE_KEYS=("vscode" "intellij" "pycharm" "webstorm" "goland" "clion" "rider" "rustrover" "eclipse" "android" "sublime" "vim" "cursor" "windsurf" "zed")
     local IDE_LABELS=("VS Code - Lightweight, extensible" "IntelliJ IDEA Community - Java, Kotlin" "PyCharm Community - Python IDE" "WebStorm - JS/TS IDE (paid)" "GoLand - Go IDE (paid)" "CLion - C/C++ IDE (paid)" "Rider - .NET IDE (paid)" "RustRover - Rust IDE" "Eclipse IDE - Java, multi-language" "Android Studio - Android dev" "Sublime Text - Fast editor" "Neovim - Terminal editor" "Cursor - AI-powered editor" "Windsurf - AI-powered IDE" "Zed - High-performance editor")
@@ -1007,6 +1257,26 @@ main() {
             elixir)     install_elixir ;;
             scala)      install_scala ;;
             julia)      install_julia ;;
+            r)          install_r ;;
+            lua)        install_lua ;;
+            haskell)    install_haskell ;;
+            perl)       install_perl ;;
+            erlang)     install_erlang ;;
+            ocaml)      install_ocaml ;;
+            fortran)    install_fortran ;;
+            d)          install_d ;;
+            nim)        install_nim ;;
+            crystal)    install_crystal ;;
+            v)          install_v ;;
+            gleam)      install_gleam ;;
+            carbon)     install_carbon ;;
+            solidity)   install_solidity ;;
+            groovy)     install_groovy ;;
+            ada)        install_ada ;;
+            cobol)      install_cobol ;;
+            lisp)       install_lisp ;;
+            racket)     install_racket ;;
+            objc)       install_objc ;;
             julia)
                 local julv=("1.12" "1.10")
                 local juli; juli=$(version_menu "Julia" "Julia 1.12 (Latest)" "Julia 1.10 (LTS)")

@@ -314,7 +314,47 @@ function Get-Languages {
                 @{ Label="Julia 1.12 (Latest)"; WinGet="Julialang.Julia"; Choco="julia" },
                 @{ Label="Julia 1.10 (LTS)"; WinGet="Julialang.Julia.LTS"; Choco="julia --version=1.10" }
             )
-        }
+        },
+        @{ Key="r"; Name="R"; Desc="Statistics, data science, bioinformatics"
+            Versions=@( @{ Label="R (latest)"; WinGet="RProject.R"; Choco="r.project" } ) },
+        @{ Key="lua"; Name="Lua"; Desc="Scripting, game engines, embedded"
+            Versions=@( @{ Label="Lua (latest)"; WinGet=""; Choco="lua" } ) },
+        @{ Key="haskell"; Name="Haskell"; Desc="Pure functional, fintech, academic"
+            Versions=@( @{ Label="Haskell (GHCup)"; WinGet=""; Choco="ghc" } ) },
+        @{ Key="perl"; Name="Perl"; Desc="Text processing, sysadmin, bioinformatics"
+            Versions=@( @{ Label="Perl (latest)"; WinGet="StrawberryPerl.StrawberryPerl"; Choco="strawberryperl" } ) },
+        @{ Key="erlang"; Name="Erlang"; Desc="Telecom, distributed, fault-tolerant"
+            Versions=@( @{ Label="Erlang (latest)"; WinGet="Ericsson.ErlangOTP"; Choco="erlang" } ) },
+        @{ Key="ocaml"; Name="OCaml"; Desc="Fintech, compilers, formal verification"
+            Versions=@( @{ Label="OCaml (latest)"; WinGet=""; Choco="ocaml" } ) },
+        @{ Key="fortran"; Name="Fortran"; Desc="Scientific computing, HPC, physics"
+            Versions=@( @{ Label="GFortran (via MinGW)"; WinGet=""; Choco="mingw" } ) },
+        @{ Key="d"; Name="D"; Desc="Systems programming, C++ alternative"
+            Versions=@( @{ Label="D (LDC latest)"; WinGet="ldc-developers.LDC"; Choco="ldc" } ) },
+        @{ Key="nim"; Name="Nim"; Desc="Python-like syntax, compiles to C"
+            Versions=@( @{ Label="Nim (latest)"; WinGet=""; Choco="nim" } ) },
+        @{ Key="crystal"; Name="Crystal"; Desc="Ruby-like, compiled, fast"
+            Versions=@( @{ Label="Crystal (latest)"; WinGet=""; Choco="crystal" } ) },
+        @{ Key="v"; Name="V"; Desc="Simple systems language (vlang)"
+            Versions=@( @{ Label="V (latest)"; WinGet=""; Choco="vlang" } ) },
+        @{ Key="gleam"; Name="Gleam"; Desc="Type-safe BEAM language"
+            Versions=@( @{ Label="Gleam (latest)"; WinGet=""; Choco="gleam" } ) },
+        @{ Key="carbon"; Name="Carbon"; Desc="Experimental C++ successor by Google"
+            Versions=@( @{ Label="Carbon (experimental)"; WinGet=""; Choco="" } ) },
+        @{ Key="solidity"; Name="Solidity"; Desc="Ethereum smart contract language"
+            Versions=@( @{ Label="Solidity (solcjs via npm)"; WinGet=""; Choco="" } ) },
+        @{ Key="groovy"; Name="Groovy"; Desc="JVM scripting, Gradle builds"
+            Versions=@( @{ Label="Groovy (latest)"; WinGet=""; Choco="groovy" } ) },
+        @{ Key="ada"; Name="Ada"; Desc="Safety-critical, aerospace, defense"
+            Versions=@( @{ Label="Ada (GNAT)"; WinGet="AdaCore.GNAT"; Choco="gnat" } ) },
+        @{ Key="cobol"; Name="COBOL"; Desc="Banking, legacy enterprise systems"
+            Versions=@( @{ Label="GnuCOBOL (latest)"; WinGet=""; Choco="gnucobol" } ) },
+        @{ Key="lisp"; Name="Common Lisp"; Desc="AI, macros, symbolic computation"
+            Versions=@( @{ Label="SBCL (latest)"; WinGet=""; Choco="sbcl" } ) },
+        @{ Key="racket"; Name="Racket"; Desc="PL research, education, DSLs"
+            Versions=@( @{ Label="Racket (latest)"; WinGet="Racket.Racket"; Choco="racket" } ) },
+        @{ Key="objc"; Name="Objective-C"; Desc="Legacy Apple development"
+            Versions=@( @{ Label="Obj-C (via MSVC/Clang)"; WinGet=""; Choco="" } ) }
     )
 }
 
@@ -618,6 +658,24 @@ function Start-SystemScan {
     $elixir = Get-CmdVersion "elixir" "--version"
     $scalaVer = try { scala -version 2>&1 | Select-Object -First 1; if ($_ -match '(\d+\.\d+[\.\d]*)') { $Matches[1] } else { "" } } catch { "" }
     $juliaVer = Get-CmdVersion "julia" "--version"
+    $rVer = Get-CmdVersion "R" "--version"
+    $luaVer = Get-CmdVersion "lua" "-v"
+    $ghcVer = Get-CmdVersion "ghc" "--version"
+    $perlVer = Get-CmdVersion "perl" "--version"
+    $erlVer = Get-CmdVersion "erl" "+V"
+    $ocamlVer = Get-CmdVersion "ocaml" "--version"
+    $gfortranVer = Get-CmdVersion "gfortran" "--version"
+    $ldcVer = Get-CmdVersion "ldc2" "--version"
+    $nimVer = Get-CmdVersion "nim" "--version"
+    $crystalVer = Get-CmdVersion "crystal" "--version"
+    $vlangVer = Get-CmdVersion "v" "--version"
+    $gleamVer = Get-CmdVersion "gleam" "--version"
+    $solcVer = Get-CmdVersion "solcjs" "--version"
+    $groovyVer = Get-CmdVersion "groovy" "--version"
+    $gnatVer = Get-CmdVersion "gnat" "--version"
+    $cobcVer = Get-CmdVersion "cobc" "--version"
+    $sbclVer = Get-CmdVersion "sbcl" "--version"
+    $racketVer = Get-CmdVersion "racket" "--version"
 
     # IDEs
     $code = Get-CmdVersion "code" "--version"
@@ -667,6 +725,24 @@ function Start-SystemScan {
     if ($wasmer) { if ($wasmLabel) { $wasmLabel += ", " }; $wasmLabel += "wasmer $wasmer" }
     Show-ScanItem "WebAssembly" $wasmLabel "latest"
     Show-ScanItem "Flutter"    $flutter "latest"
+    Show-ScanItem "R"          $rVer    "latest"
+    Show-ScanItem "Lua"        $luaVer  "latest"
+    Show-ScanItem "Haskell"    $ghcVer  "latest"
+    Show-ScanItem "Perl"       $perlVer "latest"
+    Show-ScanItem "Erlang"     $erlVer  "latest"
+    Show-ScanItem "OCaml"      $ocamlVer "latest"
+    Show-ScanItem "Fortran"    $gfortranVer "latest"
+    Show-ScanItem "D (LDC)"    $ldcVer  "latest"
+    Show-ScanItem "Nim"        $nimVer  "latest"
+    Show-ScanItem "Crystal"    $crystalVer "latest"
+    Show-ScanItem "V"          $vlangVer "latest"
+    Show-ScanItem "Gleam"      $gleamVer "latest"
+    Show-ScanItem "Solidity"   $solcVer  "latest"
+    Show-ScanItem "Groovy"     $groovyVer "latest"
+    Show-ScanItem "Ada (GNAT)" $gnatVer "latest"
+    Show-ScanItem "COBOL"      $cobcVer "latest"
+    Show-ScanItem "Lisp (SBCL)" $sbclVer "latest"
+    Show-ScanItem "Racket"     $racketVer "latest"
     Write-Host ""
 
     Write-Host "  IDEs and Editors:" -ForegroundColor Cyan
