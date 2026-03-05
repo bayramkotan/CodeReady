@@ -89,6 +89,19 @@ pkg_install() {
     fi
 }
 
+# Check if a command already exists — skip if installed
+is_cmd() { command -v "$1" &>/dev/null; }
+
+skip_installed() {
+    local name="$1" cmd="$2"
+    if is_cmd "$cmd"; then
+        ok "$name is already installed. Skipping."
+        INSTALLED+=("$name (already installed)")
+        return 0
+    fi
+    return 1
+}
+
 # --- Number menu ------------------------------------------------
 number_menu() {
     local title="$1"; shift
@@ -138,6 +151,7 @@ version_menu() {
 
 install_python() {
     local ver="${1:-3.14}"
+    skip_installed "Python $ver" "python3" && return
     case "$PKG" in
         brew)   pkg_install "Python $ver" "brew install python@$ver" ;;
         apt)    pkg_install "Python $ver" "sudo apt install -y python${ver} python3-pip python3-venv || sudo apt install -y python3 python3-pip python3-venv" ;;
@@ -149,6 +163,7 @@ install_python() {
 
 install_nodejs() {
     local ver="${1:-24}"
+    if is_cmd node; then ok "Node.js is already installed. Skipping."; INSTALLED+=("Node.js (already installed)"); return; fi
     step "Installing Node.js $ver via nvm..."
     if [[ ! -d "$HOME/.nvm" ]]; then
         curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash &>>"$LOG_FILE"
@@ -168,6 +183,7 @@ install_nodejs() {
 }
 
 install_java() {
+    skip_installed "JDK" "java" && return
     local ver="${1:-25}"
     case "$PKG" in
         brew)   pkg_install "JDK $ver" "brew install --cask temurin@$ver || brew install --cask temurin" ;;
@@ -179,6 +195,7 @@ install_java() {
 }
 
 install_csharp() {
+    skip_installed ".NET SDK" "dotnet" && return
     local ver="${1:-9}"
     case "$PKG" in
         brew)   pkg_install ".NET $ver SDK" "brew install dotnet-sdk" ;;
@@ -200,6 +217,7 @@ install_cpp() {
 }
 
 install_go() {
+    skip_installed "Go" "go" && return
     local ver="${1:-1.23}"
     case "$PKG" in
         brew) pkg_install "Go $ver" "brew install go" ;;
@@ -229,6 +247,7 @@ install_rust() {
 }
 
 install_php() {
+    skip_installed "PHP" "php" && return
     local ver="${1:-8.4}"
     case "$PKG" in
         brew)   pkg_install "PHP $ver" "brew install php@$ver composer || brew install php composer" ;;
@@ -239,6 +258,7 @@ install_php() {
 }
 
 install_ruby() {
+    skip_installed "Ruby" "ruby" && return
     local ver="${1:-3.3}"
     case "$PKG" in
         brew)   pkg_install "Ruby $ver" "brew install ruby@$ver || brew install ruby" ;;
@@ -249,6 +269,7 @@ install_ruby() {
 }
 
 install_kotlin() {
+    skip_installed "Kotlin" "kotlin" && return
     case "$PKG" in
         brew) pkg_install "Kotlin" "brew install kotlin" ;;
         *)    if command -v snap &>/dev/null; then
@@ -263,6 +284,7 @@ install_kotlin() {
 }
 
 install_dart() {
+    skip_installed "Dart/Flutter" "flutter" && return
     local variant="${1:-flutter}"
     case "$PKG" in
         brew)
@@ -282,6 +304,7 @@ install_dart() {
 }
 
 install_swift() {
+    skip_installed "Swift" "swift" && return
     case "$PKG" in
         brew) if command -v swift &>/dev/null; then ok "Swift available (via Xcode)."; else info "Install Xcode: xcode-select --install"; fail "Swift"; fi ;;
         apt)  pkg_install "Swift" "sudo apt install -y swift || (curl -fsSL https://swift.org/install.sh | bash)" ;;
@@ -290,6 +313,7 @@ install_swift() {
 }
 
 install_zig() {
+    skip_installed "Zig" "zig" && return
     case "$PKG" in
         brew)   pkg_install "Zig" "brew install zig" ;;
         apt)    if command -v snap &>/dev/null; then
@@ -343,6 +367,7 @@ install_wasm() {
 }
 
 install_typescript() {
+    skip_installed "TypeScript" "tsc" && return
     step "Installing TypeScript globally via npm..."
     if command -v npm &>/dev/null; then
         npm install -g typescript ts-node &>>"$LOG_FILE" 2>&1 && ok "TypeScript installed." || fail "TypeScript"
@@ -353,6 +378,7 @@ install_typescript() {
 }
 
 install_elixir() {
+    skip_installed "Elixir" "elixir" && return
     case "$PKG" in
         brew)   pkg_install "Elixir" "brew install elixir" ;;
         apt)    pkg_install "Elixir" "sudo apt install -y elixir" ;;
@@ -362,6 +388,7 @@ install_elixir() {
 }
 
 install_scala() {
+    skip_installed "Scala" "scala" && return
     case "$PKG" in
         brew) pkg_install "Scala" "brew install scala" ;;
         *)    if command -v cs &>/dev/null || command -v coursier &>/dev/null; then
@@ -394,6 +421,7 @@ install_julia() {
 # --- NEW LANGUAGES (v2.1) ---
 
 install_r() {
+    skip_installed "R" "R" && return
     case "$PKG" in
         brew)   pkg_install "R" "brew install r" ;;
         apt)    pkg_install "R" "sudo apt install -y r-base r-base-dev" ;;
@@ -404,6 +432,7 @@ install_r() {
 }
 
 install_lua() {
+    skip_installed "Lua" "lua" && return
     case "$PKG" in
         brew)   pkg_install "Lua" "brew install lua luarocks" ;;
         apt)    pkg_install "Lua" "sudo apt install -y lua5.4 liblua5.4-dev luarocks" ;;
@@ -421,6 +450,7 @@ install_haskell() {
 }
 
 install_perl() {
+    skip_installed "Perl" "perl" && return
     case "$PKG" in
         brew)   pkg_install "Perl" "brew install perl" ;;
         apt)    pkg_install "Perl" "sudo apt install -y perl cpanminus" ;;
@@ -430,6 +460,7 @@ install_perl() {
 }
 
 install_erlang() {
+    skip_installed "Erlang" "erl" && return
     case "$PKG" in
         brew)   pkg_install "Erlang" "brew install erlang" ;;
         apt)    pkg_install "Erlang" "sudo apt install -y erlang" ;;
@@ -439,6 +470,7 @@ install_erlang() {
 }
 
 install_ocaml() {
+    skip_installed "OCaml" "ocaml" && return
     step "Installing OCaml via opam..."
     case "$PKG" in
         brew)   pkg_install "OCaml" "brew install ocaml opam" ;;
@@ -455,6 +487,7 @@ install_ocaml() {
 }
 
 install_fortran() {
+    skip_installed "Fortran" "gfortran" && return
     case "$PKG" in
         brew)   pkg_install "Fortran (GFortran)" "brew install gcc" ;;
         apt)    pkg_install "Fortran (GFortran)" "sudo apt install -y gfortran" ;;
@@ -465,6 +498,7 @@ install_fortran() {
 }
 
 install_d() {
+    skip_installed "D" "ldc2" && return
     case "$PKG" in
         brew)   pkg_install "D (LDC)" "brew install ldc dub" ;;
         apt)    pkg_install "D (LDC)" "sudo apt install -y ldc dub" ;;
@@ -483,6 +517,7 @@ install_nim() {
 }
 
 install_crystal() {
+    skip_installed "Crystal" "crystal" && return
     case "$PKG" in
         brew)   pkg_install "Crystal" "brew install crystal" ;;
         apt)    step "Installing Crystal..."
@@ -508,6 +543,7 @@ install_v() {
 }
 
 install_gleam() {
+    skip_installed "Gleam" "gleam" && return
     case "$PKG" in
         brew) pkg_install "Gleam" "brew install gleam" ;;
         *)
@@ -524,6 +560,7 @@ install_carbon() {
 }
 
 install_solidity() {
+    skip_installed "Solidity" "solcjs" && return
     step "Installing Solidity compiler (solc)..."
     if command -v npm &>/dev/null; then
         npm install -g solc &>>"$LOG_FILE" 2>&1 && ok "Solidity (solcjs) installed via npm." || fail "Solidity"
@@ -540,6 +577,7 @@ install_solidity() {
 }
 
 install_groovy() {
+    skip_installed "Groovy" "groovy" && return
     case "$PKG" in
         brew) pkg_install "Groovy" "brew install groovy" ;;
         *)    if command -v sdk &>/dev/null || [ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]; then
@@ -555,6 +593,7 @@ install_groovy() {
 }
 
 install_ada() {
+    skip_installed "Ada" "gnat" && return
     case "$PKG" in
         brew)   pkg_install "Ada (GNAT)" "brew install gnat" ;;
         apt)    pkg_install "Ada (GNAT)" "sudo apt install -y gnat" ;;
@@ -565,6 +604,7 @@ install_ada() {
 }
 
 install_cobol() {
+    skip_installed "COBOL" "cobc" && return
     case "$PKG" in
         brew)   pkg_install "COBOL (GnuCOBOL)" "brew install gnucobol" ;;
         apt)    pkg_install "COBOL (GnuCOBOL)" "sudo apt install -y gnucobol" ;;
@@ -575,6 +615,7 @@ install_cobol() {
 }
 
 install_lisp() {
+    skip_installed "Common Lisp" "sbcl" && return
     case "$PKG" in
         brew)   pkg_install "Common Lisp (SBCL)" "brew install sbcl" ;;
         apt)    pkg_install "Common Lisp (SBCL)" "sudo apt install -y sbcl" ;;
@@ -584,6 +625,7 @@ install_lisp() {
 }
 
 install_racket() {
+    skip_installed "Racket" "racket" && return
     case "$PKG" in
         brew)   pkg_install "Racket" "brew install racket" ;;
         apt)    pkg_install "Racket" "sudo apt install -y racket" ;;
@@ -603,71 +645,118 @@ install_objc() {
 }
 
 # ================================================================
-# IDE INSTALLERS
+# IDE INSTALLERS (skip if installed, flatpak > apt/repo > snap)
 # ================================================================
+
+# Helper: try flatpak first, then snap as last resort
+flatpak_or_snap() {
+    local name="$1" flatpak_id="$2" snap_name="$3"
+    if command -v flatpak &>/dev/null; then
+        pkg_install "$name" "flatpak install -y flathub $flatpak_id"
+    elif command -v snap &>/dev/null; then
+        pkg_install "$name" "sudo snap install $snap_name --classic"
+    else
+        info "Download $name manually."; fail "$name (manual)"
+    fi
+}
+
 install_ide() {
     local key="$1"
     case "$key" in
         vscode)
+            skip_installed "VS Code" "code" && return
             case "$PKG" in
                 brew) pkg_install "VS Code" "brew install --cask visual-studio-code" ;;
-                *)    if command -v snap &>/dev/null; then pkg_install "VS Code" "sudo snap install code --classic"
-                      else info "Download VS Code: https://code.visualstudio.com"; fail "VS Code (manual)"; fi ;;
+                apt)
+                    step "Installing VS Code via Microsoft repo..."
+                    curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /usr/share/keyrings/microsoft-archive-keyring.gpg 2>>"$LOG_FILE"
+                    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-archive-keyring.gpg] https://packages.microsoft.com/repos/code stable main" | sudo tee /etc/apt/sources.list.d/vscode.list > /dev/null
+                    sudo apt update &>>"$LOG_FILE" && sudo apt install -y code &>>"$LOG_FILE" && ok "VS Code installed." || fail "VS Code" ;;
+                dnf)
+                    step "Installing VS Code via Microsoft repo..."
+                    sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc 2>>"$LOG_FILE"
+                    echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" | sudo tee /etc/yum.repos.d/vscode.repo > /dev/null
+                    sudo dnf install -y code &>>"$LOG_FILE" && ok "VS Code installed." || fail "VS Code" ;;
+                *) flatpak_or_snap "VS Code" "com.visualstudio.code" "code" ;;
             esac ;;
-        vs2026)     info "Visual Studio 2026 is Windows-only. Use VS Code or Rider." ;;
+        vscodium)
+            skip_installed "VSCodium" "codium" && return
+            case "$PKG" in
+                brew) pkg_install "VSCodium" "brew install --cask vscodium" ;;
+                apt)
+                    step "Installing VSCodium via repo..."
+                    curl -fsSL https://gitlab.com/nicedoc/vscodium/-/raw/master/install.sh | sudo bash &>>"$LOG_FILE" 2>&1
+                    sudo apt update &>>"$LOG_FILE" && sudo apt install -y codium &>>"$LOG_FILE" && ok "VSCodium installed." || fail "VSCodium" ;;
+                *) flatpak_or_snap "VSCodium" "com.vscodium.codium" "codium" ;;
+            esac ;;
+        vs2026) info "Visual Studio is Windows-only. Use VS Code or Rider." ;;
         intellij)
+            skip_installed "IntelliJ IDEA" "idea" && return
             case "$PKG" in
                 brew) pkg_install "IntelliJ IDEA" "brew install --cask intellij-idea-ce" ;;
-                *)    if command -v snap &>/dev/null; then pkg_install "IntelliJ IDEA" "sudo snap install intellij-idea-community --classic"
-                      else info "Download: https://www.jetbrains.com/idea/download/"; fail "IntelliJ (manual)"; fi ;;
+                *) flatpak_or_snap "IntelliJ IDEA" "com.jetbrains.IntelliJ-IDEA-Community" "intellij-idea-community" ;;
             esac ;;
         pycharm)
+            skip_installed "PyCharm" "pycharm" && return
             case "$PKG" in
                 brew) pkg_install "PyCharm" "brew install --cask pycharm-ce" ;;
-                *)    if command -v snap &>/dev/null; then pkg_install "PyCharm" "sudo snap install pycharm-community --classic"
-                      else fail "PyCharm (manual)"; fi ;;
+                *) flatpak_or_snap "PyCharm" "com.jetbrains.PyCharm-Community" "pycharm-community" ;;
             esac ;;
         webstorm)
+            skip_installed "WebStorm" "webstorm" && return
             case "$PKG" in
                 brew) pkg_install "WebStorm" "brew install --cask webstorm" ;;
-                *)    if command -v snap &>/dev/null; then pkg_install "WebStorm" "sudo snap install webstorm --classic"; else fail "WebStorm (manual)"; fi ;;
+                *) flatpak_or_snap "WebStorm" "com.jetbrains.WebStorm" "webstorm" ;;
             esac ;;
         goland)
+            skip_installed "GoLand" "goland" && return
             case "$PKG" in
                 brew) pkg_install "GoLand" "brew install --cask goland" ;;
-                *)    if command -v snap &>/dev/null; then pkg_install "GoLand" "sudo snap install goland --classic"; else fail "GoLand (manual)"; fi ;;
+                *) flatpak_or_snap "GoLand" "com.jetbrains.GoLand" "goland" ;;
             esac ;;
         clion)
+            skip_installed "CLion" "clion" && return
             case "$PKG" in
                 brew) pkg_install "CLion" "brew install --cask clion" ;;
-                *)    if command -v snap &>/dev/null; then pkg_install "CLion" "sudo snap install clion --classic"; else fail "CLion (manual)"; fi ;;
+                *) flatpak_or_snap "CLion" "com.jetbrains.CLion" "clion" ;;
             esac ;;
         rider)
+            skip_installed "Rider" "rider" && return
             case "$PKG" in
                 brew) pkg_install "Rider" "brew install --cask rider" ;;
-                *)    if command -v snap &>/dev/null; then pkg_install "Rider" "sudo snap install rider --classic"; else fail "Rider (manual)"; fi ;;
+                *) flatpak_or_snap "Rider" "com.jetbrains.Rider" "rider" ;;
             esac ;;
         rustrover)
+            skip_installed "RustRover" "rustrover" && return
             case "$PKG" in
                 brew) pkg_install "RustRover" "brew install --cask rustrover" ;;
-                *)    if command -v snap &>/dev/null; then pkg_install "RustRover" "sudo snap install rustrover --classic"; else fail "RustRover (manual)"; fi ;;
+                *) flatpak_or_snap "RustRover" "com.jetbrains.RustRover" "rustrover" ;;
             esac ;;
         eclipse)
+            skip_installed "Eclipse" "eclipse" && return
             case "$PKG" in
                 brew) pkg_install "Eclipse" "brew install --cask eclipse-jee" ;;
-                *)    if command -v snap &>/dev/null; then pkg_install "Eclipse" "sudo snap install eclipse --classic"; else fail "Eclipse (manual)"; fi ;;
+                *) flatpak_or_snap "Eclipse" "org.eclipse.Java" "eclipse" ;;
             esac ;;
         android)
+            skip_installed "Android Studio" "studio" && return
             case "$PKG" in
                 brew) pkg_install "Android Studio" "brew install --cask android-studio" ;;
-                *)    if command -v snap &>/dev/null; then pkg_install "Android Studio" "sudo snap install android-studio --classic"; else fail "Android Studio (manual)"; fi ;;
+                *) flatpak_or_snap "Android Studio" "com.google.AndroidStudio" "android-studio" ;;
             esac ;;
         sublime)
+            skip_installed "Sublime Text" "subl" && return
             case "$PKG" in
                 brew) pkg_install "Sublime Text" "brew install --cask sublime-text" ;;
-                *)    if command -v snap &>/dev/null; then pkg_install "Sublime Text" "sudo snap install sublime-text --classic"; else fail "Sublime Text (manual)"; fi ;;
+                apt)
+                    step "Installing Sublime Text via repo..."
+                    curl -fsSL https://download.sublimetext.com/sublimehq-pub.gpg | sudo gpg --dearmor -o /usr/share/keyrings/sublimehq-archive-keyring.gpg 2>>"$LOG_FILE"
+                    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/sublimehq-archive-keyring.gpg] https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list > /dev/null
+                    sudo apt update &>>"$LOG_FILE" && sudo apt install -y sublime-text &>>"$LOG_FILE" && ok "Sublime Text installed." || fail "Sublime Text" ;;
+                *) flatpak_or_snap "Sublime Text" "com.sublimetext.three" "sublime-text" ;;
             esac ;;
         vim)
+            skip_installed "Neovim" "nvim" && return
             case "$PKG" in
                 brew)   pkg_install "Neovim" "brew install neovim" ;;
                 apt)    pkg_install "Neovim" "sudo apt install -y neovim" ;;
@@ -676,6 +765,7 @@ install_ide() {
                 zypper) pkg_install "Neovim" "sudo zypper install -y neovim" ;;
             esac ;;
         classicvim)
+            skip_installed "Vim" "vim" && return
             case "$PKG" in
                 brew)   pkg_install "Vim" "brew install vim" ;;
                 apt)    pkg_install "Vim" "sudo apt install -y vim" ;;
@@ -683,18 +773,8 @@ install_ide() {
                 pacman) pkg_install "Vim" "sudo pacman -S --noconfirm vim" ;;
                 zypper) pkg_install "Vim" "sudo zypper install -y vim" ;;
             esac ;;
-        vscodium)
-            case "$PKG" in
-                brew) pkg_install "VSCodium" "brew install --cask vscodium" ;;
-                *)    if command -v snap &>/dev/null; then pkg_install "VSCodium" "sudo snap install codium --classic"
-                      else info "Download VSCodium: https://vscodium.com"; fail "VSCodium (manual)"; fi ;;
-            esac ;;
-        antigravity)
-            case "$PKG" in
-                brew) pkg_install "Antigravity" "brew install --cask antigravity" ;;
-                *)    info "Download Antigravity: https://antigravity.app"; fail "Antigravity (manual)" ;;
-            esac ;;
         emacs)
+            skip_installed "GNU Emacs" "emacs" && return
             case "$PKG" in
                 brew)   pkg_install "GNU Emacs" "brew install --cask emacs" ;;
                 apt)    pkg_install "GNU Emacs" "sudo apt install -y emacs" ;;
@@ -702,29 +782,39 @@ install_ide() {
                 pacman) pkg_install "GNU Emacs" "sudo pacman -S --noconfirm emacs" ;;
                 zypper) pkg_install "GNU Emacs" "sudo zypper install -y emacs" ;;
             esac ;;
+        antigravity)
+            skip_installed "Antigravity" "antigravity" && return
+            case "$PKG" in
+                brew) pkg_install "Antigravity" "brew install --cask antigravity" ;;
+                *)    info "Download Antigravity: https://antigravity.app"; fail "Antigravity (manual)" ;;
+            esac ;;
         netbeans)
+            skip_installed "NetBeans" "netbeans" && return
             case "$PKG" in
                 brew) pkg_install "NetBeans" "brew install --cask netbeans" ;;
-                *)    if command -v snap &>/dev/null; then pkg_install "NetBeans" "sudo snap install netbeans --classic"
-                      else info "Download NetBeans: https://netbeans.apache.org"; fail "NetBeans (manual)"; fi ;;
+                *) flatpak_or_snap "NetBeans" "org.apache.netbeans" "netbeans" ;;
             esac ;;
         fleet)
+            skip_installed "Fleet" "fleet" && return
             case "$PKG" in
                 brew) pkg_install "JetBrains Fleet" "brew install --cask jetbrains-fleet" ;;
-                *)    info "Download Fleet: https://www.jetbrains.com/fleet/"; fail "Fleet (manual)" ;;
+                *) flatpak_or_snap "JetBrains Fleet" "com.jetbrains.Fleet" "fleet" ;;
             esac ;;
-        notepadpp)  info "Notepad++ is Windows-only." ;;
+        notepadpp) info "Notepad++ is Windows-only." ;;
         cursor)
+            skip_installed "Cursor" "cursor" && return
             case "$PKG" in
                 brew) pkg_install "Cursor" "brew install --cask cursor" ;;
                 *)    info "Download Cursor: https://cursor.sh"; fail "Cursor (manual)" ;;
             esac ;;
         windsurf)
+            skip_installed "Windsurf" "windsurf" && return
             case "$PKG" in
                 brew) pkg_install "Windsurf" "brew install --cask windsurf" ;;
                 *)    info "Download Windsurf: https://codeium.com/windsurf"; fail "Windsurf (manual)" ;;
             esac ;;
         zed)
+            skip_installed "Zed" "zed" && return
             case "$PKG" in
                 brew) pkg_install "Zed" "brew install --cask zed" ;;
                 *)    step "Installing Zed..."
@@ -741,6 +831,7 @@ install_tool() {
     local key="$1"
     case "$key" in
         git)
+            skip_installed "Git" "git" && return
             case "$PKG" in
                 brew) pkg_install "Git" "brew install git" ;;
                 apt)  pkg_install "Git" "sudo apt install -y git" ;;
@@ -749,6 +840,7 @@ install_tool() {
                 zypper) pkg_install "Git" "sudo zypper install -y git" ;;
             esac ;;
         docker)
+            skip_installed "Docker" "docker" && return
             case "$PKG" in
                 brew) pkg_install "Docker" "brew install --cask docker" ;;
                 apt)  pkg_install "Docker" "sudo apt install -y ca-certificates curl && sudo install -m 0755 -d /etc/apt/keyrings && curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc && sudo chmod a+r /etc/apt/keyrings/docker.asc && echo \"deb [arch=\$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \$(. /etc/os-release && echo \$VERSION_CODENAME) stable\" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null && sudo apt update && sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin && sudo usermod -aG docker \$USER" ;;
@@ -756,11 +848,13 @@ install_tool() {
                 pacman) pkg_install "Docker" "sudo pacman -S --noconfirm docker docker-compose && sudo systemctl enable --now docker && sudo usermod -aG docker \$USER" ;;
             esac ;;
         postman)
+            skip_installed "Postman" "postman" && return
             case "$PKG" in
                 brew) pkg_install "Postman" "brew install --cask postman" ;;
-                *)    if command -v snap &>/dev/null; then pkg_install "Postman" "sudo snap install postman"; else fail "Postman (manual)"; fi ;;
+                *) flatpak_or_snap "Postman" "com.getpostman.Postman" "postman" ;;
             esac ;;
         cmake)
+            skip_installed "CMake" "cmake" && return
             case "$PKG" in
                 brew)   pkg_install "CMake" "brew install cmake" ;;
                 apt)    pkg_install "CMake" "sudo apt install -y cmake" ;;
