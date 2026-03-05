@@ -55,6 +55,25 @@ function Ensure-WinGet {
     }
 }
 
+function Ensure-Scoop {
+    Write-Step "Checking Scoop..."
+    if (Get-Command scoop -ErrorAction SilentlyContinue) {
+        Write-Success "Scoop is already installed."
+        return $true
+    }
+    Write-Step "Installing Scoop..."
+    try {
+        Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+        Invoke-RestMethod -Uri "https://get.scoop.sh" | Invoke-Expression
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path","User") + ";" + [System.Environment]::GetEnvironmentVariable("Path","Machine")
+        Write-Success "Scoop installed."
+        return $true
+    } catch {
+        Write-Fail "Could not install Scoop: $_"
+        return $false
+    }
+}
+
 function Ensure-Chocolatey {
     Write-Step "Checking Chocolatey..."
     if (Get-Command choco -ErrorAction SilentlyContinue) {
@@ -97,6 +116,22 @@ function Install-WithWinGet($id, $name) {
     }
 }
 
+function Install-WithScoop($pkg, $name) {
+    Write-Step "Installing $name via Scoop..."
+    try {
+        scoop install $pkg 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Success "$name installed via Scoop."
+            $script:InstalledItems += $name
+            return $true
+        } else {
+            return $false
+        }
+    } catch {
+        return $false
+    }
+}
+
 function Install-WithChoco($pkg, $name) {
     Write-Step "Installing $name..."
     try {
@@ -117,9 +152,13 @@ function Install-WithChoco($pkg, $name) {
     }
 }
 
-function Install-Item($wingetId, $chocoId, $name) {
+function Install-Item($wingetId, $chocoId, $name, $scoopId) {
+    # Priority: winget > scoop > chocolatey
     if ($wingetId -and (Get-Command winget -ErrorAction SilentlyContinue)) {
         return Install-WithWinGet $wingetId $name
+    }
+    elseif ($scoopId -and (Get-Command scoop -ErrorAction SilentlyContinue)) {
+        return Install-WithScoop $scoopId $name
     }
     elseif ($chocoId -and (Get-Command choco -ErrorAction SilentlyContinue)) {
         return Install-WithChoco $chocoId $name
@@ -858,8 +897,9 @@ function Main {
     # Package managers
     Write-SectionHeader "Package Manager Setup"
     $hasWinGet = Ensure-WinGet
+    $hasScoop = Ensure-Scoop
     $hasChoco = Ensure-Chocolatey
-    if (-not $hasWinGet -and -not $hasChoco) { Write-Fail "No package manager available."; return }
+    if (-not $hasWinGet -and -not $hasScoop -and -not $hasChoco) { Write-Fail "No package manager available."; return }
 
     # System scan - show what's installed
     $scanResult = Start-SystemScan

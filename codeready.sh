@@ -10,6 +10,9 @@ VERSION="2.0.0"
 LOG_FILE="$HOME/codeready_install.log"
 INSTALLED=()
 FAILED=()
+HAS_MACPORTS=0
+HAS_NIX=0
+HAS_FLATPAK=0
 
 # --- Detect OS --------------------------------------------------
 detect_os() {
@@ -68,6 +71,27 @@ ensure_brew() {
     ok "Homebrew installed."
 }
 
+ensure_macports() {
+    step "Checking MacPorts..."
+    if command -v port &>/dev/null; then ok "MacPorts ready."; HAS_MACPORTS=1; return 0; fi
+    info "MacPorts not installed. Using Homebrew as primary."
+    HAS_MACPORTS=0
+}
+
+ensure_nix() {
+    step "Checking Nix..."
+    if command -v nix &>/dev/null; then ok "Nix ready."; HAS_NIX=1; return 0; fi
+    info "Nix not installed. Install with: sh <(curl -L https://nixos.org/nix/install) --daemon"
+    HAS_NIX=0
+}
+
+ensure_flatpak() {
+    step "Checking Flatpak..."
+    if command -v flatpak &>/dev/null; then ok "Flatpak ready."; HAS_FLATPAK=1; return 0; fi
+    info "Flatpak not installed."
+    HAS_FLATPAK=0
+}
+
 update_pkg() {
     step "Updating package manager..."
     case "$PKG" in
@@ -77,6 +101,19 @@ update_pkg() {
         zypper) sudo zypper refresh &>>"$LOG_FILE" ;;
         brew)   brew update &>>"$LOG_FILE" ;;
     esac
+    # Also check secondary package managers
+    ensure_nix
+    ensure_flatpak
+}
+
+# Helper: try nix as fallback
+nix_install() {
+    local name="$1" pkg="$2"
+    if [[ $HAS_NIX -eq 1 ]]; then
+        step "Installing $name via Nix..."
+        nix-env -iA nixpkgs."$pkg" &>>"$LOG_FILE" 2>&1 && ok "$name installed via Nix." && return 0
+    fi
+    return 1
 }
 
 # --- Generic installer ------------------------------------------
@@ -1340,7 +1377,13 @@ main() {
     detect_os
 
     section "Package Manager Setup"
-    if [[ "$OS_TYPE" == "macos" ]]; then ensure_brew; else update_pkg; fi
+    if [[ "$OS_TYPE" == "macos" ]]; then
+        ensure_brew
+        ensure_macports
+        ensure_nix
+    else
+        update_pkg
+    fi
 
     # System scan - show what's installed
     system_scan
