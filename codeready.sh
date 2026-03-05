@@ -55,6 +55,7 @@ step()    { echo -e "  ${YELLOW}[>]${NC} $1"; }
 ok()      { echo -e "  ${GREEN}[+]${NC} $1"; echo "[OK] $1" >> "$LOG_FILE"; INSTALLED+=("$1"); }
 fail()    { echo -e "  ${RED}[-]${NC} $1"; echo "[FAIL] $1" >> "$LOG_FILE"; FAILED+=("$1"); }
 info()    { echo -e "  ${CYAN}[i]${NC} ${GRAY}$1${NC}"; }
+warn()    { echo -e "  ${YELLOW}[!]${NC} ${YELLOW}$1${NC}"; echo "[WARN] $1" >> "$LOG_FILE"; }
 section() { echo ""; echo -e "  ${YELLOW}=== $1 ===${NC}"; echo ""; }
 
 # --- Package Manager Setup --------------------------------------
@@ -100,6 +101,46 @@ skip_installed() {
         return 0
     fi
     return 1
+}
+
+# Safe apt repo add — tracks what we add so we can clean up on failure
+ADDED_REPOS=()
+ADDED_KEYRINGS=()
+
+safe_add_repo() {
+    local list_file="$1" repo_line="$2" keyring="$3" key_url="$4"
+    # Add GPG key
+    if [[ -n "$key_url" && -n "$keyring" ]]; then
+        curl -fsSL "$key_url" 2>>"$LOG_FILE" | sudo gpg --dearmor -o "$keyring" 2>>"$LOG_FILE"
+        sudo chmod a+r "$keyring"
+        ADDED_KEYRINGS+=("$keyring")
+    fi
+    # Add repo
+    echo "$repo_line" | sudo tee "$list_file" > /dev/null
+    ADDED_REPOS+=("$list_file")
+    sudo apt update &>>"$LOG_FILE" 2>&1
+}
+
+# Remove repo and keyring if install failed — don't leave broken repos
+cleanup_repo() {
+    local list_file="$1" keyring="$2"
+    [[ -f "$list_file" ]] && sudo rm -f "$list_file" 2>/dev/null
+    [[ -f "$keyring" ]] && sudo rm -f "$keyring" 2>/dev/null
+    sudo apt update &>>"$LOG_FILE" 2>&1
+}
+
+# Safe install via apt repo: add repo, try install, cleanup if fails
+safe_repo_install() {
+    local name="$1" list_file="$2" repo_line="$3" keyring="$4" key_url="$5" pkg_name="$6"
+    step "Installing $name via official repo..."
+    safe_add_repo "$list_file" "$repo_line" "$keyring" "$key_url"
+    if sudo apt install -y "$pkg_name" &>>"$LOG_FILE" 2>&1; then
+        ok "$name installed."
+    else
+        warn "Failed to install $name — cleaning up broken repo..."
+        cleanup_repo "$list_file" "$keyring"
+        fail "$name"
+    fi
 }
 
 # --- Number menu ------------------------------------------------
@@ -668,15 +709,18 @@ install_ide() {
             case "$PKG" in
                 brew) pkg_install "VS Code" "brew install --cask visual-studio-code" ;;
                 apt)
-                    step "Installing VS Code via Microsoft repo..."
-                    curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /usr/share/keyrings/microsoft-archive-keyring.gpg 2>>"$LOG_FILE"
-                    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-archive-keyring.gpg] https://packages.microsoft.com/repos/code stable main" | sudo tee /etc/apt/sources.list.d/vscode.list > /dev/null
-                    sudo apt update &>>"$LOG_FILE" && sudo apt install -y code &>>"$LOG_FILE" && ok "VS Code installed." || fail "VS Code" ;;
+                    safe_repo_install "VS Code" \
+                        "/etc/apt/sources.list.d/vscode.list" \
+                        "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-archive-keyring.gpg] https://packages.microsoft.com/repos/code stable main" \
+                        "/usr/share/keyrings/microsoft-archive-keyring.gpg" \
+                        "https://packages.microsoft.com/keys/microsoft.asc" \
+                        "code" ;;
                 dnf)
                     step "Installing VS Code via Microsoft repo..."
                     sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc 2>>"$LOG_FILE"
                     echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" | sudo tee /etc/yum.repos.d/vscode.repo > /dev/null
-                    sudo dnf install -y code &>>"$LOG_FILE" && ok "VS Code installed." || fail "VS Code" ;;
+                    if sudo dnf install -y code &>>"$LOG_FILE"; then ok "VS Code installed."
+                    else sudo rm -f /etc/yum.repos.d/vscode.repo 2>/dev/null; fail "VS Code"; fi ;;
                 *) flatpak_or_snap "VS Code" "com.visualstudio.code" "code" ;;
             esac ;;
         vscodium)
@@ -749,10 +793,12 @@ install_ide() {
             case "$PKG" in
                 brew) pkg_install "Sublime Text" "brew install --cask sublime-text" ;;
                 apt)
-                    step "Installing Sublime Text via repo..."
-                    curl -fsSL https://download.sublimetext.com/sublimehq-pub.gpg | sudo gpg --dearmor -o /usr/share/keyrings/sublimehq-archive-keyring.gpg 2>>"$LOG_FILE"
-                    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/sublimehq-archive-keyring.gpg] https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list > /dev/null
-                    sudo apt update &>>"$LOG_FILE" && sudo apt install -y sublime-text &>>"$LOG_FILE" && ok "Sublime Text installed." || fail "Sublime Text" ;;
+                    safe_repo_install "Sublime Text" \
+                        "/etc/apt/sources.list.d/sublime-text.list" \
+                        "deb [arch=amd64 signed-by=/usr/share/keyrings/sublimehq-archive-keyring.gpg] https://download.sublimetext.com/ apt/stable/" \
+                        "/usr/share/keyrings/sublimehq-archive-keyring.gpg" \
+                        "https://download.sublimetext.com/sublimehq-pub.gpg" \
+                        "sublime-text" ;;
                 *) flatpak_or_snap "Sublime Text" "com.sublimetext.three" "sublime-text" ;;
             esac ;;
         vim)
@@ -847,19 +893,26 @@ install_tool() {
                     step "Installing Docker..."
                     sudo apt install -y ca-certificates curl &>>"$LOG_FILE"
                     sudo install -m 0755 -d /etc/apt/keyrings
-                    # Detect distro: debian or ubuntu
-                    local DISTRO
+                    local DISTRO CODENAME
                     if grep -qi "debian" /etc/os-release; then DISTRO="debian"; else DISTRO="ubuntu"; fi
-                    local CODENAME
                     CODENAME=$(. /etc/os-release && echo "$VERSION_CODENAME")
-                    # Fallback for Debian testing/sid (no codename match)
                     if [[ "$DISTRO" == "debian" && ("$CODENAME" == "trixie" || "$CODENAME" == "sid" || -z "$CODENAME") ]]; then
                         CODENAME="bookworm"
                     fi
-                    curl -fsSL "https://download.docker.com/linux/${DISTRO}/gpg" -o /etc/apt/keyrings/docker.asc 2>>"$LOG_FILE"
-                    sudo chmod a+r /etc/apt/keyrings/docker.asc
-                    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/${DISTRO} ${CODENAME} stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-                    sudo apt update &>>"$LOG_FILE" && sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin &>>"$LOG_FILE" && sudo usermod -aG docker "$USER" && ok "Docker installed." || fail "Docker"
+                    local docker_keyring="/etc/apt/keyrings/docker.asc"
+                    local docker_list="/etc/apt/sources.list.d/docker.list"
+                    curl -fsSL "https://download.docker.com/linux/${DISTRO}/gpg" -o "$docker_keyring" 2>>"$LOG_FILE"
+                    sudo chmod a+r "$docker_keyring"
+                    echo "deb [arch=$(dpkg --print-architecture) signed-by=${docker_keyring}] https://download.docker.com/linux/${DISTRO} ${CODENAME} stable" | sudo tee "$docker_list" > /dev/null
+                    sudo apt update &>>"$LOG_FILE" 2>&1
+                    if sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin &>>"$LOG_FILE" 2>&1; then
+                        sudo usermod -aG docker "$USER" 2>/dev/null
+                        ok "Docker installed."
+                    else
+                        warn "Docker install failed — cleaning up repo to prevent system issues..."
+                        cleanup_repo "$docker_list" "$docker_keyring"
+                        fail "Docker"
+                    fi
                     ;;
                 dnf)  pkg_install "Docker" "sudo dnf install -y docker && sudo systemctl enable --now docker && sudo usermod -aG docker \$USER" ;;
                 pacman) pkg_install "Docker" "sudo pacman -S --noconfirm docker docker-compose && sudo systemctl enable --now docker && sudo usermod -aG docker \$USER" ;;
