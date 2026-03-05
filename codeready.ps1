@@ -363,23 +363,29 @@ function Get-Languages {
 # ================================================================
 function Get-IDEs {
     return @(
-        @{ Key="vscode";    Name="VS Code";                    Desc="Lightweight, extensible, multi-language";    WinGet="Microsoft.VisualStudioCode";              Choco="vscode" },
-        @{ Key="vs2026";    Name="Visual Studio 2026 Community"; Desc="Full-featured IDE for .NET, C++ (v18)";   WinGet="Microsoft.VisualStudio.2026.Community";    Choco="visualstudio2026community" },
-        @{ Key="intellij";  Name="IntelliJ IDEA Community";    Desc="Java, Kotlin, JVM languages";               WinGet="JetBrains.IntelliJIDEA.Community";         Choco="intellijidea-community" },
-        @{ Key="pycharm";   Name="PyCharm Community";          Desc="Python IDE with debugging and testing";      WinGet="JetBrains.PyCharm.Community";              Choco="pycharm-community" },
-        @{ Key="webstorm";  Name="WebStorm";                   Desc="JavaScript/TypeScript IDE (paid)";           WinGet="JetBrains.WebStorm";                       Choco="webstorm" },
-        @{ Key="goland";    Name="GoLand";                     Desc="Go IDE by JetBrains (paid)";                 WinGet="JetBrains.GoLand";                         Choco="goland" },
-        @{ Key="clion";     Name="CLion";                      Desc="C/C++ IDE by JetBrains (paid)";              WinGet="JetBrains.CLion";                          Choco="clion" },
-        @{ Key="rider";     Name="Rider";                      Desc=".NET IDE by JetBrains (paid)";               WinGet="JetBrains.Rider";                          Choco="jetbrains-rider" },
-        @{ Key="rustrover"; Name="RustRover";                  Desc="Rust IDE by JetBrains";                      WinGet="JetBrains.RustRover";                      Choco="rustrover" },
-        @{ Key="eclipse";   Name="Eclipse IDE";                Desc="Java, C/C++, PHP, multi-language";           WinGet="EclipseFoundation.EclipseIDE";             Choco="eclipse" },
-        @{ Key="android";   Name="Android Studio";             Desc="Official Android development IDE";           WinGet="Google.AndroidStudio";                     Choco="androidstudio" },
-        @{ Key="sublime";   Name="Sublime Text";               Desc="Fast, lightweight code editor";              WinGet="SublimeHQ.SublimeText.4";                  Choco="sublimetext4" },
-        @{ Key="vim";       Name="Neovim";                     Desc="Terminal-based editor for power users";      WinGet="Neovim.Neovim";                            Choco="neovim" },
-        @{ Key="notepadpp"; Name="Notepad++";                  Desc="Lightweight Windows code editor";            WinGet="Notepad++.Notepad++";                      Choco="notepadplusplus" },
-        @{ Key="cursor";    Name="Cursor";                     Desc="AI-powered code editor";                     WinGet="Anysphere.Cursor";                         Choco="" },
-        @{ Key="windsurf";  Name="Windsurf";                   Desc="AI-powered IDE by Codeium";                  WinGet="Codeium.Windsurf";                         Choco="" },
-        @{ Key="zed";       Name="Zed";                        Desc="High-performance editor written in Rust";    WinGet="Zed.Zed";                                  Choco="" }
+        @{ Key="vscode";      Name="VS Code";                    Desc="Lightweight, extensible, multi-language";    WinGet="Microsoft.VisualStudioCode";              Choco="vscode" },
+        @{ Key="vscodium";    Name="VSCodium";                   Desc="VS Code without telemetry";                  WinGet="VSCodium.VSCodium";                       Choco="vscodium" },
+        @{ Key="antigravity"; Name="Antigravity";                Desc="AI-native code editor";                      WinGet="";                                        Choco="" },
+        @{ Key="cursor";      Name="Cursor";                     Desc="AI-powered code editor";                     WinGet="Anysphere.Cursor";                        Choco="" },
+        @{ Key="zed";         Name="Zed";                        Desc="High-performance editor written in Rust";    WinGet="Zed.Zed";                                 Choco="" },
+        @{ Key="windsurf";    Name="Windsurf";                   Desc="AI-powered IDE by Codeium";                  WinGet="Codeium.Windsurf";                        Choco="" },
+        @{ Key="vs2026";      Name="Visual Studio Community";    Desc="Full-featured IDE for .NET, C++";            WinGet="Microsoft.VisualStudio.2026.Community";   Choco="visualstudio2026community" },
+        @{ Key="sublime";     Name="Sublime Text";               Desc="Fast, lightweight code editor";              WinGet="SublimeHQ.SublimeText.4";                 Choco="sublimetext4" },
+        @{ Key="classicvim";  Name="Vim";                        Desc="Classic terminal text editor";               WinGet="vim.vim";                                 Choco="vim" },
+        @{ Key="vim";         Name="Neovim";                     Desc="Modern terminal editor";                     WinGet="Neovim.Neovim";                           Choco="neovim" },
+        @{ Key="emacs";       Name="GNU Emacs";                  Desc="Extensible, customizable text editor";       WinGet="GNU.Emacs";                               Choco="emacs" },
+        @{ Key="notepadpp";   Name="Notepad++";                  Desc="Lightweight Windows code editor";            WinGet="Notepad++.Notepad++";                     Choco="notepadplusplus" },
+        @{ Key="intellij";    Name="IntelliJ IDEA Community";    Desc="Java, Kotlin, JVM languages";               WinGet="JetBrains.IntelliJIDEA.Community";        Choco="intellijidea-community" },
+        @{ Key="pycharm";     Name="PyCharm Community";          Desc="Python IDE with debugging and testing";      WinGet="JetBrains.PyCharm.Community";             Choco="pycharm-community" },
+        @{ Key="webstorm";    Name="WebStorm";                   Desc="JavaScript/TypeScript IDE (paid)";           WinGet="JetBrains.WebStorm";                      Choco="webstorm" },
+        @{ Key="goland";      Name="GoLand";                     Desc="Go IDE by JetBrains (paid)";                 WinGet="JetBrains.GoLand";                        Choco="goland" },
+        @{ Key="clion";       Name="CLion";                      Desc="C/C++ IDE by JetBrains (paid)";             WinGet="JetBrains.CLion";                         Choco="clion" },
+        @{ Key="rider";       Name="Rider";                      Desc=".NET IDE by JetBrains (paid)";              WinGet="JetBrains.Rider";                         Choco="jetbrains-rider" },
+        @{ Key="rustrover";   Name="RustRover";                  Desc="Rust IDE by JetBrains";                      WinGet="JetBrains.RustRover";                     Choco="rustrover" },
+        @{ Key="fleet";       Name="JetBrains Fleet";            Desc="Lightweight multi-language IDE";             WinGet="JetBrains.Fleet";                         Choco="" },
+        @{ Key="eclipse";     Name="Eclipse IDE";                Desc="Java, C/C++, PHP, multi-language";          WinGet="EclipseFoundation.EclipseIDE";            Choco="eclipse" },
+        @{ Key="netbeans";    Name="Apache NetBeans";            Desc="Java, PHP, HTML5 IDE";                       WinGet="Apache.NetBeans";                         Choco="netbeans" },
+        @{ Key="android";     Name="Android Studio";             Desc="Official Android development IDE";           WinGet="Google.AndroidStudio";                    Choco="androidstudio" }
     )
 }
 

@@ -675,6 +675,44 @@ install_ide() {
                 pacman) pkg_install "Neovim" "sudo pacman -S --noconfirm neovim" ;;
                 zypper) pkg_install "Neovim" "sudo zypper install -y neovim" ;;
             esac ;;
+        classicvim)
+            case "$PKG" in
+                brew)   pkg_install "Vim" "brew install vim" ;;
+                apt)    pkg_install "Vim" "sudo apt install -y vim" ;;
+                dnf)    pkg_install "Vim" "sudo dnf install -y vim-enhanced" ;;
+                pacman) pkg_install "Vim" "sudo pacman -S --noconfirm vim" ;;
+                zypper) pkg_install "Vim" "sudo zypper install -y vim" ;;
+            esac ;;
+        vscodium)
+            case "$PKG" in
+                brew) pkg_install "VSCodium" "brew install --cask vscodium" ;;
+                *)    if command -v snap &>/dev/null; then pkg_install "VSCodium" "sudo snap install codium --classic"
+                      else info "Download VSCodium: https://vscodium.com"; fail "VSCodium (manual)"; fi ;;
+            esac ;;
+        antigravity)
+            case "$PKG" in
+                brew) pkg_install "Antigravity" "brew install --cask antigravity" ;;
+                *)    info "Download Antigravity: https://antigravity.app"; fail "Antigravity (manual)" ;;
+            esac ;;
+        emacs)
+            case "$PKG" in
+                brew)   pkg_install "GNU Emacs" "brew install --cask emacs" ;;
+                apt)    pkg_install "GNU Emacs" "sudo apt install -y emacs" ;;
+                dnf)    pkg_install "GNU Emacs" "sudo dnf install -y emacs" ;;
+                pacman) pkg_install "GNU Emacs" "sudo pacman -S --noconfirm emacs" ;;
+                zypper) pkg_install "GNU Emacs" "sudo zypper install -y emacs" ;;
+            esac ;;
+        netbeans)
+            case "$PKG" in
+                brew) pkg_install "NetBeans" "brew install --cask netbeans" ;;
+                *)    if command -v snap &>/dev/null; then pkg_install "NetBeans" "sudo snap install netbeans --classic"
+                      else info "Download NetBeans: https://netbeans.apache.org"; fail "NetBeans (manual)"; fi ;;
+            esac ;;
+        fleet)
+            case "$PKG" in
+                brew) pkg_install "JetBrains Fleet" "brew install --cask jetbrains-fleet" ;;
+                *)    info "Download Fleet: https://www.jetbrains.com/fleet/"; fail "Fleet (manual)" ;;
+            esac ;;
         notepadpp)  info "Notepad++ is Windows-only." ;;
         cursor)
             case "$PKG" in
@@ -1099,8 +1137,8 @@ main() {
     local LANG_KEYS=("python" "nodejs" "java" "csharp" "cpp" "go" "rust" "php" "ruby" "kotlin" "dart" "swift" "zig" "mojo" "wasm" "typescript" "elixir" "scala" "julia" "r" "lua" "haskell" "perl" "erlang" "ocaml" "fortran" "d" "nim" "crystal" "v" "gleam" "carbon" "solidity" "groovy" "ada" "cobol" "lisp" "racket" "objc")
     local LANG_LABELS=("Python - General purpose, AI/ML" "Node.js - JavaScript/TypeScript runtime" "Java (JDK) - Enterprise, Android" "C# / .NET SDK - Microsoft ecosystem" "C/C++ - Systems programming" "Go - Cloud, microservices" "Rust - Memory safety, systems" "PHP - Web, CMS" "Ruby - Web, scripting" "Kotlin - Android, JVM" "Dart/Flutter - Mobile, web UI" "Swift - Apple ecosystem" "Zig - Next-gen systems, C interop" "Mojo - AI/GPU programming" "WebAssembly (WASI) - Portable binary" "TypeScript - Typed JavaScript" "Elixir - Functional, concurrent" "Scala - JVM functional/OOP" "Julia - Scientific computing" "R - Statistics, data science" "Lua - Scripting, game engines" "Haskell - Pure functional, fintech" "Perl - Text processing, sysadmin" "Erlang - Telecom, distributed systems" "OCaml - Fintech, compilers" "Fortran - Scientific computing, HPC" "D - Systems programming, C++ alt" "Nim - Python-like syntax, compiled" "Crystal - Ruby-like, compiled" "V - Simple systems language" "Gleam - Type-safe BEAM language" "Carbon - Experimental C++ successor" "Solidity - Ethereum smart contracts" "Groovy - JVM scripting, Gradle" "Ada - Safety-critical systems" "COBOL - Banking, legacy systems" "Common Lisp (SBCL) - AI, macros" "Racket - PL research, education" "Objective-C - Legacy Apple dev")
 
-    local IDE_KEYS=("vscode" "intellij" "pycharm" "webstorm" "goland" "clion" "rider" "rustrover" "eclipse" "android" "sublime" "vim" "cursor" "windsurf" "zed")
-    local IDE_LABELS=("VS Code - Lightweight, extensible" "IntelliJ IDEA Community - Java, Kotlin" "PyCharm Community - Python IDE" "WebStorm - JS/TS IDE (paid)" "GoLand - Go IDE (paid)" "CLion - C/C++ IDE (paid)" "Rider - .NET IDE (paid)" "RustRover - Rust IDE" "Eclipse IDE - Java, multi-language" "Android Studio - Android dev" "Sublime Text - Fast editor" "Neovim - Terminal editor" "Cursor - AI-powered editor" "Windsurf - AI-powered IDE" "Zed - High-performance editor")
+    local IDE_KEYS=("vscode" "vscodium" "antigravity" "cursor" "zed" "windsurf" "sublime" "classicvim" "vim" "emacs" "notepadpp" "intellij" "pycharm" "webstorm" "goland" "clion" "rider" "rustrover" "fleet" "eclipse" "netbeans" "android")
+    local IDE_LABELS=("VS Code - Lightweight, extensible" "VSCodium - VS Code without telemetry" "Antigravity - AI-native code editor" "Cursor - AI-powered code editor" "Zed - High-performance editor" "Windsurf - AI-powered IDE" "Sublime Text - Fast, lightweight" "Vim - Classic terminal editor" "Neovim - Modern terminal editor" "GNU Emacs - Extensible text editor" "Notepad++ - Windows code editor" "IntelliJ IDEA Community - Java, Kotlin" "PyCharm Community - Python IDE" "WebStorm - JS/TS IDE (paid)" "GoLand - Go IDE (paid)" "CLion - C/C++ IDE (paid)" "Rider - .NET IDE (paid)" "RustRover - Rust IDE" "JetBrains Fleet - Lightweight multi-lang" "Eclipse IDE - Java, multi-language" "Apache NetBeans - Java, PHP, HTML5" "Android Studio - Android development")
 
     local TOOL_KEYS=("git" "docker" "postman" "cmake" "gh" "pyenv")
     local TOOL_LABELS=("Git - Version control" "Docker - Containers" "Postman - API testing" "CMake - Build system" "GitHub CLI - GitHub from terminal" "pyenv - Python version manager")
