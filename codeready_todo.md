@@ -16,8 +16,15 @@
 - [x] **23 IDEs/Editors** — added VSCodium, Antigravity, Vim, GNU Emacs, NetBeans, JetBrains Fleet
 - [x] **15 profiles** — added DevOps/Cloud, Blockchain/Web3, Embedded/IoT, Scientific Computing, Functional, JVM Ecosystem, Minimalist/Terminal
 - [x] **System scan detects all 23 IDEs** — full IDE detection in scan report
+- [x] **Skip already installed** — `skip_installed` checks before every install, no redundant re-installs
+- [x] **Safe repo install** — `safe_repo_install` + `cleanup_repo` — failed installs clean up broken repos automatically
+- [x] **Flatpak first, snap last** — IDE install priority: apt repo → flatpak → snap (en son)
+- [x] **Scoop (Windows)** — added as secondary package manager (winget → Scoop → Chocolatey)
+- [x] **MacPorts (macOS)** — detected and available as fallback alongside Homebrew
+- [x] **Nix (cross-platform)** — detected as fallback on Linux and macOS
+- [x] **Docker Debian fix** — auto-detect debian vs ubuntu, trixie/sid fallback to bookworm
+- [x] **Windows IDE detection** — file path checks for Notepad++, Android Studio, JetBrains IDEs
 - [ ] **One-click accept** — user just hits Enter to accept all recommendations
-- [ ] **Skip already installed** — never reinstall something that's already at latest version
 - [ ] **Version check via API** — query GitHub releases, pypi, npm registry for actual latest versions instead of hardcoded version lists
 
 ### Uninstall Mode
@@ -36,7 +43,126 @@
 
 ---
 
-## 🎨 v2.2 — Terminal Beautification / Shell UX (Next Up)
+## 📦 v2.2 — Frameworks & TUI Expansion (Next Up)
+
+### New Frameworks by Ecosystem
+
+**JavaScript / TypeScript:**
+- [ ] Svelte / SvelteKit (already partial)
+- [ ] Remix (already partial)
+- [ ] Hono — ultra-fast web framework
+- [ ] Elysia — Bun-native web framework
+- [ ] Turborepo — monorepo build system
+- [ ] Prisma — database ORM
+
+**Go:**
+- [ ] Gin — HTTP web framework
+- [ ] Fiber — Express-inspired web framework
+- [ ] Echo — high-performance web framework
+- [ ] Cobra — CLI application framework
+
+**Rust:**
+- [ ] Actix Web — high-performance web framework
+- [ ] Axum — modular web framework (Tokio)
+- [ ] Rocket — web framework with macros
+- [ ] Bevy — game engine (ECS-based)
+- [ ] Leptos — full-stack web framework (WASM)
+
+**Java / Kotlin / JVM:**
+- [ ] Spring Boot — enterprise web framework
+- [ ] Quarkus — cloud-native Java framework
+- [ ] Micronaut — microservices framework
+- [ ] Ktor — Kotlin async web framework
+- [ ] Gradle — build tool (already via SDKMAN)
+
+**PHP:**
+- [ ] Laravel — full-stack web framework
+- [ ] Symfony — enterprise PHP framework
+- [ ] Composer (already partial — ensure global)
+
+**Ruby:**
+- [ ] Ruby on Rails — full-stack web framework
+- [ ] Bundler — dependency manager
+- [ ] Sinatra — lightweight web framework
+
+**Elixir:**
+- [ ] Phoenix — real-time web framework
+- [ ] Mix — build tool (comes with Elixir)
+- [ ] Nerves — embedded/IoT framework
+
+**Python (additions):**
+- [ ] Celery — async task queue
+- [ ] Pytest — testing framework
+- [ ] Ruff — ultra-fast linter
+- [ ] Black — code formatter
+- [ ] Jupyter Notebook / Lab
+
+**Haskell:**
+- [ ] Cabal — package manager
+- [ ] Stack — build tool
+- [ ] Yesod — web framework
+
+**OCaml:**
+- [ ] opam — package manager (already in installer)
+- [ ] Dune — build system
+
+### TUI / Terminal Beautification Tools
+
+**Prompt Engines:**
+- [ ] Starship — cross-platform prompt
+- [ ] Oh My Posh — Windows/cross-platform prompt
+
+**Shell Plugins:**
+- [ ] Oh My Zsh — zsh framework + plugins
+- [ ] zsh-autosuggestions
+- [ ] zsh-syntax-highlighting
+- [ ] Fish shell + Fisher plugin manager
+- [ ] PSReadLine config (Windows)
+- [ ] posh-git (Windows)
+- [ ] Terminal-Icons (Windows)
+
+**Nerd Fonts:**
+- [ ] FiraCode Nerd Font
+- [ ] JetBrains Mono Nerd Font
+- [ ] Hack Nerd Font
+- [ ] CascadiaCode Nerd Font
+- [ ] MesloLGS Nerd Font
+
+**Terminal Color Schemes:**
+- [ ] Catppuccin (Latte, Frappe, Macchiato, Mocha)
+- [ ] Dracula
+- [ ] Nord
+- [ ] Gruvbox (Light, Dark)
+- [ ] One Dark
+- [ ] Tokyo Night
+- [ ] Solarized (Light, Dark)
+
+**Terminal Emulator Config:**
+- [ ] Windows Terminal settings.json — font, color scheme, opacity
+- [ ] Alacritty config generator
+- [ ] Kitty config generator
+- [ ] iTerm2 profile import (macOS)
+
+### Modern CLI Tools
+
+- [ ] bat — cat with syntax highlighting
+- [ ] eza / exa — modern ls replacement
+- [ ] fd — modern find replacement
+- [ ] ripgrep (rg) — modern grep replacement
+- [ ] fzf — fuzzy finder
+- [ ] zoxide — smarter cd
+- [ ] delta — better git diff
+- [ ] lazygit — terminal git UI
+- [ ] lazydocker — terminal docker UI
+- [ ] htop / btop — system monitor
+- [ ] tldr — simplified man pages
+- [ ] jq — JSON processor
+- [ ] yq — YAML processor
+- [ ] httpie — modern curl alternative
+
+---
+
+## 🎨 v2.3 — Terminal Beautification / Shell UX
 
 Kullanıcının terminalini güzelleştir. VenvStudio'daki CLI/TUI Tools yaklaşımının CodeReady versiyonu.
 
@@ -112,7 +238,7 @@ Kullanıcının terminalini güzelleştir. VenvStudio'daki CLI/TUI Tools yaklaş
 
 ---
 
-## 📡 v2.3 — Live Version Intelligence
+## 📡 v2.4 — Live Version Intelligence
 
 ### Dynamic Version Discovery
 
@@ -140,7 +266,7 @@ Stop hardcoding versions. Query real sources at runtime.
 
 ---
 
-## 📋 v2.4 — Configuration Profiles and Export
+## 📋 v2.5 — Configuration Profiles and Export
 
 ### Save and Restore Environments
 
@@ -177,7 +303,7 @@ Stop hardcoding versions. Query real sources at runtime.
 
 ---
 
-## 🔄 v2.5 — Update Manager
+## 🔄 v2.6 — Update Manager
 
 ### Keep Everything Fresh
 
