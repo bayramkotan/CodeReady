@@ -904,8 +904,8 @@ function Main {
         Write-Host "  ============================================================" -ForegroundColor Red
         Write-Host ""
         Write-Host "  This includes:" -ForegroundColor Yellow
-        Write-Host "    - 18 programming languages and runtimes" -ForegroundColor White
-        Write-Host "    - 17 IDEs and editors" -ForegroundColor White
+        Write-Host "    - 39 programming languages and runtimes" -ForegroundColor White
+        Write-Host "    - 23 IDEs and editors" -ForegroundColor White
         Write-Host "    - 9 developer tools" -ForegroundColor White
         Write-Host "    - 38 frameworks, libraries and package managers" -ForegroundColor White
         Write-Host ""

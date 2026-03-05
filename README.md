@@ -32,7 +32,7 @@ Setting up a new development machine is painful. You spend hours downloading com
 - **Version selection** — choose between multiple versions for each language (latest, LTS, older)
 - **Multi-profile support** — combine Web Dev + Data Science + AI/ML in one go
 - **Cross-platform** — same experience on Windows, macOS, and Linux
-- **82+ packages** — languages, IDEs, tools, frameworks, all in one place
+- **109+ packages** — languages, IDEs, tools, frameworks, all in one place
 - **Auto shell reload** — installed tools work immediately, no terminal restart needed
 
 ---
@@ -106,7 +106,7 @@ chmod +x codeready.sh
 | **Version Selection** | Pick specific versions for each language (latest, LTS, or older) |
 | **8 Quick Profiles** | Pre-configured setups for common developer roles |
 | **Multi-Profile** | Select `1 3 7` to combine Web Dev + Data Science + AI/ML |
-| **Install Everything** | Option 9 installs all 82+ packages (with safety warnings) |
+| **Install Everything** | Option 9 installs all 109+ packages (with safety warnings) |
 | **Smart Deduplication** | Combining profiles never installs the same package twice |
 | **Auto Package Manager** | Detects and installs winget/Chocolatey (Win) or Homebrew/apt/dnf/pacman (Unix) |
 | **Auto Shell Reload** | Sources `.bashrc`/`.zshrc` after install — tools work immediately |
@@ -118,7 +118,7 @@ chmod +x codeready.sh
 
 ## Supported Software
 
-### Programming Languages and Runtimes — 18 languages
+### Programming Languages and Runtimes — 39 languages
 
 | Language | Version Selection | Win | Mac | Linux | Notes |
 |----------|-------------------|:---:|:---:|:-----:|-------|
@@ -134,21 +134,52 @@ chmod +x codeready.sh
 | **Kotlin** | Latest | ✅ | ✅ | ✅ | Via SDKMAN or snap |
 | **Dart / Flutter** | Latest | ✅ | ✅ | ✅ | Flutter includes Dart |
 | **Swift** | Latest | ✅ | ✅ | ⚠️ | macOS via Xcode, Linux partial |
-| **Zig** | Multiple recent versions | ✅ | ✅ | ✅ | Next-gen systems language |
-| **Mojo** | Latest | WSL | ✅ | ✅ | AI/GPU programming by Modular |
-| **WebAssembly** | Wasmtime / Wasmer | ✅ | ✅ | ✅ | WASI runtimes |
 | **TypeScript** | Latest (via npm) | ✅ | ✅ | ✅ | Requires Node.js |
-| **Elixir** | Latest | ✅ | ✅ | ✅ | Functional, concurrent |
+| **R** | Latest | ✅ | ✅ | ✅ | Statistics, data science |
+| **Lua** | Latest | ✅ | ✅ | ✅ | Scripting, game engines, embedded |
+| **Perl** | Latest | ✅ | ✅ | ✅ | Text processing, sysadmin |
+| **Julia** | Latest + LTS | ✅ | ✅ | ✅ | Scientific computing |
 | **Scala** | Latest | ✅ | ✅ | ✅ | JVM functional/OOP |
+| **Groovy** | Latest | ✅ | ✅ | ✅ | JVM scripting, Gradle builds |
+| **Elixir** | Latest | ✅ | ✅ | ✅ | Functional, concurrent, BEAM VM |
+| **Erlang** | Latest | ✅ | ✅ | ✅ | Telecom, distributed systems |
+| **Haskell** | Latest via GHCup | ✅ | ✅ | ✅ | Pure functional, fintech |
+| **OCaml** | Latest via opam | ✅ | ✅ | ✅ | Fintech, compilers |
+| **Common Lisp** | Latest (SBCL) | ✅ | ✅ | ✅ | AI, symbolic computing |
+| **Racket** | Latest | ✅ | ✅ | ✅ | PL research, education |
+| **Zig** | Multiple recent versions | ✅ | ✅ | ✅ | Next-gen systems language |
+| **Nim** | Latest via choosenim | ✅ | ✅ | ✅ | Python-like syntax, compiled |
+| **Crystal** | Latest | ✅ | ✅ | ✅ | Ruby-like, compiled, fast |
+| **V** | Latest | ✅ | ✅ | ✅ | Simple systems language |
+| **D** | Latest (LDC) | ✅ | ✅ | ✅ | Systems programming |
+| **Gleam** | Latest | ✅ | ✅ | ✅ | Type-safe BEAM language |
+| **Mojo** | Latest | WSL | ✅ | ✅ | AI/GPU programming by Modular |
+| **Carbon** | Experimental | ⚠️ | ⚠️ | ⚠️ | Google's C++ successor (no installer) |
+| **Solidity** | Latest (solcjs) | ✅ | ✅ | ✅ | Ethereum smart contracts |
+| **Fortran** | Latest (GFortran) | ✅ | ✅ | ✅ | Scientific computing, HPC |
+| **Ada** | Latest (GNAT) | ✅ | ✅ | ✅ | Safety-critical, aerospace |
+| **COBOL** | Latest (GnuCOBOL) | ✅ | ✅ | ✅ | Banking, legacy systems |
+| **Objective-C** | Via Clang/GNUstep | ✅ | ✅ | ✅ | Legacy Apple development |
+| **WebAssembly** | Wasmtime / Wasmer | ✅ | ✅ | ✅ | WASI runtimes |
 
-> **Version selection** is available for Python, Node.js, Java, .NET, Go, PHP, Ruby, and Zig. You pick your preferred version during setup. Other languages install the latest stable release.
+> **Version selection** is available for Python, Node.js, Java, .NET, Go, PHP, Ruby, Zig, and Julia. You pick your preferred version during setup. Other languages install the latest stable release.
 
-### IDEs and Editors — 17 editors
+### IDEs and Editors — 23 editors
 
 | IDE | License | Win | Mac | Linux |
 |-----|---------|:---:|:---:|:-----:|
 | **VS Code** | Free | ✅ | ✅ | ✅ |
+| **VSCodium** | Free | ✅ | ✅ | ✅ |
+| **Antigravity** | Free | ✅ | ✅ | ✅ |
+| **Cursor** | Freemium | ✅ | ✅ | ✅ |
+| **Zed** | Free | ✅ | ✅ | ✅ |
+| **Windsurf** | Free | ✅ | ✅ | ✅ |
 | **Visual Studio** Community | Free | ✅ | — | — |
+| **Sublime Text** | Freemium | ✅ | ✅ | ✅ |
+| **Vim** | Free | ✅ | ✅ | ✅ |
+| **Neovim** | Free | ✅ | ✅ | ✅ |
+| **GNU Emacs** | Free | ✅ | ✅ | ✅ |
+| **Notepad++** | Free | ✅ | — | — |
 | **IntelliJ IDEA** Community | Free | ✅ | ✅ | ✅ |
 | **PyCharm** Community | Free | ✅ | ✅ | ✅ |
 | **WebStorm** | Paid | ✅ | ✅ | ✅ |
@@ -156,14 +187,10 @@ chmod +x codeready.sh
 | **CLion** | Paid | ✅ | ✅ | ✅ |
 | **Rider** | Paid | ✅ | ✅ | ✅ |
 | **RustRover** | Free | ✅ | ✅ | ✅ |
+| **JetBrains Fleet** | Free | ✅ | ✅ | ✅ |
 | **Eclipse IDE** | Free | ✅ | ✅ | ✅ |
+| **Apache NetBeans** | Free | ✅ | ✅ | ✅ |
 | **Android Studio** | Free | ✅ | ✅ | ✅ |
-| **Sublime Text** | Freemium | ✅ | ✅ | ✅ |
-| **Neovim** | Free | ✅ | ✅ | ✅ |
-| **Notepad++** | Free | ✅ | — | — |
-| **Cursor** | Freemium | ✅ | ✅ | ✅ |
-| **Windsurf** | Free | ✅ | ✅ | ✅ |
-| **Zed** | Free | ✅ | ✅ | ✅ |
 
 ### Developer Tools — 9 tools
 
@@ -275,7 +302,7 @@ Select profile(s): 9         <- install EVERYTHING (with safety warnings)
 | **6** | **Game Developer** | C/C++, C# | Visual Studio, VS Code, Rider | CMake |
 | **7** | **AI / ML Engineer** | Python, Mojo, Rust | VS Code, PyCharm, Cursor | VenvStudio, uv, Conda, Streamlit, FastAPI |
 | **8** | **Custom Setup** | *You choose* | *You choose* | *You choose* |
-| **9** | **INSTALL EVERYTHING** | *All 18 languages* | *All 17 IDEs* | *All 38 frameworks* |
+| **9** | **INSTALL EVERYTHING** | *All 39 languages* | *All 23 IDEs* | *All 38 frameworks* |
 
 > **Note:** Option 9 will warn you about estimated time (~45-90 min), disk usage (~30-50 GB), and system load before proceeding. Requires typing `YES` in uppercase to confirm.
 
