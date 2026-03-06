@@ -656,19 +656,14 @@ function Show-Summary {
 function Get-CmdVersion($cmd, $flag) {
     if (-not $flag) { $flag = "--version" }
     if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) { return "" }
+    # Only run --version on safe CLI tools (no GUI, no interactive shell)
+    $safeCmds = @("python","node","java","dotnet","gcc","go","rustc","php","ruby","dart","zig","tsc","nim","crystal","gleam","gfortran","ldc2","cobc","gnat","sbcl","git","docker","cmake","gh","npm","yarn","pnpm","bun","uv","poetry","conda","terraform","code","codium","nvim","vim","subl","emacs","perl","ghc","ocaml","racket","lua","julia","groovy","mojo","solcjs","wasmtime","wasmer")
+    if ($safeCmds -notcontains $cmd) { return "found" }
     try {
-        # Run with 5-second timeout to prevent hanging
-        $job = Start-Job -ScriptBlock {
-            param($c, $f)
-            & $c $f 2>&1 | Select-Object -First 3
-        } -ArgumentList $cmd, $flag
-        $result = $job | Wait-Job -Timeout 5 | Receive-Job 2>$null
-        Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
-        if ($result) {
-            foreach ($line in $result) {
-                $s = "$line"
-                if ($s -match '(\d+\.\d+[\.\d]*)') { return $Matches[1] }
-            }
+        $out = & $cmd $flag 2>&1 | Select-Object -First 3
+        foreach ($line in $out) {
+            $s = "$line"
+            if ($s -match '(\d+\.\d+[\.\d]*)') { return $Matches[1] }
         }
         return "found"
     } catch { return "found" }
