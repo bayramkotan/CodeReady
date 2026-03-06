@@ -24,8 +24,15 @@
 - [x] **Nix (cross-platform)** — detected as fallback on Linux and macOS
 - [x] **Docker Debian fix** — auto-detect debian vs ubuntu, trixie/sid fallback to bookworm
 - [x] **Windows IDE detection** — file path checks for Notepad++, Android Studio, JetBrains IDEs
-- [ ] **One-click accept** — user just hits Enter to accept all recommendations
-- [ ] **Version check via API** — query GitHub releases, pypi, npm registry for actual latest versions instead of hardcoded version lists
+- [x] **Silent error handling** — no red error messages for missing commands in scan
+- [x] **Version display** — shows actual version numbers instead of "installed OK"
+
+### Known Issues (to fix next)
+
+- [ ] **Windows scan too slow** — scanning 72+ commands takes too long. Need parallel scan or file-path-only detection for non-PATH apps
+- [ ] **JetBrains IDEs** — don't try `--version` (they launch GUI), use only file path detection
+- [ ] **Parallel scanning** — run detections in background jobs, collect results
+- [ ] **Cache scan results** — save to `~/.codeready/scan-cache.json`, re-scan only if older than 1 hour
 
 ### Uninstall Mode
 
@@ -322,6 +329,102 @@ Stop hardcoding versions. Query real sources at runtime.
 - [ ] **Changelog preview** — show brief changelog for major updates
 - [ ] **Rollback support** — save previous version info, ability to downgrade if update breaks something
 - [ ] **Auto-update schedule** — optional cron/task scheduler for weekly checks
+
+---
+
+## 🩺 v2.7 — Problem Solver / Diagnostics Engine
+
+An intelligent troubleshooting system that diagnoses and fixes common development environment issues automatically.
+
+### `--doctor` Command
+
+- [ ] **`codeready --doctor`** — run full system diagnostics
+- [ ] **Exit codes** — 0 = all good, 1 = warnings, 2 = critical issues
+- [ ] **Colored report** — green/yellow/red per check
+- [ ] **`--doctor --fix`** — auto-fix safe issues
+- [ ] **`--doctor --fix --dry-run`** — show what would be fixed without doing it
+
+### PATH & Environment Checks
+
+- [ ] **Duplicate PATH entries** — detect and offer to clean
+- [ ] **Broken PATH entries** — directories that don't exist
+- [ ] **Conflicting versions** — multiple Python/Node/Java on PATH, which one wins?
+- [ ] **Wrong version active** — `python` points to 2.x instead of 3.x
+- [ ] **Missing PATH** — installed but not on PATH (e.g., Go installed but `/usr/local/go/bin` missing)
+- [ ] **Shell config conflicts** — .bashrc vs .bash_profile vs .profile loading order
+
+### Package Manager Health
+
+- [ ] **Broken apt/dnf repos** — detect and offer to remove
+- [ ] **Stale package cache** — `apt update` not run in > 7 days
+- [ ] **Orphaned packages** — installed deps no longer needed
+- [ ] **GPG key expiry** — repo signing keys about to expire
+- [ ] **Conflicting package managers** — same tool installed via brew AND apt
+- [ ] **winget source health** — check if winget sources reachable
+- [ ] **Scoop bucket issues** — outdated or broken buckets
+
+### Language-Specific Diagnostics
+
+**Python:**
+- [ ] pip vs pip3 confusion — which pip goes with which python?
+- [ ] Broken virtual environments — missing interpreters
+- [ ] System vs user packages — `--break-system-packages` needed?
+- [ ] Conda vs pip conflicts
+- [ ] Missing build tools — `gcc`, `python-dev` for compilation
+
+**Node.js:**
+- [ ] nvm vs system Node — which is active?
+- [ ] Global npm permissions — EACCES errors
+- [ ] Multiple lockfile conflicts (npm + yarn + pnpm)
+
+**Java:**
+- [ ] JAVA_HOME not set or wrong version
+- [ ] Multiple JDKs — which is active?
+
+**Rust:**
+- [ ] rustup vs system rust conflicts
+- [ ] Missing linker (`cc` not found)
+
+**Docker:**
+- [ ] Daemon not running
+- [ ] User not in docker group
+- [ ] Broken Docker repo — auto-detect and fix
+
+**Git:**
+- [ ] No user.name/email configured
+- [ ] SSH key missing
+- [ ] Credential helper not set
+
+### System Checks
+
+- [ ] Disk space — warn if < 5GB free
+- [ ] RAM — warn if < 2GB available
+- [ ] Internet connectivity — github.com, pypi.org, npmjs.org reachable?
+- [ ] DNS resolution issues
+- [ ] Firewall/proxy blocking package downloads
+- [ ] SSL certificate issues
+- [ ] File permissions — `/usr/local/bin`, `~/.config` ownership
+
+### IDE Health
+
+- [ ] VS Code broken extensions
+- [ ] VS Code conflicting settings.json
+- [ ] Neovim broken plugins
+
+### Auto-Fix Categories
+
+- [ ] **Safe fixes** — auto-apply (PATH cleanup, missing config, broken repos)
+- [ ] **Risky fixes** — ask user first (version switching, package removal)
+- [ ] **Manual fixes** — show instructions only (OS-level, permission changes)
+- [ ] **Fix log** — `~/.codeready/doctor-fixes.log`
+- [ ] **Rollback** — undo all auto-fixes if something goes wrong
+
+### Knowledge Base
+
+- [ ] Error pattern database — common errors mapped to solutions
+- [ ] Web search fallback — suggest Stack Overflow / GitHub issues
+- [ ] Community fixes — load patterns from GitHub repo
+- [ ] OS-specific checks and fixes per platform
 
 ---
 
