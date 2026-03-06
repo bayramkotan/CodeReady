@@ -273,40 +273,91 @@ Stop hardcoding versions. Query real sources at runtime.
 
 ---
 
-## 📋 v2.5 — Configuration Profiles and Export
+## 📋 v2.5 — Configuration, Cache & Portable Profiles
 
-### Save and Restore Environments
+### Config & Cache System (`~/.codeready/`)
 
-- [ ] **Export config** — save entire selection to `codeready-config.yaml`
-  ```yaml
-  name: "My Web Dev Setup"
-  created: "2026-03-01"
-  languages:
-    - name: nodejs
-      version: "24"
-    - name: python
-      version: "3.14"
-  ides:
-    - vscode
-    - cursor
-  tools:
-    - git
-    - docker
-  frameworks:
-    - react
-    - tailwind
-    - venvstudio
+- [ ] **`~/.codeready/` directory** — central config location
+- [ ] **`scan-cache.json`** — scan results cached, re-scan only if > 1 hour old or `--rescan` flag
+  ```json
+  {
+    "scanned_at": "2026-03-06T14:30:00Z",
+    "os": "windows",
+    "languages": {
+      "python": {"installed": true, "version": "3.14.0", "path": "C:\\Python314\\python.exe"},
+      "nodejs": {"installed": true, "version": "24.14.0", "path": "C:\\Users\\user\\.nvm\\..."},
+      "go": {"installed": false}
+    },
+    "ides": {
+      "vscode": {"installed": true, "version": "1.109.5", "path": "C:\\Users\\user\\AppData\\Local\\Programs\\..."},
+      "notepadpp": {"installed": true, "path": "C:\\Program Files\\Notepad++\\notepad++.exe"}
+    },
+    "tools": { "git": {"installed": true, "version": "2.53.0"} },
+    "frameworks": { "npm": {"installed": true, "version": "11.9.0"} }
+  }
   ```
-- [ ] **Import config** — `./codeready.sh --config my-setup.yaml` for instant replay
-- [ ] **Team sharing** — commit config file to team repo, everyone gets same environment
-- [ ] **Config templates on GitHub** — community-contributed configs for different stacks
-- [ ] **Diff configs** — compare two configs to see what's different
+- [ ] **`install-manifest.json`** — what CodeReady installed, when, how
+  ```json
+  {
+    "installed_at": "2026-03-06T14:35:00Z",
+    "profile": "2",
+    "items": [
+      {"name": "nodejs", "version": "24", "method": "nvm", "timestamp": "..."},
+      {"name": "vscode", "version": "1.109.5", "method": "winget", "id": "Microsoft.VisualStudioCode"}
+    ]
+  }
+  ```
+- [ ] **`config.json`** — user preferences
+  ```json
+  {
+    "default_profile": "2",
+    "package_manager_priority": ["winget", "scoop", "choco"],
+    "skip_scan": false,
+    "auto_fix": true,
+    "theme": "default"
+  }
+  ```
 
-### Environment Health Check
+### Portable Profile (`codeready-profile.json`)
 
-- [ ] **`--check` flag** — verify all installed tools are working and on PATH
-- [ ] **`--doctor` flag** — diagnose and fix common issues (broken symlinks, missing PATH entries, corrupted installs)
-- [ ] **Periodic health check reminder** — optional: run check monthly
+- [ ] **Export** — `codeready --export` saves current selections to `codeready-profile.json`
+- [ ] **Import** — `codeready --import codeready-profile.json` installs everything from file
+- [ ] **Git-friendly** — commit to repo, whole team gets same dev environment
+- [ ] **Clone workflow:**
+  ```bash
+  # Machine A: export
+  ./codeready.sh --export
+  git add codeready-profile.json && git commit -m "dev environment" && git push
+
+  # Machine B: import
+  git pull
+  ./codeready.sh --import codeready-profile.json
+  ```
+- [ ] **Profile format:**
+  ```json
+  {
+    "name": "My Full Stack Setup",
+    "created": "2026-03-06",
+    "created_on": "windows",
+    "languages": ["nodejs", "python", "typescript"],
+    "language_versions": {"nodejs": "24", "python": "3.14"},
+    "ides": ["vscode", "cursor"],
+    "tools": ["git", "docker"],
+    "frameworks": ["react", "nextjs", "tailwind", "django", "fastapi"],
+    "custom_packages": {"winget": ["SomeApp.Id"], "brew": ["some-pkg"]}
+  }
+  ```
+- [ ] **Diff profiles** — `codeready --diff profile-a.json profile-b.json`
+- [ ] **Merge profiles** — `codeready --merge profile-a.json profile-b.json > combined.json`
+
+### Scan Performance (using cache)
+
+- [ ] **First run** — full scan, save to `scan-cache.json`
+- [ ] **Subsequent runs** — read from cache, finish in < 1 second
+- [ ] **`--rescan` flag** — force fresh scan
+- [ ] **Smart invalidation** — if PATH changed or new software detected, auto-rescan
+- [ ] **Windows optimization** — JetBrains IDEs: file path only, no `--version` (they launch GUI)
+- [ ] **Parallel scan (Linux/macOS)** — run detections in background with `&`, collect results
 
 ---
 
