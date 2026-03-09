@@ -3,6 +3,7 @@
   <img src="https://img.shields.io/badge/Languages-39-ff6b35?style=for-the-badge&labelColor=0a0a0a" alt="Languages" />
   <img src="https://img.shields.io/badge/IDEs-23-06d6a0?style=for-the-badge&labelColor=0a0a0a" alt="IDEs" />
   <img src="https://img.shields.io/badge/Frameworks-38+-7b2fbe?style=for-the-badge&labelColor=0a0a0a" alt="Frameworks" />
+  <img src="https://img.shields.io/badge/Profiles-15-ef476f?style=for-the-badge&labelColor=0a0a0a" alt="Profiles" />
 </p>
 
 <p align="center">
@@ -310,8 +311,8 @@ Select profile(s): 17        <- install EVERYTHING (with safety warnings)
 | **1** | **Web Frontend** | ![Node.js](https://img.shields.io/badge/-Node.js-339933?style=flat-square&logo=nodedotjs&logoColor=white) ![TypeScript](https://img.shields.io/badge/-TS-3178C6?style=flat-square&logo=typescript&logoColor=white) ![React](https://img.shields.io/badge/-React-61DAFB?style=flat-square&logo=react&logoColor=black) ![Vue](https://img.shields.io/badge/-Vue-4FC08D?style=flat-square&logo=vuedotjs&logoColor=white) ![Tailwind](https://img.shields.io/badge/-Tailwind-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white) ![Vite](https://img.shields.io/badge/-Vite-646CFF?style=flat-square&logo=vite&logoColor=white) |
 | **2** | **Web Full Stack** | ![Node.js](https://img.shields.io/badge/-Node.js-339933?style=flat-square&logo=nodedotjs&logoColor=white) ![Python](https://img.shields.io/badge/-Python-3776AB?style=flat-square&logo=python&logoColor=white) ![React](https://img.shields.io/badge/-React-61DAFB?style=flat-square&logo=react&logoColor=black) ![Next.js](https://img.shields.io/badge/-Next.js-000?style=flat-square&logo=nextdotjs&logoColor=white) ![Django](https://img.shields.io/badge/-Django-092E20?style=flat-square&logo=django&logoColor=white) ![Express](https://img.shields.io/badge/-Express-000?style=flat-square&logo=express&logoColor=white) |
 | **3** | **Mobile Developer** | ![Kotlin](https://img.shields.io/badge/-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white) ![Flutter](https://img.shields.io/badge/-Flutter-02569B?style=flat-square&logo=flutter&logoColor=white) ![Swift](https://img.shields.io/badge/-Swift-F05138?style=flat-square&logo=swift&logoColor=white) ![Android Studio](https://img.shields.io/badge/-Android_Studio-3DDC84?style=flat-square&logo=androidstudio&logoColor=white) |
-| **4** | **Data Scientist** | ![Python](https://img.shields.io/badge/-Python-3776AB?style=flat-square&logo=python&logoColor=white) ![R](https://img.shields.io/badge/-R-276DC3?style=flat-square&logo=r&logoColor=white) ![Julia](https://img.shields.io/badge/-Julia-9558B2?style=flat-square&logo=julia&logoColor=white) ![Streamlit](https://img.shields.io/badge/-Streamlit-FF4B4B?style=flat-square&logo=streamlit&logoColor=white) ![Conda](https://img.shields.io/badge/-Conda-44A833?style=flat-square&logo=anaconda&logoColor=white) |
-| **5** | **AI / ML Engineer** | ![Python](https://img.shields.io/badge/-Python-3776AB?style=flat-square&logo=python&logoColor=white) ![Mojo](https://img.shields.io/badge/-Mojo-FF7000?style=flat-square) ![Rust](https://img.shields.io/badge/-Rust-000?style=flat-square&logo=rust&logoColor=white) ![Cursor](https://img.shields.io/badge/-Cursor-000?style=flat-square) ![FastAPI](https://img.shields.io/badge/-FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white) |
+| **4** | **Data Scientist** | ![Python](https://img.shields.io/badge/-Python-3776AB?style=flat-square&logo=python&logoColor=white) ![R](https://img.shields.io/badge/-R-276DC3?style=flat-square&logo=r&logoColor=white) ![Julia](https://img.shields.io/badge/-Julia-9558B2?style=flat-square&logo=julia&logoColor=white) ![VenvStudio](https://img.shields.io/badge/-VenvStudio-4B8BBE?style=flat-square&logo=python&logoColor=white) ![Streamlit](https://img.shields.io/badge/-Streamlit-FF4B4B?style=flat-square&logo=streamlit&logoColor=white) ![Conda](https://img.shields.io/badge/-Conda-44A833?style=flat-square&logo=anaconda&logoColor=white) |
+| **5** | **AI / ML Engineer** | ![Python](https://img.shields.io/badge/-Python-3776AB?style=flat-square&logo=python&logoColor=white) ![Mojo](https://img.shields.io/badge/-Mojo-FF7000?style=flat-square) ![Rust](https://img.shields.io/badge/-Rust-000?style=flat-square&logo=rust&logoColor=white) ![Cursor](https://img.shields.io/badge/-Cursor-000?style=flat-square) ![VenvStudio](https://img.shields.io/badge/-VenvStudio-4B8BBE?style=flat-square&logo=python&logoColor=white) ![FastAPI](https://img.shields.io/badge/-FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white) |
 | **6** | **Systems Programmer** | ![C++](https://img.shields.io/badge/-C++-00599C?style=flat-square&logo=cplusplus&logoColor=white) ![Rust](https://img.shields.io/badge/-Rust-000?style=flat-square&logo=rust&logoColor=white) ![Zig](https://img.shields.io/badge/-Zig-F7A41D?style=flat-square&logo=zig&logoColor=black) ![Go](https://img.shields.io/badge/-Go-00ADD8?style=flat-square&logo=go&logoColor=white) ![CMake](https://img.shields.io/badge/-CMake-064F8C?style=flat-square&logo=cmake&logoColor=white) |
 | **7** | **Full Stack .NET** | ![C#](https://img.shields.io/badge/-C%23-512BD4?style=flat-square&logo=csharp&logoColor=white) ![Node.js](https://img.shields.io/badge/-Node.js-339933?style=flat-square&logo=nodedotjs&logoColor=white) ![React](https://img.shields.io/badge/-React-61DAFB?style=flat-square&logo=react&logoColor=black) ![Blazor](https://img.shields.io/badge/-Blazor-512BD4?style=flat-square&logo=blazor&logoColor=white) ![Visual Studio](https://img.shields.io/badge/-VS-5C2D91?style=flat-square&logo=visualstudio&logoColor=white) |
 | **8** | **Game Developer** | ![C++](https://img.shields.io/badge/-C++-00599C?style=flat-square&logo=cplusplus&logoColor=white) ![C#](https://img.shields.io/badge/-C%23-512BD4?style=flat-square&logo=csharp&logoColor=white) ![Lua](https://img.shields.io/badge/-Lua-2C2D72?style=flat-square&logo=lua&logoColor=white) ![Rider](https://img.shields.io/badge/-Rider-000?style=flat-square&logo=rider&logoColor=white) |
@@ -395,6 +396,116 @@ CodeReady/
 | ![Windows](https://img.shields.io/badge/-Win-0078D6?style=flat-square&logo=windows&logoColor=white) | Windows 10/11, Administrator privileges, Internet |
 | ![macOS](https://img.shields.io/badge/-Mac-000?style=flat-square&logo=apple&logoColor=white) | macOS 12+, Internet |
 | ![Linux](https://img.shields.io/badge/-Linux-FCC624?style=flat-square&logo=linux&logoColor=black) | Ubuntu 20.04+ / Debian 11+ / Fedora 36+ / Arch / openSUSE, sudo, Internet |
+
+---
+
+## Coming Soon
+
+CodeReady is actively growing. Here's what's planned for upcoming releases. See the full [Roadmap](codeready_todo.md) for details.
+
+### Databases (v2.2)
+
+<p>
+  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white" />
+  <img src="https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white" />
+  <img src="https://img.shields.io/badge/MariaDB-003545?style=flat-square&logo=mariadb&logoColor=white" />
+  <img src="https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white" />
+  <img src="https://img.shields.io/badge/MongoDB-47A248?style=flat-square&logo=mongodb&logoColor=white" />
+  <img src="https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white" />
+  <img src="https://img.shields.io/badge/Neo4j-4581C3?style=flat-square&logo=neo4j&logoColor=white" />
+  <img src="https://img.shields.io/badge/Elasticsearch-005571?style=flat-square&logo=elasticsearch&logoColor=white" />
+  <img src="https://img.shields.io/badge/Cassandra-1287B1?style=flat-square&logo=apachecassandra&logoColor=white" />
+</p>
+
+Database GUI tools: DBeaver, pgAdmin, MongoDB Compass, Redis Insight, TablePlus
+
+### More Frameworks (v2.2)
+
+<p>
+  <img src="https://img.shields.io/badge/Laravel-FF2D20?style=flat-square&logo=laravel&logoColor=white" />
+  <img src="https://img.shields.io/badge/Symfony-000000?style=flat-square&logo=symfony&logoColor=white" />
+  <img src="https://img.shields.io/badge/Spring_Boot-6DB33F?style=flat-square&logo=springboot&logoColor=white" />
+  <img src="https://img.shields.io/badge/Rails-D30001?style=flat-square&logo=rubyonrails&logoColor=white" />
+  <img src="https://img.shields.io/badge/Phoenix-FD4F00?style=flat-square&logo=phoenixframework&logoColor=white" />
+  <img src="https://img.shields.io/badge/Gin-00ADD8?style=flat-square&logo=go&logoColor=white" />
+  <img src="https://img.shields.io/badge/Actix-000000?style=flat-square&logo=rust&logoColor=white" />
+  <img src="https://img.shields.io/badge/Axum-000000?style=flat-square&logo=rust&logoColor=white" />
+  <img src="https://img.shields.io/badge/Hono-E36002?style=flat-square" />
+  <img src="https://img.shields.io/badge/Prisma-2D3748?style=flat-square&logo=prisma&logoColor=white" />
+  <img src="https://img.shields.io/badge/WordPress_CLI-21759B?style=flat-square&logo=wordpress&logoColor=white" />
+  <img src="https://img.shields.io/badge/Jupyter-F37626?style=flat-square&logo=jupyter&logoColor=white" />
+</p>
+
+### LaTeX & Typesetting (v2.2)
+
+<p>
+  <img src="https://img.shields.io/badge/TeX_Live-008080?style=flat-square&logo=latex&logoColor=white" />
+  <img src="https://img.shields.io/badge/MiKTeX-00796B?style=flat-square&logo=latex&logoColor=white" />
+  <img src="https://img.shields.io/badge/Pandoc-1A1A1A?style=flat-square" />
+  <img src="https://img.shields.io/badge/latexmk-008080?style=flat-square" />
+</p>
+
+### Essential Desktop Tools (v2.2)
+
+<p>
+  <img src="https://img.shields.io/badge/7--Zip-00599C?style=flat-square" />
+  <img src="https://img.shields.io/badge/KeePassXC-6CAC4D?style=flat-square&logo=keepassxc&logoColor=white" />
+  <img src="https://img.shields.io/badge/Firefox_Dev-FF7139?style=flat-square&logo=firefoxbrowser&logoColor=white" />
+  <img src="https://img.shields.io/badge/PowerToys-015BFF?style=flat-square&logo=windows&logoColor=white" />
+  <img src="https://img.shields.io/badge/Obsidian-7C3AED?style=flat-square&logo=obsidian&logoColor=white" />
+  <img src="https://img.shields.io/badge/Alacritty-F46D01?style=flat-square&logo=alacritty&logoColor=white" />
+  <img src="https://img.shields.io/badge/OBS_Studio-302E31?style=flat-square&logo=obsstudio&logoColor=white" />
+  <img src="https://img.shields.io/badge/Wireshark-1679A7?style=flat-square&logo=wireshark&logoColor=white" />
+  <img src="https://img.shields.io/badge/ShareX-2D9FD9?style=flat-square" />
+  <img src="https://img.shields.io/badge/ngrok-1F1E37?style=flat-square&logo=ngrok&logoColor=white" />
+  <img src="https://img.shields.io/badge/Slack-4A154B?style=flat-square&logo=slack&logoColor=white" />
+  <img src="https://img.shields.io/badge/Discord-5865F2?style=flat-square&logo=discord&logoColor=white" />
+  <img src="https://img.shields.io/badge/Figma-F24E1E?style=flat-square&logo=figma&logoColor=white" />
+</p>
+
+### Terminal Beautification (v2.3)
+
+<p>
+  <img src="https://img.shields.io/badge/Starship-DD0B78?style=flat-square&logo=starship&logoColor=white" />
+  <img src="https://img.shields.io/badge/Oh_My_Posh-14162B?style=flat-square" />
+  <img src="https://img.shields.io/badge/Oh_My_Zsh-1A2C34?style=flat-square" />
+  <img src="https://img.shields.io/badge/Nerd_Fonts-000000?style=flat-square" />
+  <img src="https://img.shields.io/badge/Catppuccin-EBA0AC?style=flat-square" />
+  <img src="https://img.shields.io/badge/Dracula-BD93F9?style=flat-square" />
+  <img src="https://img.shields.io/badge/Nord-5E81AC?style=flat-square" />
+  <img src="https://img.shields.io/badge/Tokyo_Night-7AA2F7?style=flat-square" />
+</p>
+
+### Modern CLI Tools (v2.3)
+
+<p>
+  <img src="https://img.shields.io/badge/bat-FCA121?style=flat-square" />
+  <img src="https://img.shields.io/badge/eza-4E9A06?style=flat-square" />
+  <img src="https://img.shields.io/badge/ripgrep-E44D26?style=flat-square" />
+  <img src="https://img.shields.io/badge/fzf-1D1D1D?style=flat-square" />
+  <img src="https://img.shields.io/badge/zoxide-F5A623?style=flat-square" />
+  <img src="https://img.shields.io/badge/lazygit-FCA121?style=flat-square" />
+  <img src="https://img.shields.io/badge/delta-000000?style=flat-square" />
+  <img src="https://img.shields.io/badge/jq-B5BD68?style=flat-square" />
+  <img src="https://img.shields.io/badge/httpie-73DC8C?style=flat-square" />
+  <img src="https://img.shields.io/badge/tldr-259CE6?style=flat-square" />
+</p>
+
+### Diagnostics Engine (v2.7)
+
+```
+$ codeready --doctor
+
+  [✓] PATH — no duplicates, no broken entries
+  [✓] Python — pip3 matches python3
+  [!] Node.js — nvm not loaded in .bashrc
+  [✗] Docker — daemon not running
+  [✓] Git — user.name and user.email configured
+  [!] Disk — 4.2 GB free (< 5 GB warning)
+
+  3 passed, 2 warnings, 1 error
+  Run: codeready --doctor --fix
+```
 
 ---
 
