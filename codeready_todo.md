@@ -33,6 +33,13 @@
 - [ ] **JetBrains IDEs** — don't try `--version` (they launch GUI), use only file path detection
 - [ ] **Parallel scanning** — run detections in background jobs, collect results
 - [ ] **Cache scan results** — save to `~/.codeready/scan-cache.json`, re-scan only if older than 1 hour
+- [ ] **Linux pip install errors** — VenvStudio, pipx, Django fail without `sudo` and `--break-system-packages`. Auto-detect and add flags
+- [ ] **Postman Linux** — flatpak fallback not working on all distros, add direct .deb/.rpm download
+- [ ] **Docker post-install** — auto-add user to docker group + `newgrp docker` so sudo not needed. Also add Docker Desktop option
+- [ ] **Banner version hardcoded** — version number in ASCII art should be read from config/variable, not hardcoded
+- [ ] **CachyOS not detected** — `Detected: linux (package manager: unknown)`. CachyOS uses pacman, add to detection list
+- [ ] **Windows ARM support** — detect ARM64 architecture, use correct installers (winget supports ARM)
+- [ ] **macOS Apple Silicon** — detect arm64/aarch64, use correct Homebrew path (`/opt/homebrew`) and native binaries
 
 ### Uninstall Mode
 
@@ -41,12 +48,37 @@
 - [ ] **Selective uninstall** — interactive menu to pick which items to remove
 - [ ] **Dependency awareness** — warn if removing Node.js while React/Next.js depend on it
 - [ ] **Clean PATH entries** — remove additions made to .bashrc/.zshrc/.profile
+- [ ] **Uninstall frameworks too** — not just languages/IDEs, also npm globals, pip packages, etc.
 
-### Source Shell Config Fix
+### Shell Integration
 
 - [x] **Auto-detect shell** — bash, zsh and source the correct config
 - [x] **Auto-reload after install** — sources .bashrc/.zshrc/.profile so tools work immediately
 - [ ] **Fish shell support** — fish uses different syntax for PATH (`set -gx`)
+- [ ] **CodeReady section in .bashrc** — add clearly marked `# === CodeReady ===` section for all PATH/alias additions
+- [ ] **CodeReady aliases** — `cr-update`, `cr-scan`, `cr-doctor` as shell aliases
+- [ ] **Create desktop shortcut / launcher** — optional shortcut to re-run CodeReady for updates
+
+### Non-Admin / Local Install Mode
+
+- [ ] **`--local` flag** — install everything to `~/.local/` without sudo
+- [ ] **Detect if user has sudo** — if not, auto-switch to local mode
+- [ ] **User-level installs** — nvm, rustup, pip --user, cargo, ghcup already work without sudo
+- [ ] **Warn about system packages** — some things (apt packages) truly need sudo, show clear message
+
+### Package Manager Auto-Install
+
+- [ ] **Linux: ask to install flatpak/nix** — if not present, offer to install them
+- [ ] **macOS: auto-install Homebrew** — already done, but also offer MacPorts
+- [ ] **Windows: auto-install Scoop** — already done, ensure all three are offered
+
+### Localization / Multi-Language UI
+
+- [ ] **Language selection at startup** — "Select language: [1] English [2] Turkce"
+- [ ] **Default: English** — fall back to English if language not supported
+- [ ] **Turkish (TR)** — full Turkish translation of all menus and messages
+- [ ] **Language stored in config** — `~/.codeready/config.json` → `{"language": "tr"}`
+- [ ] **Separate language files** — `lang/en.json`, `lang/tr.json` with all strings
 
 ---
 
@@ -700,6 +732,18 @@ After installing IDEs, auto-configure them.
 ---
 
 ## 💭 Future Ideas (Unscheduled)
+
+### CodeReady GUI (Desktop Application)
+
+- [ ] **Rewrite in Rust or Python** — proper compiled/packaged application, not just scripts
+- [ ] **GUI with PySide6 or Tauri** — visual interface for all CodeReady features
+- [ ] **Drag-and-drop profile builder** — visually compose your dev environment
+- [ ] **Real-time progress** — visual progress bars, not just terminal text
+- [ ] **System tray** — background process for update notifications
+- [ ] **Auto-updater** — CodeReady updates itself
+- [ ] **One-click installer** — .exe / .dmg / .deb package, no script needed
+
+### Other Ideas
 
 - [ ] **Web dashboard** — local web UI as alternative to terminal (Electron/Tauri app?)
 - [ ] **Remote setup** — SSH into remote machine and set up environment
