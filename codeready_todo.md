@@ -82,10 +82,16 @@
 - [ ] Ktor — Kotlin async web framework
 - [ ] Gradle — build tool (already via SDKMAN)
 
-**PHP:**
-- [ ] Laravel — full-stack web framework
-- [ ] Symfony — enterprise PHP framework
-- [ ] Composer (already partial — ensure global)
+**PHP (full ecosystem):**
+- [ ] Composer — dependency manager (global install)
+- [ ] Laravel — full-stack MVC web framework
+- [ ] Symfony — enterprise modular framework
+- [ ] CodeIgniter — lightweight MVC framework
+- [ ] Slim — micro framework for APIs
+- [ ] WordPress CLI (wp-cli) — WordPress management from terminal
+- [ ] PHPUnit — testing framework
+- [ ] PHP-CS-Fixer — code style fixer
+- [ ] Pest — modern PHP testing framework
 
 **Ruby:**
 - [ ] Ruby on Rails — full-stack web framework
@@ -112,6 +118,55 @@
 **OCaml:**
 - [ ] opam — package manager (already in installer)
 - [ ] Dune — build system
+
+### LaTeX / Typesetting
+
+- [ ] **TeX Live** — full LaTeX distribution (Linux/macOS: `apt install texlive-full` / `brew install texlive`)
+- [ ] **MiKTeX** — LaTeX distribution for Windows (winget/choco)
+- [ ] **TinyTeX** — lightweight LaTeX via R's tinytex package
+- [ ] **latexmk** — automated LaTeX build tool
+- [ ] **Pandoc** — universal document converter (Markdown → PDF, LaTeX, DOCX)
+- [ ] **LaTeX Workshop** — VS Code extension auto-install (if VS Code selected)
+- [ ] **Overleaf CLI** — (if available) sync with Overleaf projects
+- [ ] **BibTeX / Biber** — bibliography management (included in TeX Live)
+- [ ] **Add to Scientific Computing profile** — auto-include TeX Live + Pandoc + latexmk
+
+### Databases
+
+**Relational:**
+- [ ] **PostgreSQL** — advanced open-source RDBMS (apt/brew/winget + pgAdmin)
+- [ ] **MySQL** — popular open-source RDBMS (apt/brew/winget + MySQL Workbench)
+- [ ] **MariaDB** — MySQL fork, community-driven
+- [ ] **SQLite** — embedded file-based database (usually pre-installed)
+- [ ] **SQL Server Express** — Microsoft RDBMS (Windows: winget, Linux: apt repo)
+
+**NoSQL:**
+- [ ] **MongoDB** — document database (apt repo/brew/winget + MongoDB Compass)
+- [ ] **Redis** — in-memory key-value store (apt/brew, Windows via WSL or Memurai)
+- [ ] **CouchDB** — document database with REST API
+- [ ] **Cassandra** — distributed wide-column store
+
+**Graph & Search:**
+- [ ] **Neo4j** — graph database
+- [ ] **Elasticsearch** — search and analytics engine
+- [ ] **Meilisearch** — fast, lightweight search engine
+
+**Database Tools:**
+- [ ] **DBeaver** — universal database GUI (supports all above)
+- [ ] **pgAdmin** — PostgreSQL GUI
+- [ ] **MongoDB Compass** — MongoDB GUI
+- [ ] **Redis Insight** — Redis GUI
+- [ ] **TablePlus** — multi-database GUI (macOS/Windows)
+- [ ] **Adminer** — lightweight web-based DB manager (PHP)
+- [ ] **pgcli / mycli / litecli** — terminal DB clients with auto-complete
+- [ ] **Prisma** — ORM for Node.js (already in JS section)
+- [ ] **SQLAlchemy** — Python ORM (pip install)
+- [ ] **Diesel** — Rust ORM
+
+**Database Profiles:**
+- [ ] **Add "Database Developer" profile (#16?)** — PostgreSQL, Redis, MongoDB + DBeaver + Python/Node.js
+- [ ] **Add database selection to Web Full Stack profile** — PostgreSQL + Redis as defaults
+- [ ] **Docker-based option** — install databases via Docker Compose instead of native (lighter, cleaner)
 
 ### TUI / Terminal Beautification Tools
 
@@ -166,6 +221,98 @@
 - [ ] jq — JSON processor
 - [ ] yq — YAML processor
 - [ ] httpie — modern curl alternative
+
+### Desktop / Productivity Tools (New "Essential Tools" profile)
+
+Her developer'ın günlük ihtiyacı olan uygulamalar. Yeni profil: **"Essential Tools"**
+
+**Archivers & File Tools:**
+- [ ] **7-Zip** — universal archive manager (Win: winget/scoop, Linux: p7zip, Mac: brew)
+- [ ] **WinRAR** — popular archive manager (Windows only)
+- [ ] **PeaZip** — cross-platform archive manager
+- [ ] **Everything** — instant file search (Windows only, by Voidtools)
+- [ ] **WizTree** — disk space analyzer (Windows)
+- [ ] **ncdu** — terminal disk usage analyzer (Linux/macOS)
+
+**Security & Passwords:**
+- [ ] **KeePassXC** — cross-platform password manager
+- [ ] **Bitwarden CLI** — password manager CLI
+- [ ] **GnuPG (GPG)** — encryption and signing
+- [ ] **OpenSSH** — SSH client/server (usually pre-installed)
+- [ ] **age** — modern file encryption tool
+
+**Browsers:**
+- [ ] **Firefox Developer Edition** — developer-focused browser
+- [ ] **Google Chrome** — for testing/DevTools
+- [ ] **Brave** — privacy-focused browser
+- [ ] **Microsoft Edge** — Chromium-based (Windows pre-installed)
+
+**Communication & Collaboration:**
+- [ ] **Slack** — team communication
+- [ ] **Discord** — community/gaming communication
+- [ ] **Zoom** — video conferencing
+- [ ] **Microsoft Teams** — enterprise communication
+
+**Terminals & Shells:**
+- [ ] **Windows Terminal** — modern Windows terminal (already in tools)
+- [ ] **Alacritty** — GPU-accelerated terminal
+- [ ] **Kitty** — fast, feature-rich terminal
+- [ ] **WezTerm** — GPU-accelerated cross-platform terminal
+- [ ] **Warp** — AI-powered terminal (macOS/Linux)
+- [ ] **Tabby** — modern cross-platform terminal
+- [ ] **tmux** — terminal multiplexer (Linux/macOS)
+
+**Networking & API:**
+- [ ] **Postman** — API testing (already in tools)
+- [ ] **Insomnia** — REST/GraphQL client
+- [ ] **Bruno** — offline-first API client
+- [ ] **Wireshark** — network protocol analyzer
+- [ ] **Nmap** — network scanner
+- [ ] **mtr / WinMTR** — network diagnostics
+- [ ] **curl / wget** — command-line HTTP (usually pre-installed)
+- [ ] **ngrok** — expose localhost to internet
+
+**Media & Screenshots:**
+- [ ] **ShareX** — screenshot & screen recorder (Windows)
+- [ ] **Flameshot** — screenshot tool (Linux)
+- [ ] **OBS Studio** — screen recording/streaming
+- [ ] **ffmpeg** — media converter CLI
+- [ ] **ImageMagick** — image processing CLI
+
+**Clipboard & Productivity:**
+- [ ] **Ditto** — clipboard manager (Windows)
+- [ ] **CopyQ** — cross-platform clipboard manager
+- [ ] **PowerToys** — Windows productivity utilities (FancyZones, PowerRename, etc.)
+- [ ] **Raycast** — productivity launcher (macOS, Spotlight replacement)
+- [ ] **Albert / Ulauncher** — application launcher (Linux)
+
+**Fonts & Design:**
+- [ ] **Nerd Fonts** — patched developer fonts (already in TUI section)
+- [ ] **Figma** — design tool (web-based, desktop app)
+- [ ] **GIMP** — image editor
+- [ ] **Inkscape** — vector graphics editor
+- [ ] **draw.io (diagrams.net)** — diagramming tool
+
+**Documentation & Notes:**
+- [ ] **Obsidian** — markdown knowledge base
+- [ ] **Notion** — all-in-one workspace
+- [ ] **Typora** — WYSIWYG markdown editor
+- [ ] **Logseq** — open-source knowledge graph
+- [ ] **Zettlr** — academic markdown editor
+
+**Virtualization:**
+- [ ] **VirtualBox** — free VM manager
+- [ ] **Vagrant** — VM automation
+- [ ] **QEMU** — open-source emulator (Linux)
+
+**New Profile: "Essential Tools" (#18):**
+```
+[18] Essential Tools  - 7-Zip, KeePassXC, Firefox Dev, Alacritty, PowerToys, Obsidian, ShareX
+```
+- [ ] Create profile with sensible defaults per platform
+- [ ] Windows: 7-Zip, KeePassXC, Everything, PowerToys, Windows Terminal, ShareX, Firefox Dev
+- [ ] macOS: KeePassXC, Raycast, Alacritty, Firefox Dev, Obsidian
+- [ ] Linux: p7zip, KeePassXC, Flameshot, Alacritty, tmux, Firefox Dev
 
 ---
 
