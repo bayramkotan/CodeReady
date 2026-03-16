@@ -1004,9 +1004,9 @@ install_framework() {
             esac ;;
 
         # Python Package Managers
-        uv)         step "Installing uv..."; (pip3 install uv 2>/dev/null || pip install uv 2>/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh) &>>"$LOG_FILE" 2>&1 && ok "uv installed." || fail "uv" ;;
+        uv)         step "Installing uv..."; (pip3 install --break-system-packages uv 2>/dev/null || pip install --break-system-packages uv 2>/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh) &>>"$LOG_FILE" 2>&1 && ok "uv installed." || fail "uv" ;;
         poetry)     step "Installing Poetry..."; (curl -sSL https://install.python-poetry.org | python3 -) &>>"$LOG_FILE" 2>&1 && ok "Poetry installed." || fail "Poetry" ;;
-        pipx)       step "Installing pipx..."; (pip3 install --user pipx 2>/dev/null || pip install --user pipx) &>>"$LOG_FILE" 2>&1 && ok "pipx installed." || fail "pipx" ;;
+        pipx)       step "Installing pipx..."; (pip3 install --break-system-packages --user pipx 2>/dev/null || pip install --break-system-packages --user pipx) &>>"$LOG_FILE" 2>&1 && ok "pipx installed." || fail "pipx" ;;
         conda)
             step "Installing Miniconda..."
             case "$PKG" in
@@ -1019,7 +1019,7 @@ install_framework() {
                     bash /tmp/miniconda.sh -b -p "$HOME/miniconda3" &>>"$LOG_FILE" && ok "Miniconda installed." || fail "Miniconda"
                     rm -f /tmp/miniconda.sh ;;
             esac ;;
-        venvstudio) step "Installing VenvStudio..."; (pip3 install VenvStudio 2>/dev/null || pip install VenvStudio) &>>"$LOG_FILE" 2>&1 && ok "VenvStudio installed." || fail "VenvStudio" ;;
+        venvstudio) step "Installing VenvStudio..."; (pip3 install --break-system-packages VenvStudio 2>/dev/null || pip install --break-system-packages VenvStudio) &>>"$LOG_FILE" 2>&1 && ok "VenvStudio installed." || fail "VenvStudio" ;;
 
         # JS/TS Frameworks
         react)      step "Installing React (create-react-app)..."; npm install -g create-react-app &>>"$LOG_FILE" && ok "React CLI installed." || fail "React" ;;
@@ -1035,10 +1035,10 @@ install_framework() {
         remix)      step "Installing Remix..."; npm install -g create-remix &>>"$LOG_FILE" && ok "Remix installed." || fail "Remix" ;;
 
         # Python Frameworks
-        django)     step "Installing Django..."; (pip3 install django 2>/dev/null || pip install django) &>>"$LOG_FILE" 2>&1 && ok "Django installed." || fail "Django" ;;
-        flask)      step "Installing Flask..."; (pip3 install flask 2>/dev/null || pip install flask) &>>"$LOG_FILE" 2>&1 && ok "Flask installed." || fail "Flask" ;;
-        fastapi)    step "Installing FastAPI..."; (pip3 install fastapi uvicorn 2>/dev/null || pip install fastapi uvicorn) &>>"$LOG_FILE" 2>&1 && ok "FastAPI installed." || fail "FastAPI" ;;
-        streamlit)  step "Installing Streamlit..."; (pip3 install streamlit 2>/dev/null || pip install streamlit) &>>"$LOG_FILE" 2>&1 && ok "Streamlit installed." || fail "Streamlit" ;;
+        django)     step "Installing Django..."; (pip3 install --break-system-packages django 2>/dev/null || pip install --break-system-packages django) &>>"$LOG_FILE" 2>&1 && ok "Django installed." || fail "Django" ;;
+        flask)      step "Installing Flask..."; (pip3 install --break-system-packages flask 2>/dev/null || pip install --break-system-packages flask) &>>"$LOG_FILE" 2>&1 && ok "Flask installed." || fail "Flask" ;;
+        fastapi)    step "Installing FastAPI..."; (pip3 install --break-system-packages fastapi uvicorn 2>/dev/null || pip install --break-system-packages fastapi uvicorn) &>>"$LOG_FILE" 2>&1 && ok "FastAPI installed." || fail "FastAPI" ;;
+        streamlit)  step "Installing Streamlit..."; (pip3 install --break-system-packages streamlit 2>/dev/null || pip install --break-system-packages streamlit) &>>"$LOG_FILE" 2>&1 && ok "Streamlit installed." || fail "Streamlit" ;;
 
         # CSS/UI
         tailwind)   step "Installing Tailwind CSS..."; npm install -g tailwindcss &>>"$LOG_FILE" && ok "Tailwind CSS installed." || fail "Tailwind CSS" ;;
