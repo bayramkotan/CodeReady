@@ -1,0 +1,46 @@
+{
+  "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-config-schema/schema.json",
+  "productName": "CodeReady",
+  "version": "2.1.0",
+  "identifier": "com.bayramkotan.codeready",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "title": "CodeReady v2.1.0",
+    "windows": [
+      {
+        "title": "CodeReady — Developer Environment Setup",
+        "width": 1100,
+        "height": 720,
+        "minWidth": 900,
+        "minHeight": 600,
+        "resizable": true,
+        "decorations": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "plugins": {
+    "shell": {
+      "open": true,
+      "scope": [
+        {
+          "name": "run-powershell",
+          "cmd": "powershell",
+          "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", { "validator": ".*" }]
+        },
+        {
+          "name": "run-bash",
+          "cmd": "bash",
+          "args": ["-c", { "validator": ".*" }]
+        }
+      ]
+    }
+  }
+}

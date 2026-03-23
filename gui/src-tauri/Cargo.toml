@@ -1,0 +1,17 @@
+[package]
+name = "codeready-gui"
+version = "2.1.0"
+description = "CodeReady — Developer Environment Setup Tool"
+authors = ["Bayram Kotan <bayramkotan>"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["shell-open"] }
+tauri-plugin-shell = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["process", "io-util", "rt-multi-thread"] }
+which = "7"
