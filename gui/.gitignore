@@ -1,0 +1,16 @@
+# Rust build artifacts
+src-tauri/target/
+
+# Node modules
+node_modules/
+
+# Vite build output (keep in repo for web server, or regenerate)
+# dist/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

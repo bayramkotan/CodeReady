@@ -10,7 +10,6 @@
     "beforeBuildCommand": "npm run build"
   },
   "app": {
-    "title": "CodeReady v2.1.0",
     "windows": [
       {
         "title": "CodeReady — Developer Environment Setup",
