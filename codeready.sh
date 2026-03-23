@@ -65,6 +65,12 @@ section() { echo ""; echo -e "  ${YELLOW}=== $1 ===${NC}"; echo ""; }
 ensure_brew() {
     step "Checking Homebrew..."
     if command -v brew &>/dev/null; then ok "Homebrew ready."; return 0; fi
+    echo ""
+    read -rp "  [?] Homebrew is not installed. Install it? (Y/n): " answer
+    if [[ "$answer" == "n" || "$answer" == "N" ]]; then
+        info "Skipped Homebrew installation."
+        return 1
+    fi
     step "Installing Homebrew..."
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     eval "$(/opt/homebrew/bin/brew shellenv 2>/dev/null || /usr/local/bin/brew shellenv 2>/dev/null || /home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null)"
@@ -75,21 +81,56 @@ ensure_macports() {
     step "Checking MacPorts..."
     if command -v port &>/dev/null; then ok "MacPorts ready."; HAS_MACPORTS=1; return 0; fi
     info "MacPorts not installed. Using Homebrew as primary."
+    echo ""
+    read -rp "  [?] Install MacPorts as secondary? (y/N): " answer
+    if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
+        info "Visit https://www.macports.org/install.php — MacPorts requires manual download."
+    fi
     HAS_MACPORTS=0
 }
 
 ensure_nix() {
     step "Checking Nix..."
     if command -v nix &>/dev/null; then ok "Nix ready."; HAS_NIX=1; return 0; fi
-    info "Nix not installed. Install with: sh <(curl -L https://nixos.org/nix/install) --daemon"
-    HAS_NIX=0
+    echo ""
+    read -rp "  [?] Nix is not installed. Install it? (Y/n): " answer
+    if [[ "$answer" == "n" || "$answer" == "N" ]]; then
+        info "Skipped Nix installation."
+        HAS_NIX=0
+        return 1
+    fi
+    step "Installing Nix..."
+    sh <(curl -L https://nixos.org/nix/install) --daemon &>>"$LOG_FILE" 2>&1
+    if command -v nix &>/dev/null; then
+        ok "Nix installed."
+        HAS_NIX=1
+    else
+        info "Nix install may require a shell restart."
+        HAS_NIX=0
+    fi
 }
 
 ensure_flatpak() {
     step "Checking Flatpak..."
     if command -v flatpak &>/dev/null; then ok "Flatpak ready."; HAS_FLATPAK=1; return 0; fi
-    info "Flatpak not installed."
-    HAS_FLATPAK=0
+    echo ""
+    read -rp "  [?] Flatpak is not installed. Install it? (Y/n): " answer
+    if [[ "$answer" == "n" || "$answer" == "N" ]]; then
+        info "Skipped Flatpak installation."
+        HAS_FLATPAK=0
+        return 1
+    fi
+    step "Installing Flatpak..."
+    case "$PKG" in
+        apt)    sudo apt install -y flatpak &>>"$LOG_FILE" ;;
+        dnf)    sudo dnf install -y flatpak &>>"$LOG_FILE" ;;
+        pacman) sudo pacman -S --noconfirm flatpak &>>"$LOG_FILE" ;;
+        zypper) sudo zypper install -y flatpak &>>"$LOG_FILE" ;;
+        *)      info "Please install Flatpak manually for your distro."; HAS_FLATPAK=0; return 1 ;;
+    esac
+    flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo &>>"$LOG_FILE" 2>&1
+    ok "Flatpak installed."
+    HAS_FLATPAK=1
 }
 
 update_pkg() {

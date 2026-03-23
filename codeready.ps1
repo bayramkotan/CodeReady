@@ -42,6 +42,13 @@ function Ensure-WinGet {
         Write-Success "winget is already installed."
         return $true
     }
+    Write-Host ""
+    Write-Host "  [?] winget is not installed. Install it? (Y/n): " -ForegroundColor Yellow -NoNewline
+    $answer = Read-Host
+    if ($answer -eq "n" -or $answer -eq "N") {
+        Write-Info "Skipped winget installation."
+        return $false
+    }
     Write-Step "Installing winget..."
     try {
         $progressPreference = "silentlyContinue"
@@ -61,6 +68,13 @@ function Ensure-Scoop {
         Write-Success "Scoop is already installed."
         return $true
     }
+    Write-Host ""
+    Write-Host "  [?] Scoop is not installed. Install it? (Y/n): " -ForegroundColor Yellow -NoNewline
+    $answer = Read-Host
+    if ($answer -eq "n" -or $answer -eq "N") {
+        Write-Info "Skipped Scoop installation."
+        return $false
+    }
     Write-Step "Installing Scoop..."
     try {
         Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
@@ -79,6 +93,13 @@ function Ensure-Chocolatey {
     if (Get-Command choco -ErrorAction SilentlyContinue) {
         Write-Success "Chocolatey is already installed."
         return $true
+    }
+    Write-Host ""
+    Write-Host "  [?] Chocolatey is not installed. Install it? (Y/n): " -ForegroundColor Yellow -NoNewline
+    $answer = Read-Host
+    if ($answer -eq "n" -or $answer -eq "N") {
+        Write-Info "Skipped Chocolatey installation."
+        return $false
     }
     Write-Step "Installing Chocolatey..."
     try {

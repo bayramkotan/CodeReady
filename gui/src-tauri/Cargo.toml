@@ -5,13 +5,30 @@ description = "CodeReady — Developer Environment Setup Tool"
 authors = ["Bayram Kotan <bayramkotan>"]
 edition = "2021"
 
+[features]
+default = ["tauri-app"]
+tauri-app = ["dep:tauri", "dep:tauri-plugin-shell"]
+web-server = ["dep:actix-web", "dep:actix-files", "dep:actix-cors"]
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = ["shell-open"] }
-tauri-plugin-shell = "2"
+tauri = { version = "2", features = ["shell-open"], optional = true }
+tauri-plugin-shell = { version = "2", optional = true }
+actix-web = { version = "4", optional = true }
+actix-files = { version = "0.6", optional = true }
+actix-cors = { version = "0.7", optional = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["process", "io-util", "rt-multi-thread"] }
 which = "7"
+local-ip-address = "0.6"
+
+[[bin]]
+name = "codeready-gui"
+path = "src/main.rs"
+
+[[bin]]
+name = "codeready-web"
+path = "src/web_server.rs"

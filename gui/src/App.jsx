@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { useI18n } from "./hooks/useI18n";
+import { useApi } from "./hooks/useApi";
 import TitleBar from "./components/TitleBar";
 import TerminalPanel from "./components/TerminalPanel";
 import ScanView from "./components/ScanView";
@@ -12,6 +11,7 @@ const TABS = ["scan", "languages", "ides", "frameworks", "profiles"];
 
 export default function App() {
   const { lang, setLang, t } = useI18n("en");
+  const api = useApi();
   const [activeTab, setActiveTab] = useState("scan");
   const [scanResult, setScanResult] = useState(null);
   const [profiles, setProfiles] = useState([]);
@@ -25,27 +25,35 @@ export default function App() {
 
   const clearLogs = useCallback(() => setLogs([]), []);
 
-  // Listen for scan-progress events from Rust
+  // Listen for scan-progress events (Tauri only, web mode gets results synchronously)
   useEffect(() => {
-    const unlisten = listen("scan-progress", (event) => {
-      addLog(event.payload);
-    });
-    return () => { unlisten.then((fn) => fn()); };
-  }, [addLog]);
+    const setup = async () => {
+      const unlisten = await api.listenEvent("scan-progress", (payload) => {
+        addLog(payload);
+      });
+      return unlisten;
+    };
+    const promise = setup();
+    return () => { promise.then((fn) => fn && fn()); };
+  }, [addLog, api]);
 
   // Listen for install-progress events
   useEffect(() => {
-    const unlisten = listen("install-progress", (event) => {
-      const p = event.payload;
-      addLog(`${p.status === "done" ? "[+]" : p.status === "failed" ? "[-]" : "[>]"} ${p.message}`);
-      setProgress(p.percent);
-    });
-    return () => { unlisten.then((fn) => fn()); };
-  }, [addLog]);
+    const setup = async () => {
+      const unlisten = await api.listenEvent("install-progress", (payload) => {
+        const p = payload;
+        addLog(`${p.status === "done" ? "[+]" : p.status === "failed" ? "[-]" : "[>]"} ${p.message}`);
+        setProgress(p.percent);
+      });
+      return unlisten;
+    };
+    const promise = setup();
+    return () => { promise.then((fn) => fn && fn()); };
+  }, [addLog, api]);
 
   // Load profiles on mount
   useEffect(() => {
-    invoke("get_profiles").then(setProfiles).catch(console.error);
+    api.getProfiles().then(setProfiles).catch(console.error);
   }, []);
 
   // Auto-scan on mount
@@ -58,7 +66,7 @@ export default function App() {
     setProgress(0);
     addLog("[~] " + t("scan.scanning"));
     try {
-      const result = await invoke("scan_system");
+      const result = await api.scanSystem();
       setScanResult(result);
       setProgress(100);
       addLog(`[✓] ${t("scan.complete")} ${result.installed_count}/${result.total} ${t("scan.installed")}.`);
@@ -69,19 +77,11 @@ export default function App() {
   };
 
   const handleInstall = async (names) => {
-    // For now, log selected items — full install logic maps names to package IDs
     for (const name of names) {
       addLog(`[>] Installing ${name}...`);
       try {
-        // TODO: Map name → InstallRequest with correct method + package_id
-        // This will use the language/IDE/framework definitions
-        await invoke("install_item", {
-          request: {
-            name,
-            method: "winget", // placeholder — should be dynamic
-            package_id: name.toLowerCase(),
-          },
-        });
+        const result = await api.smartInstall(name);
+        addLog(`[+] ${result}`);
       } catch (e) {
         addLog(`[-] ${name}: ${e}`);
       }

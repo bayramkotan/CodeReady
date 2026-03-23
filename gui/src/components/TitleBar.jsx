@@ -1,27 +1,38 @@
-import { getCurrentWindow } from "@tauri-apps/api/window";
+const IS_TAURI = typeof window !== "undefined" && window.__TAURI_INTERNALS__;
+
+let appWindow = null;
+if (IS_TAURI) {
+  import("@tauri-apps/api/window").then((m) => {
+    appWindow = m.getCurrentWindow();
+  });
+}
 
 export default function TitleBar({ lang, onToggleLang }) {
-  const appWindow = getCurrentWindow();
-
   return (
     <div
       data-tauri-drag-region
       className="flex items-center justify-between px-4 py-2.5 bg-[#1a1a2e] border-b border-cr-border-light"
     >
-      {/* Traffic lights */}
+      {/* Traffic lights (Tauri only) */}
       <div className="flex gap-2">
-        <button
-          onClick={() => appWindow.close()}
-          className="w-3 h-3 rounded-full bg-cr-red hover:brightness-110 transition"
-        />
-        <button
-          onClick={() => appWindow.minimize()}
-          className="w-3 h-3 rounded-full bg-cr-yellow hover:brightness-110 transition"
-        />
-        <button
-          onClick={() => appWindow.toggleMaximize()}
-          className="w-3 h-3 rounded-full bg-cr-green hover:brightness-110 transition"
-        />
+        {IS_TAURI ? (
+          <>
+            <button
+              onClick={() => appWindow?.close()}
+              className="w-3 h-3 rounded-full bg-cr-red hover:brightness-110 transition"
+            />
+            <button
+              onClick={() => appWindow?.minimize()}
+              className="w-3 h-3 rounded-full bg-cr-yellow hover:brightness-110 transition"
+            />
+            <button
+              onClick={() => appWindow?.toggleMaximize()}
+              className="w-3 h-3 rounded-full bg-cr-green hover:brightness-110 transition"
+            />
+          </>
+        ) : (
+          <span className="text-[11px] text-cr-accent">WEB MODE</span>
+        )}
       </div>
 
       {/* Version */}
