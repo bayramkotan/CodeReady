@@ -7,15 +7,14 @@ edition = "2021"
 
 [features]
 default = ["tauri-app"]
-tauri-app = ["dep:tauri", "dep:tauri-plugin-shell"]
+tauri-app = ["dep:tauri"]
 web-server = ["dep:actix-web", "dep:actix-files", "dep:actix-cors"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = ["shell-open"], optional = true }
-tauri-plugin-shell = { version = "2", optional = true }
+tauri = { version = "2", features = [], optional = true }
 actix-web = { version = "4", optional = true }
 actix-files = { version = "0.6", optional = true }
 actix-cors = { version = "0.7", optional = true }

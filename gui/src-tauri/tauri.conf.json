@@ -26,21 +26,5 @@
       "csp": null
     }
   },
-  "plugins": {
-    "shell": {
-      "open": true,
-      "scope": [
-        {
-          "name": "run-powershell",
-          "cmd": "powershell",
-          "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", { "validator": ".*" }]
-        },
-        {
-          "name": "run-bash",
-          "cmd": "bash",
-          "args": ["-c", { "validator": ".*" }]
-        }
-      ]
-    }
-  }
+  "plugins": {}
 }
