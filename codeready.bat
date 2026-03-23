@@ -1,5 +1,5 @@
 @echo off
-title CodeReady v2.0 - Developer Environment Setup
+title CodeReady v2.1 - Developer Environment Setup
 net session >nul 2>&1
 if %errorLevel% neq 0 (
     echo   [!] CodeReady requires Administrator privileges. Requesting elevation...
@@ -7,7 +7,7 @@ if %errorLevel% neq 0 (
     exit /b
 )
 echo.
-echo   Starting CodeReady v2.0...
+echo   Starting CodeReady v2.1...
 echo.
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0codeready.ps1"
 echo.

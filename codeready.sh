@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # ================================================================
-# CodeReady v2.0.0
+# CodeReady v2.1.0
 # Developer Environment Setup Tool (Linux/macOS)
 # https://github.com/bayramkotan/CodeReady
 # ================================================================
 set -uo pipefail
 
-VERSION="2.0.0"
+VERSION="2.1.0"
 LOG_FILE="$HOME/codeready_install.log"
 INSTALLED=()
 FAILED=()

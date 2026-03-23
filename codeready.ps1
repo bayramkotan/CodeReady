@@ -1,12 +1,12 @@
 #Requires -RunAsAdministrator
 # ================================================================
-# CodeReady v2.0.0
+# CodeReady v2.1.0
 # Developer Environment Setup Tool (Windows)
 # https://github.com/bayramkotan/CodeReady
 # ================================================================
 
 $ErrorActionPreference = "Continue"
-$script:Version = "2.0.0"
+$script:Version = "2.1.0"
 $script:LogFile = "$env:USERPROFILE\codeready_install.log"
 $script:InstalledItems = @()
 $script:FailedItems = @()
