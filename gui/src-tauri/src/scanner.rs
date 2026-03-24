@@ -236,26 +236,10 @@ fn get_version(cmd: &str, args: &[&str]) -> Option<String> {
     Some(version)
 }
 
-/// Check if a command exists in PATH
-fn cmd_exists(cmd: &str) -> bool {
-    if which::which(cmd).is_ok() { return true; }
-    #[cfg(target_os = "windows")]
-    {
-        // Try where command
-        if Command::new("cmd")
-            .args(["/c", &format!("where {} >nul 2>nul", cmd)])
-            .status()
-            .map(|s| s.success())
-            .unwrap_or(false) { return true; }
-        // Try powershell Get-Command (catches PS functions like scoop)
-        if Command::new("powershell")
-            .args(["-NoProfile", "-NonInteractive", "-Command",
-                   &format!("if (Get-Command {} -ErrorAction SilentlyContinue) {{ exit 0 }} else {{ exit 1 }}", cmd)])
-            .status()
-            .map(|s| s.success())
-            .unwrap_or(false) { return true; }
-    }
-    false
+/// Check if a command exists — only used as last resort for known edge cases
+/// NOT used for general tool detection (too many false positives on Windows)
+fn _cmd_exists_basic(cmd: &str) -> bool {
+    which::which(cmd).is_ok()
 }
 
 /// Get list of globally installed npm packages (cached for performance)
@@ -387,26 +371,26 @@ pub fn scan_system_sync() -> ScanResult {
         installed: bootstrap_installed,
     });
 
-    // 4. Tools & package managers
+    // 4. Tools & package managers — only trust get_version result
     for (name, cmd, args) in TOOL_CMDS {
         let version = get_version(cmd, args);
-        let installed = version.is_some() || cmd_exists(cmd);
+        let installed = version.is_some();
         items.push(ScanItem {
             name: name.to_string(),
             category: "tool".to_string(),
-            version: version.or_else(|| if installed { Some("found".to_string()) } else { None }),
+            version,
             installed,
         });
     }
 
-    // 5. System package managers
+    // 5. System package managers — only trust get_version result
     for (name, cmd, args) in PKG_MANAGER_CMDS {
         let version = get_version(cmd, args);
-        let installed = version.is_some() || cmd_exists(cmd);
+        let installed = version.is_some();
         items.push(ScanItem {
             name: name.to_string(),
             category: "pkgmanager".to_string(),
-            version: version.or_else(|| if installed { Some("found".to_string()) } else { None }),
+            version,
             installed,
         });
     }
