@@ -27,6 +27,7 @@ pub struct InstallRequest {
     pub package_id: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InstallProgress {
     pub name: String,

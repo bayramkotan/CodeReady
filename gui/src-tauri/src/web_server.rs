@@ -7,8 +7,8 @@ mod scanner;
 
 use actix_cors::Cors;
 use actix_files as fs;
-use actix_web::{web, App, HttpResponse, HttpServer, middleware};
-use definitions::{get_all_packages, PackageDef};
+use actix_web::{web, App, HttpResponse, HttpServer};
+use definitions::get_all_packages;
 use local_ip_address::local_ip;
 use scanner::{scan_system_sync, run_install, get_os, get_profiles, InstallRequest, ScanResult};
 use serde::Deserialize;
@@ -87,15 +87,11 @@ async fn main() -> std::io::Result<()> {
 
     println!();
     println!("  ============================================");
-    println!("  CodeReady Web Server v2.1.0");
+    println!("  CodeReady Web Server v2.2.0");
     println!("  ============================================");
     println!();
     println!("  Local:   http://127.0.0.1:{}", port);
     println!("  Network: http://{}:{}", local_ip, port);
-    println!();
-    println!("  Any device on your network can access this");
-    println!("  URL to scan and install developer tools on");
-    println!("  THIS machine.");
     println!();
     println!("  Press Ctrl+C to stop.");
     println!();
