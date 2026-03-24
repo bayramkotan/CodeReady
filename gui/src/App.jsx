@@ -18,6 +18,8 @@ export default function App() {
   const [logs, setLogs] = useState([]);
   const [progress, setProgress] = useState(null);
   const [scanning, setScanning] = useState(false);
+  const [target, setTarget] = useState({ type: "local" }); // NEW: target state
+  const [backendOnline, setBackendOnline] = useState(null); // NEW: backend status
 
   const addLog = useCallback((line) => {
     setLogs((prev) => [...prev, line]);
@@ -51,39 +53,77 @@ export default function App() {
     return () => { promise.then((fn) => fn && fn()); };
   }, [addLog, api]);
 
-  // Load profiles on mount
+  // Check backend on mount
   useEffect(() => {
-    api.getProfiles().then(setProfiles).catch(console.error);
+    checkBackend();
   }, []);
 
-  // Auto-scan on mount
-  useEffect(() => {
-    handleScan();
-  }, []);
+  const checkBackend = async () => {
+    try {
+      await api.getOsInfo();
+      setBackendOnline(true);
+      addLog("[+] Backend connected");
+      // Load profiles + auto-scan only if backend is online
+      api.getProfiles().then(setProfiles).catch(() => {});
+      handleScan();
+    } catch {
+      setBackendOnline(false);
+      addLog("[!] Backend not running — UI only mode");
+      addLog("[!] Start the Rust backend or use: cargo run --bin codeready-web --features web-server --no-default-features");
+    }
+  };
+
+  // Handle target change
+  const handleTargetChange = (newTarget) => {
+    setTarget(newTarget);
+    clearLogs();
+    setScanResult(null);
+    setProgress(null);
+
+    if (newTarget.type === "local") {
+      addLog("[~] Target: localhost");
+      if (backendOnline) handleScan();
+    } else {
+      const h = newTarget.host;
+      addLog(`[~] Target: ${h.user}@${h.host}:${h.port} (SSH)`);
+      addLog("[!] SSH remote scan requires Rust backend with ssh2 crate");
+      addLog("[!] For now, use terminal: ./codeready.sh --remote " + h.host + " --remote-user " + h.user + " --scan");
+    }
+  };
 
   const handleScan = async () => {
+    if (!backendOnline && !api.isTauri) {
+      addLog("[-] Cannot scan — backend not running");
+      return;
+    }
     setScanning(true);
     setProgress(0);
-    addLog("[~] " + t("scan.scanning"));
+    const prefix = target.type === "remote" ? `[${target.host?.label}] ` : "";
+    addLog(`${prefix}[~] ${t("scan.scanning")}`);
     try {
       const result = await api.scanSystem();
       setScanResult(result);
       setProgress(100);
-      addLog(`[✓] ${t("scan.complete")} ${result.installed_count}/${result.total} ${t("scan.installed")}.`);
+      addLog(`${prefix}[+] ${t("scan.complete")} ${result.installed_count}/${result.total} ${t("scan.installed")}.`);
     } catch (e) {
-      addLog(`[-] Scan error: ${e}`);
+      addLog(`${prefix}[-] Scan error: ${e.message || e}`);
     }
     setScanning(false);
   };
 
   const handleInstall = async (names) => {
+    if (!backendOnline && !api.isTauri) {
+      addLog("[-] Cannot install — backend not running");
+      return;
+    }
+    const prefix = target.type === "remote" ? `[${target.host?.label}] ` : "";
     for (const name of names) {
-      addLog(`[>] Installing ${name}...`);
+      addLog(`${prefix}[>] Installing ${name}...`);
       try {
         const result = await api.smartInstall(name);
-        addLog(`[+] ${result}`);
+        addLog(`${prefix}[+] ${result}`);
       } catch (e) {
-        addLog(`[-] ${name}: ${e}`);
+        addLog(`${prefix}[-] ${name}: ${e.message || e}`);
       }
     }
     // Rescan after install
@@ -118,8 +158,13 @@ export default function App() {
 
   return (
     <div className="h-screen flex flex-col bg-cr-bg font-mono">
-      {/* Title bar */}
-      <TitleBar lang={lang} onToggleLang={setLang} />
+      {/* Title bar with target selector */}
+      <TitleBar
+        lang={lang}
+        onToggleLang={setLang}
+        target={target}
+        onTargetChange={handleTargetChange}
+      />
 
       {/* Header */}
       <div className="px-6 pt-5 pb-3 border-b border-cr-border">
@@ -128,8 +173,20 @@ export default function App() {
             {t("appName")}
           </span>
           <span className="text-[11px] bg-[#1e3a5f] text-cr-blue px-2.5 py-0.5 rounded-full">
-            v2.1.0
+            v2.2.0
           </span>
+          {/* Backend status badge */}
+          {backendOnline === false && (
+            <span className="text-[10px] bg-cr-red/20 text-cr-red px-2 py-0.5 rounded-full">
+              BACKEND OFFLINE
+            </span>
+          )}
+          {/* Target badge */}
+          {target.type === "remote" && (
+            <span className="text-[10px] bg-cr-accent/20 text-cr-accent px-2 py-0.5 rounded-full">
+              SSH: {target.host?.label}
+            </span>
+          )}
         </div>
         <span className="text-[12px] text-cr-muted">{t("subtitle")}</span>
       </div>
