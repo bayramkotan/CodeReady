@@ -1,7 +1,7 @@
 # CodeReady Roadmap
 
 > This is a living document. Features are prioritized by impact and complexity.
-> Last updated: 5 March 2026
+> Last updated: 24 March 2026
 
 ---
 
@@ -33,10 +33,10 @@
 - [ ] **JetBrains IDEs** — don't try `--version` (they launch GUI), use only file path detection
 - [ ] **Parallel scanning** — run detections in background jobs, collect results
 - [ ] **Cache scan results** — save to `~/.codeready/scan-cache.json`, re-scan only if older than 1 hour
-- [ ] **Linux pip install errors** — VenvStudio, pipx, Django fail without `sudo` and `--break-system-packages`. Auto-detect and add flags
+- [x] **Linux pip install errors** — FIXED: `--break-system-packages` added to all pip installs in codeready.sh
 - [ ] **Postman Linux** — flatpak fallback not working on all distros, add direct .deb/.rpm download
 - [ ] **Docker post-install** — auto-add user to docker group + `newgrp docker` so sudo not needed. Also add Docker Desktop option
-- [ ] **Banner version hardcoded** — version number in ASCII art should be read from config/variable, not hardcoded
+- [x] **Banner version hardcoded** — FIXED: updated to v2.1.0 in codeready.ps1, codeready.sh, codeready.bat
 - [ ] **CachyOS not detected** — `Detected: linux (package manager: unknown)`. CachyOS uses pacman, add to detection list
 - [ ] **Windows ARM support** — detect ARM64 architecture, use correct installers (winget supports ARM)
 - [ ] **macOS Apple Silicon** — detect arm64/aarch64, use correct Homebrew path (`/opt/homebrew`) and native binaries
@@ -733,20 +733,29 @@ After installing IDEs, auto-configure them.
 
 ## 💭 Future Ideas (Unscheduled)
 
-### CodeReady GUI (Desktop Application)
+### CodeReady GUI (Desktop + Web Application) — 🚧 IN PROGRESS
 
-- [ ] **Rewrite in Rust or Python** — proper compiled/packaged application, not just scripts
-- [ ] **GUI with PySide6 or Tauri** — visual interface for all CodeReady features
+- [x] **Tauri v2 + React frontend** — gui/ subfolder with dark terminal theme
+- [x] **Actix-web server** — REST API on port 3500, LAN-accessible from any device
+- [x] **Dual mode** — `useApi` hook auto-detects Tauri native vs browser, same React UI
+- [x] **System scan** — detects 32+ languages + 10 IDEs via safe CLI whitelist
+- [x] **Smart install** — `definitions.rs` maps 97 packages to winget/choco/apt/brew/pip/npm
+- [x] **15 profiles** — same profiles as terminal scripts
+- [x] **EN/TR i18n** — `useI18n` hook with full translations
+- [x] **Terminal output panel** — live log with colored status, progress bar
+- [x] **Package manager prompts** — PS1 and SH now ask before installing winget/Scoop/Choco/Homebrew/Flatpak/Nix
 - [ ] **Drag-and-drop profile builder** — visually compose your dev environment
 - [ ] **Real-time progress** — visual progress bars, not just terminal text
 - [ ] **System tray** — background process for update notifications
 - [ ] **Auto-updater** — CodeReady updates itself
 - [ ] **One-click installer** — .exe / .dmg / .deb package, no script needed
+- [ ] **Version selection dropdowns** — multi-version like terminal (Python 3.14/3.13/3.12)
+- [ ] **Profile → ScanView auto-selection** — applying profile checks missing items
 
 ### Other Ideas
 
-- [ ] **Web dashboard** — local web UI as alternative to terminal (Electron/Tauri app?)
-- [ ] **Remote setup** — SSH into remote machine and set up environment
+- [x] **Web dashboard** — implemented as Actix-web server (port 3500) with React frontend, LAN-accessible
+- [ ] **Remote setup** — SSH into remote machine and set up environment (partially possible via web server on LAN)
 - [ ] **WSL bridge** — detect Windows, auto-setup WSL, configure shared paths
 - [ ] **Language server management** — install and configure LSPs independently
 - [ ] **Database setup** — PostgreSQL, MySQL, MongoDB, Redis with optional sample data
