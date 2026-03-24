@@ -7,7 +7,7 @@ import ScanView from "./components/ScanView";
 import ProfilesView from "./components/ProfilesView";
 import "./styles/global.css";
 
-const TABS = ["scan", "languages", "ides", "frameworks", "profiles"];
+const TABS = ["scan", "languages", "ides", "frameworks", "tools", "profiles"];
 
 export default function App() {
   const { lang, setLang, t } = useI18n("en");
@@ -146,8 +146,11 @@ export default function App() {
   // Filter scan items by tab
   const getFilteredItems = () => {
     if (!scanResult) return [];
+    if (activeTab === "scan") return scanResult.items;
+    if (activeTab === "tools") {
+      return scanResult.items.filter((i) => i.category === "tool" || i.category === "pkgmanager");
+    }
     const categoryMap = {
-      scan: null, // show all
       languages: "language",
       ides: "ide",
       frameworks: "framework",

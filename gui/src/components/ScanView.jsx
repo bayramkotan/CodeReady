@@ -22,6 +22,7 @@ export default function ScanView({ items, t, onInstall }) {
     ide: t("categories.ide"),
     framework: t("categories.framework"),
     tool: t("categories.tool"),
+    pkgmanager: t("categories.pkgmanager"),
   };
 
   const installed = items.filter((i) => i.installed).length;

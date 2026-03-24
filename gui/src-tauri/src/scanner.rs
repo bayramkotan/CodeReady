@@ -46,7 +46,7 @@ pub struct ProfileDef {
     pub tools: Vec<String>,
 }
 
-/// Safe CLI whitelist
+/// Safe CLI whitelist — languages & runtimes
 const SAFE_VERSION_CMDS: &[(&str, &str, &[&str])] = &[
     ("Python",       "python",    &["--version"]),
     ("Node.js",      "node",      &["--version"]),
@@ -76,11 +76,9 @@ const SAFE_VERSION_CMDS: &[(&str, &str, &[&str])] = &[
     ("Groovy",       "groovy",    &["--version"]),
     ("Erlang",       "erl",       &["+V"]),
     (".NET SDK",     "dotnet",    &["--version"]),
-    ("Git",          "git",       &["--version"]),
-    ("Docker",       "docker",    &["--version"]),
-    ("kubectl",      "kubectl",   &["version", "--client", "--short"]),
 ];
 
+/// IDEs — check via which/where
 const IDE_CMDS: &[(&str, &str)] = &[
     ("VS Code",       "code"),
     ("VSCodium",      "codium"),
@@ -94,8 +92,70 @@ const IDE_CMDS: &[(&str, &str)] = &[
     ("Android Studio","studio"),
 ];
 
+/// Tools & Package Managers — check via which/where + --version
+const TOOL_CMDS: &[(&str, &str, &[&str])] = &[
+    ("Git",          "git",       &["--version"]),
+    ("Docker",       "docker",    &["--version"]),
+    ("kubectl",      "kubectl",   &["version", "--client", "--short"]),
+    ("Helm",         "helm",      &["version", "--short"]),
+    ("Terraform",    "terraform", &["--version"]),
+    ("npm",          "npm",       &["--version"]),
+    ("Yarn",         "yarn",      &["--version"]),
+    ("pnpm",         "pnpm",      &["--version"]),
+    ("Bun",          "bun",       &["--version"]),
+    ("pipx",         "pipx",      &["--version"]),
+    ("uv",           "uv",        &["--version"]),
+    ("Poetry",       "poetry",    &["--version"]),
+    ("Conda",        "conda",     &["--version"]),
+];
+
+/// Package Managers (system-level) — check via which/where
+const PKG_MANAGER_CMDS: &[(&str, &str, &[&str])] = &[
+    ("Scoop",        "scoop",     &["--version"]),
+    ("Chocolatey",   "choco",     &["--version"]),
+    ("Homebrew",     "brew",      &["--version"]),
+    ("Flatpak",      "flatpak",   &["--version"]),
+    ("Nix",          "nix",       &["--version"]),
+    ("Snap",         "snap",      &["version"]),
+    ("winget",       "winget",    &["--version"]),
+];
+
+/// Frameworks — npm globals to check
+const NPM_FRAMEWORKS: &[(&str, &str)] = &[
+    ("React",         "create-react-app"),
+    ("Next.js",       "create-next-app"),
+    ("Vue",           "@vue/cli"),
+    ("Nuxt",          "nuxi"),
+    ("Angular",       "@angular/cli"),
+    ("Svelte",        "create-svelte"),
+    ("Vite",          "create-vite"),
+    ("Astro",         "create-astro"),
+    ("Remix",         "create-remix"),
+    ("Express",       "express-generator"),
+    ("NestJS",        "@nestjs/cli"),
+    ("Tailwind",      "tailwindcss"),
+    ("React Native",  "react-native-cli"),
+    ("Expo",          "expo-cli"),
+    ("Ionic",         "@ionic/cli"),
+    ("Electron",      "electron"),
+];
+
+/// Frameworks — pip packages to check
+const PIP_FRAMEWORKS: &[(&str, &str)] = &[
+    ("Django",        "django"),
+    ("Flask",         "flask"),
+    ("FastAPI",       "fastapi"),
+    ("Streamlit",     "streamlit"),
+    ("VenvStudio",    "VenvStudio"),
+];
+
+// ─── Version detection ───────────────────────────────────────────
+
 fn get_version(cmd: &str, args: &[&str]) -> Option<String> {
-    let output = Command::new(cmd).args(args).output().ok()?;
+    let output = Command::new(cmd).args(args)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .output().ok()?;
     let raw = if output.status.success() {
         String::from_utf8_lossy(&output.stdout).to_string()
     } else {
@@ -112,6 +172,17 @@ fn get_version(cmd: &str, args: &[&str]) -> Option<String> {
         .replace("ruby ", "")
         .replace("Dart SDK version: ", "")
         .replace("v", "")
+        .replace("Chocolatey ", "")
+        .replace("Scoop ", "")
+        .replace("Homebrew ", "")
+        .replace("nix (Nix) ", "")
+        .replace("flatpak ", "")
+        .replace("uv ", "")
+        .replace("poetry (version ", "").replace(")", "")
+        .replace("conda ", "")
+        .replace("pnpm ", "")
+        .replace("helm: ", "")
+        .replace("Terraform ", "")
         .trim()
         .split_whitespace()
         .next()
@@ -120,10 +191,69 @@ fn get_version(cmd: &str, args: &[&str]) -> Option<String> {
     Some(version)
 }
 
+/// Get list of globally installed npm packages (cached for performance)
+fn get_npm_globals() -> Vec<String> {
+    let output = Command::new("npm")
+        .args(["list", "-g", "--depth=0", "--json"])
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .output();
+
+    match output {
+        Ok(o) if o.status.success() => {
+            let json_str = String::from_utf8_lossy(&o.stdout);
+            // Parse JSON to get dependency names
+            if let Ok(val) = serde_json::from_str::<serde_json::Value>(&json_str) {
+                if let Some(deps) = val.get("dependencies").and_then(|d| d.as_object()) {
+                    return deps.keys().map(|k| k.to_lowercase()).collect();
+                }
+            }
+            Vec::new()
+        }
+        _ => Vec::new(),
+    }
+}
+
+/// Get list of installed pip packages (cached for performance)
+fn get_pip_packages() -> Vec<String> {
+    let output = Command::new("pip3")
+        .args(["list", "--format=columns"])
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .output();
+
+    // Fallback to pip if pip3 not found
+    let output = match output {
+        Ok(o) if o.status.success() => o,
+        _ => {
+            match Command::new("pip")
+                .args(["list", "--format=columns"])
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::null())
+                .output()
+            {
+                Ok(o) => o,
+                Err(_) => return Vec::new(),
+            }
+        }
+    };
+
+    if !output.status.success() { return Vec::new(); }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    stdout.lines()
+        .skip(2) // skip header + separator
+        .filter_map(|line| line.split_whitespace().next())
+        .map(|name| name.to_lowercase())
+        .collect()
+}
+
+// ─── Main scan ───────────────────────────────────────────────────
+
 pub fn scan_system_sync() -> ScanResult {
     let mut items: Vec<ScanItem> = Vec::new();
 
-    // Languages/runtimes
+    // 1. Languages & runtimes
     for (name, cmd, args) in SAFE_VERSION_CMDS {
         let version = get_version(cmd, args);
         let installed = version.is_some();
@@ -135,13 +265,81 @@ pub fn scan_system_sync() -> ScanResult {
         });
     }
 
-    // IDEs via which
+    // 2. IDEs via which
     for (name, cmd) in IDE_CMDS {
         let installed = which::which(cmd).is_ok();
         items.push(ScanItem {
             name: name.to_string(),
             category: "ide".to_string(),
             version: if installed { Some("found".to_string()) } else { None },
+            installed,
+        });
+    }
+
+    // 3. Frameworks — check npm globals + pip packages
+    let npm_globals = get_npm_globals();
+    let pip_packages = get_pip_packages();
+
+    for (name, npm_pkg) in NPM_FRAMEWORKS {
+        let installed = npm_globals.iter().any(|p| p == &npm_pkg.to_lowercase());
+        items.push(ScanItem {
+            name: name.to_string(),
+            category: "framework".to_string(),
+            version: if installed { Some("found".to_string()) } else { None },
+            installed,
+        });
+    }
+
+    for (name, pip_pkg) in PIP_FRAMEWORKS {
+        // Skip if already added via npm
+        if items.iter().any(|i| i.name == *name) { continue; }
+        let installed = pip_packages.iter().any(|p| p == &pip_pkg.to_lowercase());
+        items.push(ScanItem {
+            name: name.to_string(),
+            category: "framework".to_string(),
+            version: if installed { Some("found".to_string()) } else { None },
+            installed,
+        });
+    }
+
+    // Blazor check — dotnet installed = Blazor available
+    let dotnet_installed = items.iter().any(|i| i.name == ".NET SDK" && i.installed);
+    items.push(ScanItem {
+        name: "Blazor".to_string(),
+        category: "framework".to_string(),
+        version: if dotnet_installed { Some("via .NET".to_string()) } else { None },
+        installed: dotnet_installed,
+    });
+
+    // Bootstrap — npm check
+    let bootstrap_installed = npm_globals.iter().any(|p| p == "bootstrap");
+    items.push(ScanItem {
+        name: "Bootstrap".to_string(),
+        category: "framework".to_string(),
+        version: if bootstrap_installed { Some("found".to_string()) } else { None },
+        installed: bootstrap_installed,
+    });
+
+    // 4. Tools & package managers
+    for (name, cmd, args) in TOOL_CMDS {
+        let version = get_version(cmd, args);
+        let installed = version.is_some();
+        items.push(ScanItem {
+            name: name.to_string(),
+            category: "tool".to_string(),
+            version,
+            installed,
+        });
+    }
+
+    // 5. System package managers
+    for (name, cmd, args) in PKG_MANAGER_CMDS {
+        let version = get_version(cmd, args);
+        let installed = version.is_some();
+        items.push(ScanItem {
+            name: name.to_string(),
+            category: "pkgmanager".to_string(),
+            version,
             installed,
         });
     }
