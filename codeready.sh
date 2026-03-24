@@ -1390,6 +1390,72 @@ system_scan() {
     show_item "Helm"       "$helm_ver"   "${LATEST[helm]}"
     echo ""
 
+    # Frameworks — npm globals
+    echo -e "  ${BOLD}${CYAN}Frameworks (npm global):${NC}"
+    local npm_globals=""
+    if command -v npm &>/dev/null; then
+        npm_globals=$(npm list -g --depth=0 2>/dev/null | tail -n +2 | sed 's/.*── //' | cut -d@ -f1)
+    fi
+
+    check_npm_fw() {
+        local name="$1" pkg="$2"
+        local status=""
+        if echo "$npm_globals" | grep -qiw "$pkg"; then
+            status="found"
+        fi
+        show_item "$name" "$status" "latest"
+    }
+
+    check_npm_fw "React (CRA)"    "create-react-app"
+    check_npm_fw "Next.js"        "create-next-app"
+    check_npm_fw "Vue CLI"        "@vue/cli"
+    check_npm_fw "Nuxt (nuxi)"    "nuxi"
+    check_npm_fw "Angular CLI"    "@angular/cli"
+    check_npm_fw "SvelteKit"      "create-svelte"
+    check_npm_fw "Vite"           "create-vite"
+    check_npm_fw "Astro"          "create-astro"
+    check_npm_fw "Remix"          "create-remix"
+    check_npm_fw "Express"        "express-generator"
+    check_npm_fw "NestJS"         "@nestjs/cli"
+    check_npm_fw "Tailwind CSS"   "tailwindcss"
+    check_npm_fw "Bootstrap"      "bootstrap"
+    check_npm_fw "React Native"   "react-native-cli"
+    check_npm_fw "Expo"           "expo-cli"
+    check_npm_fw "Ionic CLI"      "@ionic/cli"
+    check_npm_fw "Electron"       "electron"
+    echo ""
+
+    # Frameworks — pip packages
+    echo -e "  ${BOLD}${CYAN}Frameworks (pip):${NC}"
+    local pip_list=""
+    if command -v pip3 &>/dev/null; then
+        pip_list=$(pip3 list --format=columns 2>/dev/null | tail -n +3 | awk '{print tolower($1)}')
+    elif command -v pip &>/dev/null; then
+        pip_list=$(pip list --format=columns 2>/dev/null | tail -n +3 | awk '{print tolower($1)}')
+    fi
+
+    check_pip_fw() {
+        local name="$1" pkg="$2"
+        local status=""
+        if echo "$pip_list" | grep -qiw "$pkg"; then
+            status="found"
+        fi
+        show_item "$name" "$status" "latest"
+    }
+
+    check_pip_fw "Django"      "django"
+    check_pip_fw "Flask"       "flask"
+    check_pip_fw "FastAPI"     "fastapi"
+    check_pip_fw "Streamlit"   "streamlit"
+    check_pip_fw "VenvStudio"  "venvstudio"
+    echo ""
+
+    # Blazor check
+    local blazor_status=""
+    [[ -n "$dotnet_ver" ]] && blazor_status="via .NET"
+    show_item "Blazor" "$blazor_status" "latest"
+    echo ""
+
     # Count stats
     local installed_count=0 update_count=0 missing_count=0
     for v in "$py_ver" "$node_ver" "$java_ver" "$dotnet_ver" "$gcc_ver" "$go_ver" "$rust_ver" "$php_ver" "$ruby_ver" "$git_ver" "$docker_ver" "$code_ver" "$npm_ver"; do

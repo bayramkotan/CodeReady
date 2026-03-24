@@ -898,6 +898,60 @@ function Start-SystemScan {
     Show-ScanItem "Helm"       $helm       "latest"
     Write-Host ""
 
+    # Frameworks — npm globals
+    Write-Host "  Frameworks (npm global):" -ForegroundColor Cyan
+    $npmGlobals = @()
+    try { $npmGlobals = (npm list -g --depth=0 --json 2>$null | ConvertFrom-Json).dependencies.PSObject.Properties.Name } catch {}
+    $fwNpm = @(
+        @("React (CRA)",     "create-react-app"),
+        @("Next.js",         "create-next-app"),
+        @("Vue CLI",         "@vue/cli"),
+        @("Nuxt (nuxi)",     "nuxi"),
+        @("Angular CLI",     "@angular/cli"),
+        @("SvelteKit",       "create-svelte"),
+        @("Vite",            "create-vite"),
+        @("Astro",           "create-astro"),
+        @("Remix",           "create-remix"),
+        @("Express",         "express-generator"),
+        @("NestJS",          "@nestjs/cli"),
+        @("Tailwind CSS",    "tailwindcss"),
+        @("Bootstrap",       "bootstrap"),
+        @("React Native",    "react-native-cli"),
+        @("Expo",            "expo-cli"),
+        @("Ionic CLI",       "@ionic/cli"),
+        @("Electron",        "electron")
+    )
+    foreach ($fw in $fwNpm) {
+        $fwName = $fw[0]; $fwPkg = $fw[1]
+        $fwInstalled = if ($npmGlobals -contains $fwPkg) { "found" } else { "" }
+        Show-ScanItem $fwName $fwInstalled "latest"
+    }
+    Write-Host ""
+
+    # Frameworks — pip packages
+    Write-Host "  Frameworks (pip):" -ForegroundColor Cyan
+    $pipList = @()
+    try { $pipList = (pip list --format=json 2>$null | ConvertFrom-Json).name } catch {}
+    if (-not $pipList) { try { $pipList = (pip3 list --format=json 2>$null | ConvertFrom-Json).name } catch {} }
+    $fwPip = @(
+        @("Django",      "Django"),
+        @("Flask",       "Flask"),
+        @("FastAPI",     "fastapi"),
+        @("Streamlit",   "streamlit"),
+        @("VenvStudio",  "VenvStudio")
+    )
+    foreach ($fw in $fwPip) {
+        $fwName = $fw[0]; $fwPkg = $fw[1]
+        $fwInstalled = if ($pipList -contains $fwPkg) { "found" } else { "" }
+        Show-ScanItem $fwName $fwInstalled "latest"
+    }
+    Write-Host ""
+
+    # Blazor check
+    $blazorStatus = if ($dotnet) { "via .NET" } else { "" }
+    Show-ScanItem "Blazor" $blazorStatus "latest"
+    Write-Host ""
+
     Write-Host "  ----------------------------------------" -ForegroundColor DarkGray
     $instCount = @($py,$node,$java,$dotnet,$gcc,$goVer,$rust,$php,$ruby,$git,$docker,$code,$npm) | Where-Object { $_ } | Measure-Object | Select-Object -ExpandProperty Count
     $missCount = 13 - $instCount
