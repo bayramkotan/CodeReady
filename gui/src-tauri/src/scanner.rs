@@ -152,6 +152,9 @@ const PIP_FRAMEWORKS: &[(&str, &str)] = &[
 
 // ─── Version detection ───────────────────────────────────────────
 
+/// Commands that are PowerShell functions, not executables
+const PS_FUNCTION_CMDS: &[&str] = &["scoop"];
+
 fn get_version(cmd: &str, args: &[&str]) -> Option<String> {
     // First try direct execution
     let output = Command::new(cmd).args(args)
@@ -160,50 +163,71 @@ fn get_version(cmd: &str, args: &[&str]) -> Option<String> {
         .output();
 
     let output = match output {
-        Ok(o) if o.status.success() || !String::from_utf8_lossy(&o.stderr).trim().is_empty() => o,
-        _ => {
-            #[cfg(target_os = "windows")]
-            {
-                let full_cmd = if args.is_empty() {
-                    cmd.to_string()
-                } else {
-                    format!("{} {}", cmd, args.join(" "))
-                };
-                // Try cmd /c first (for .bat/.cmd files)
-                let cmd_result = Command::new("cmd")
-                    .args(["/c", &full_cmd])
-                    .stdout(std::process::Stdio::piped())
-                    .stderr(std::process::Stdio::piped())
-                    .output();
-                match cmd_result {
-                    Ok(o) if o.status.success() => o,
-                    _ => {
-                        // Try powershell (for PS functions like scoop)
-                        match Command::new("powershell")
-                            .args(["-NoProfile", "-NonInteractive", "-Command", &full_cmd])
-                            .stdout(std::process::Stdio::piped())
-                            .stderr(std::process::Stdio::piped())
-                            .output()
-                        {
-                            Ok(o) => o,
-                            Err(_) => return None,
-                        }
-                    }
-                }
+        Ok(o) if o.status.success() => o,
+        Ok(o) => {
+            // Check stderr for tools that output version there (java, rustc)
+            let stderr = String::from_utf8_lossy(&o.stderr).to_string();
+            if !stderr.trim().is_empty() && (stderr.contains("version") || stderr.contains("Version")) {
+                o
+            } else {
+                return try_fallback(cmd, args);
             }
-            #[cfg(not(target_os = "windows"))]
-            return None;
+        }
+        Err(_) => {
+            return try_fallback(cmd, args);
         }
     };
 
+    parse_version_output(&output)
+}
+
+#[cfg(target_os = "windows")]
+fn try_fallback(cmd: &str, args: &[&str]) -> Option<String> {
+    let full_cmd = if args.is_empty() {
+        cmd.to_string()
+    } else {
+        format!("{} {}", cmd, args.join(" "))
+    };
+
+    // Try cmd /c (for .bat/.cmd files like choco)
+    if let Ok(o) = Command::new("cmd")
+        .args(["/c", &full_cmd])
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .output()
+    {
+        if o.status.success() {
+            return parse_version_output(&o);
+        }
+    }
+
+    // Try powershell ONLY for known PS functions (scoop)
+    if PS_FUNCTION_CMDS.contains(&cmd) {
+        if let Ok(o) = Command::new("powershell")
+            .args(["-NoProfile", "-NonInteractive", "-Command", &full_cmd])
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .output()
+        {
+            if o.status.success() {
+                return parse_version_output(&o);
+            }
+        }
+    }
+
+    None
+}
+
+#[cfg(not(target_os = "windows"))]
+fn try_fallback(_cmd: &str, _args: &[&str]) -> Option<String> {
+    None
+}
+
+fn parse_version_output(output: &std::process::Output) -> Option<String> {
     let raw = if output.status.success() {
         String::from_utf8_lossy(&output.stdout).to_string()
     } else {
-        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-        if stderr.trim().is_empty() {
-            return None;
-        }
-        stderr
+        String::from_utf8_lossy(&output.stderr).to_string()
     };
     let line = raw.lines().next().unwrap_or("").trim().to_string();
     if line.is_empty() { return None; }
@@ -233,6 +257,7 @@ fn get_version(cmd: &str, args: &[&str]) -> Option<String> {
         .next()
         .unwrap_or(&line)
         .to_string();
+    if version.is_empty() { return None; }
     Some(version)
 }
 
