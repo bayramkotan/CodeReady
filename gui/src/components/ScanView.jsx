@@ -36,44 +36,38 @@ export default function ScanView({ items, t, onInstall, onRescan, scanning }) {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Fixed top: stats + action buttons */}
-      <div className="px-6 pt-4 pb-3 border-b border-cr-border bg-cr-bg">
-        {/* Stats */}
-        <div className="flex gap-5 text-[12px] mb-3">
+      <div className="px-6 pt-4 pb-3 border-b border-[rgba(255,255,255,0.06)]">
+        <div className="flex gap-6 text-[12px] mb-3">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-cr-green" />
-            <span className="text-cr-muted">
-              {installed} {t("scan.installed")}
-            </span>
+            <span className="text-cr-muted">{installed} installed</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-cr-red" />
-            <span className="text-cr-muted">
-              {missing} {t("scan.notInstalled")}
-            </span>
+            <span className="text-cr-muted">{missing} not installed</span>
           </div>
         </div>
 
-        {/* Action buttons */}
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <button
             onClick={() => onInstall([...selected])}
             disabled={selected.size === 0}
-            className="px-5 py-2 bg-cr-accent text-cr-bg text-[13px] font-semibold rounded-md hover:bg-cr-accent-hover transition disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-white text-black text-[12px] font-medium rounded-lg hover:bg-gray-200 transition disabled:opacity-20 disabled:cursor-not-allowed"
           >
-            {t("scan.installSelected")} {selected.size > 0 && `(${selected.size})`}
+            Install selected {selected.size > 0 && `(${selected.size})`}
           </button>
           <button
             onClick={selectAllMissing}
-            className="px-5 py-2 text-cr-accent text-[13px] border border-cr-border-light rounded-md hover:bg-cr-surface transition"
+            className="px-4 py-2 text-cr-text text-[12px] border border-[rgba(255,255,255,0.1)] rounded-lg hover:bg-white/5 transition"
           >
-            {t("scan.selectAll")}
+            Select all missing
           </button>
           <button
             onClick={onRescan}
             disabled={scanning}
-            className="px-5 py-2 text-cr-muted text-[13px] border border-cr-border-light rounded-md hover:bg-cr-surface hover:text-cr-accent transition disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-cr-muted text-[12px] border border-[rgba(255,255,255,0.06)] rounded-lg hover:bg-white/5 hover:text-cr-text transition disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            {scanning ? "Scanning..." : "⟳ Rescan"}
+            {scanning ? "Scanning..." : "Rescan"}
           </button>
         </div>
       </div>
@@ -86,17 +80,21 @@ export default function ScanView({ items, t, onInstall, onRescan, scanning }) {
 
           return (
             <div key={cat} className="mb-6">
-              <div className="text-[12px] text-cr-muted uppercase tracking-wider mb-3">
+              <div className="text-[11px] text-cr-muted uppercase tracking-wider mb-3">
                 {categoryLabels[cat] || cat}
               </div>
 
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1">
                 {catItems.map((item) => (
                   <div
                     key={item.name}
                     onClick={() => !item.installed && toggle(item.name)}
-                    className={`flex items-center justify-between px-3 py-2 rounded-md bg-cr-surface border-l-[3px] cursor-pointer transition hover:bg-[#1a1a40] ${
-                      item.installed ? "border-cr-green" : "border-cr-red"
+                    className={`flex items-center justify-between px-3 py-2.5 rounded-lg border transition cursor-pointer ${
+                      item.installed
+                        ? "border-[rgba(34,197,94,0.15)] bg-[rgba(34,197,94,0.03)] hover:bg-[rgba(34,197,94,0.06)]"
+                        : selected.has(item.name)
+                          ? "border-[rgba(255,255,255,0.15)] bg-white/5"
+                          : "border-[rgba(255,255,255,0.04)] hover:border-[rgba(255,255,255,0.08)] hover:bg-white/[0.02]"
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -104,8 +102,8 @@ export default function ScanView({ items, t, onInstall, onRescan, scanning }) {
                         <div
                           className={`w-4 h-4 rounded border flex items-center justify-center text-[10px] transition ${
                             selected.has(item.name)
-                              ? "bg-cr-accent border-cr-accent text-cr-bg"
-                              : "border-cr-border-light text-transparent"
+                              ? "bg-white border-white text-black"
+                              : "border-[rgba(255,255,255,0.15)] text-transparent"
                           }`}
                         >
                           ✓
@@ -113,16 +111,10 @@ export default function ScanView({ items, t, onInstall, onRescan, scanning }) {
                       )}
                       <span className="text-[13px] text-cr-text">{item.name}</span>
                     </div>
-                    <span
-                      className={`text-[12px] ${
-                        item.installed ? "text-cr-green" : "text-cr-red"
-                      }`}
-                    >
+                    <span className={`text-[12px] font-mono ${item.installed ? "text-cr-green" : "text-cr-muted"}`}>
                       {item.installed
-                        ? item.version === "found"
-                          ? t("scan.found")
-                          : item.version
-                        : t("scan.notInstalled")}
+                        ? item.version === "found" ? "found" : item.version
+                        : "not installed"}
                     </span>
                   </div>
                 ))}
