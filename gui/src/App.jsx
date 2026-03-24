@@ -65,7 +65,7 @@ export default function App() {
       addLog("[+] Backend connected");
       // Load profiles + auto-scan only if backend is online
       api.getProfiles().then(setProfiles).catch(() => {});
-      handleScan();
+      handleScan(true);
     } catch {
       setBackendOnline(false);
       addLog("[!] Backend not running — UI only mode");
@@ -91,8 +91,8 @@ export default function App() {
     }
   };
 
-  const handleScan = async () => {
-    if (!backendOnline && !api.isTauri) {
+  const handleScan = async (forceRun = false) => {
+    if (!forceRun && !backendOnline && !api.isTauri) {
       addLog("[-] Cannot scan — backend not running");
       return;
     }
