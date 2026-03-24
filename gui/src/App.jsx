@@ -196,19 +196,25 @@ export default function App() {
 
       {/* Tab bar */}
       <div className="flex border-b border-cr-border px-6">
-        {TABS.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-5 py-3 text-[13px] transition border-b-2 ${
-              activeTab === tab
-                ? "text-cr-accent border-cr-accent"
-                : "text-cr-muted border-transparent hover:text-cr-text"
-            }`}
-          >
-            {t(`tabs.${tab}`)}
-          </button>
-        ))}
+        {TABS.map((tab) => {
+          const label = t(`tabs.${tab}`);
+          // Fallback if translation key returns the key itself
+          const fallbackLabels = { scan: "System Scan", languages: "Languages", ides: "IDEs", frameworks: "Frameworks", tools: "Tools", profiles: "Profiles" };
+          const displayLabel = label.startsWith("tabs.") ? (fallbackLabels[tab] || tab) : label;
+          return (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-5 py-3 text-[13px] transition border-b-2 ${
+                activeTab === tab
+                  ? "text-cr-accent border-cr-accent"
+                  : "text-cr-muted border-transparent hover:text-cr-text"
+              }`}
+            >
+              {displayLabel}
+            </button>
+          );
+        })}
       </div>
 
       {/* Main content */}
@@ -221,6 +227,8 @@ export default function App() {
             items={getFilteredItems()}
             t={t}
             onInstall={handleInstall}
+            onRescan={() => handleScan(true)}
+            scanning={scanning}
           />
         )}
 

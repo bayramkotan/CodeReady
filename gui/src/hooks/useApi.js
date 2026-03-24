@@ -19,7 +19,7 @@ async function safeFetch(url, options = {}) {
   try {
     const res = await fetch(url, {
       ...options,
-      signal: AbortSignal.timeout(5000), // 5s timeout
+      signal: AbortSignal.timeout(60000), // 60s timeout (scan can be slow with npm/pip checks)
     });
     if (!res.ok) {
       const text = await res.text().catch(() => "");

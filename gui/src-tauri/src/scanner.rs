@@ -153,14 +153,57 @@ const PIP_FRAMEWORKS: &[(&str, &str)] = &[
 // ─── Version detection ───────────────────────────────────────────
 
 fn get_version(cmd: &str, args: &[&str]) -> Option<String> {
+    // First try direct execution
     let output = Command::new(cmd).args(args)
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
-        .output().ok()?;
+        .output();
+
+    let output = match output {
+        Ok(o) if o.status.success() || !String::from_utf8_lossy(&o.stderr).trim().is_empty() => o,
+        _ => {
+            #[cfg(target_os = "windows")]
+            {
+                let full_cmd = if args.is_empty() {
+                    cmd.to_string()
+                } else {
+                    format!("{} {}", cmd, args.join(" "))
+                };
+                // Try cmd /c first (for .bat/.cmd files)
+                let cmd_result = Command::new("cmd")
+                    .args(["/c", &full_cmd])
+                    .stdout(std::process::Stdio::piped())
+                    .stderr(std::process::Stdio::piped())
+                    .output();
+                match cmd_result {
+                    Ok(o) if o.status.success() => o,
+                    _ => {
+                        // Try powershell (for PS functions like scoop)
+                        match Command::new("powershell")
+                            .args(["-NoProfile", "-NonInteractive", "-Command", &full_cmd])
+                            .stdout(std::process::Stdio::piped())
+                            .stderr(std::process::Stdio::piped())
+                            .output()
+                        {
+                            Ok(o) => o,
+                            Err(_) => return None,
+                        }
+                    }
+                }
+            }
+            #[cfg(not(target_os = "windows"))]
+            return None;
+        }
+    };
+
     let raw = if output.status.success() {
         String::from_utf8_lossy(&output.stdout).to_string()
     } else {
-        String::from_utf8_lossy(&output.stderr).to_string()
+        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+        if stderr.trim().is_empty() {
+            return None;
+        }
+        stderr
     };
     let line = raw.lines().next().unwrap_or("").trim().to_string();
     if line.is_empty() { return None; }
@@ -184,12 +227,35 @@ fn get_version(cmd: &str, args: &[&str]) -> Option<String> {
         .replace("pnpm ", "")
         .replace("helm: ", "")
         .replace("Terraform ", "")
+        .replace("Current stable version of Scoop:", "")
         .trim()
         .split_whitespace()
         .next()
         .unwrap_or(&line)
         .to_string();
     Some(version)
+}
+
+/// Check if a command exists in PATH
+fn cmd_exists(cmd: &str) -> bool {
+    if which::which(cmd).is_ok() { return true; }
+    #[cfg(target_os = "windows")]
+    {
+        // Try where command
+        if Command::new("cmd")
+            .args(["/c", &format!("where {} >nul 2>nul", cmd)])
+            .status()
+            .map(|s| s.success())
+            .unwrap_or(false) { return true; }
+        // Try powershell Get-Command (catches PS functions like scoop)
+        if Command::new("powershell")
+            .args(["-NoProfile", "-NonInteractive", "-Command",
+                   &format!("if (Get-Command {} -ErrorAction SilentlyContinue) {{ exit 0 }} else {{ exit 1 }}", cmd)])
+            .status()
+            .map(|s| s.success())
+            .unwrap_or(false) { return true; }
+    }
+    false
 }
 
 /// Get list of globally installed npm packages (cached for performance)
@@ -324,11 +390,11 @@ pub fn scan_system_sync() -> ScanResult {
     // 4. Tools & package managers
     for (name, cmd, args) in TOOL_CMDS {
         let version = get_version(cmd, args);
-        let installed = version.is_some();
+        let installed = version.is_some() || cmd_exists(cmd);
         items.push(ScanItem {
             name: name.to_string(),
             category: "tool".to_string(),
-            version,
+            version: version.or_else(|| if installed { Some("found".to_string()) } else { None }),
             installed,
         });
     }
@@ -336,11 +402,11 @@ pub fn scan_system_sync() -> ScanResult {
     // 5. System package managers
     for (name, cmd, args) in PKG_MANAGER_CMDS {
         let version = get_version(cmd, args);
-        let installed = version.is_some();
+        let installed = version.is_some() || cmd_exists(cmd);
         items.push(ScanItem {
             name: name.to_string(),
             category: "pkgmanager".to_string(),
-            version,
+            version: version.or_else(|| if installed { Some("found".to_string()) } else { None }),
             installed,
         });
     }
