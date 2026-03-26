@@ -152,7 +152,8 @@ const PIP_FRAMEWORKS: &[(&str, &str)] = &[
 
 // ─── Version detection ───────────────────────────────────────────
 
-/// Commands that are PowerShell functions, not executables
+/// Commands that are PowerShell functions, not executables (Windows only)
+#[allow(dead_code)]
 const PS_FUNCTION_CMDS: &[&str] = &["scoop"];
 
 fn get_version(cmd: &str, args: &[&str]) -> Option<String> {

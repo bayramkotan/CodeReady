@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useI18n } from "./hooks/useI18n";
 import { useApi } from "./hooks/useApi";
 import TitleBar from "./components/TitleBar";
@@ -21,6 +21,7 @@ export default function App() {
   const [installing, setInstalling] = useState(false);
   const [target, setTarget] = useState({ type: "local" });
   const [backendOnline, setBackendOnline] = useState(null);
+  const initRef = useRef(false);
 
   const addLog = useCallback((line) => {
     setLogs((prev) => [...prev, line]);
@@ -53,6 +54,8 @@ export default function App() {
   }, [addLog, api]);
 
   useEffect(() => {
+    if (initRef.current) return;
+    initRef.current = true;
     checkBackend();
   }, []);
 
