@@ -231,34 +231,73 @@ fn parse_version_output(output: &std::process::Output) -> Option<String> {
     };
     let line = raw.lines().next().unwrap_or("").trim().to_string();
     if line.is_empty() { return None; }
-    let version = line
-        .replace("Python ", "")
-        .replace("java version \"", "").replace("\"", "")
-        .replace("openjdk version \"", "")
-        .replace("go version go", "")
-        .replace("rustc ", "")
-        .replace("ruby ", "")
-        .replace("Dart SDK version: ", "")
-        .replace("v", "")
-        .replace("Chocolatey ", "")
-        .replace("Scoop ", "")
-        .replace("Homebrew ", "")
-        .replace("nix (Nix) ", "")
-        .replace("flatpak ", "")
-        .replace("uv ", "")
-        .replace("poetry (version ", "").replace(")", "")
-        .replace("conda ", "")
-        .replace("pnpm ", "")
-        .replace("helm: ", "")
-        .replace("Terraform ", "")
-        .replace("Current stable version of Scoop:", "")
-        .trim()
-        .split_whitespace()
-        .next()
-        .unwrap_or(&line)
-        .to_string();
+
+    // Extract version number using regex-like approach: find first N.N.N or N.N pattern
+    let version = extract_semver(&line).unwrap_or_else(|| {
+        // Fallback: strip known prefixes and take first word
+        line.replace("Python ", "")
+            .replace("java version \"", "").replace("\"", "")
+            .replace("openjdk version \"", "")
+            .replace("go version go", "")
+            .replace("rustc ", "")
+            .replace("ruby ", "")
+            .replace("Dart SDK version: ", "")
+            .replace("Chocolatey ", "")
+            .replace("Scoop ", "")
+            .replace("Homebrew ", "")
+            .replace("nix (Nix) ", "")
+            .replace("flatpak ", "")
+            .replace("uv ", "")
+            .replace("poetry (version ", "").replace(")", "")
+            .replace("conda ", "")
+            .replace("pnpm ", "")
+            .replace("helm: ", "")
+            .replace("Terraform ", "")
+            .replace("Current stable version of Scoop:", "")
+            .trim()
+            .split_whitespace()
+            .next()
+            .unwrap_or(&line)
+            .trim_start_matches('v')
+            .to_string()
+    });
+
     if version.is_empty() { return None; }
+    // Final sanity check: version should start with a digit
+    if version.chars().next().map_or(true, |c| !c.is_ascii_digit()) {
+        // If no digit found, just return "found" to indicate it exists
+        return Some("found".to_string());
+    }
     Some(version)
+}
+
+/// Extract semver-like version (N.N.N or N.N) from a string
+fn extract_semver(s: &str) -> Option<String> {
+    let chars: Vec<char> = s.chars().collect();
+    let len = chars.len();
+    let mut i = 0;
+    while i < len {
+        // Find start of a digit sequence
+        if chars[i].is_ascii_digit() {
+            let start = i;
+            // Try to match N.N.N or N.N
+            let mut dots = 0;
+            let mut j = i;
+            while j < len && (chars[j].is_ascii_digit() || (chars[j] == '.' && j + 1 < len && chars[j + 1].is_ascii_digit())) {
+                if chars[j] == '.' { dots += 1; }
+                j += 1;
+            }
+            if dots >= 1 {
+                let candidate: String = chars[start..j].iter().collect();
+                // Must have at least one dot and start with digit
+                if candidate.contains('.') && candidate.chars().next().map_or(false, |c| c.is_ascii_digit()) {
+                    return Some(candidate);
+                }
+            }
+        }
+        i += 1;
+    }
+    None
 }
 
 /// Check if a command exists — only used as last resort for known edge cases
@@ -269,6 +308,15 @@ fn _cmd_exists_basic(cmd: &str) -> bool {
 
 /// Get list of globally installed npm packages (cached for performance)
 fn get_npm_globals() -> Vec<String> {
+    // Windows: npm is a .cmd file — must run via cmd /c
+    #[cfg(target_os = "windows")]
+    let output = Command::new("cmd")
+        .args(["/c", "npm", "list", "-g", "--depth=0", "--json"])
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .output();
+
+    #[cfg(not(target_os = "windows"))]
     let output = Command::new("npm")
         .args(["list", "-g", "--depth=0", "--json"])
         .stdout(std::process::Stdio::piped())
@@ -292,6 +340,15 @@ fn get_npm_globals() -> Vec<String> {
 
 /// Get list of installed pip packages (cached for performance)
 fn get_pip_packages() -> Vec<String> {
+    // Windows: pip/pip3 may be .exe but let's be safe with cmd /c
+    #[cfg(target_os = "windows")]
+    let output = Command::new("cmd")
+        .args(["/c", "pip3", "list", "--format=columns"])
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .output();
+
+    #[cfg(not(target_os = "windows"))]
     let output = Command::new("pip3")
         .args(["list", "--format=columns"])
         .stdout(std::process::Stdio::piped())
@@ -302,12 +359,21 @@ fn get_pip_packages() -> Vec<String> {
     let output = match output {
         Ok(o) if o.status.success() => o,
         _ => {
-            match Command::new("pip")
+            #[cfg(target_os = "windows")]
+            let fallback = Command::new("cmd")
+                .args(["/c", "pip", "list", "--format=columns"])
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::null())
+                .output();
+
+            #[cfg(not(target_os = "windows"))]
+            let fallback = Command::new("pip")
                 .args(["list", "--format=columns"])
                 .stdout(std::process::Stdio::piped())
                 .stderr(std::process::Stdio::null())
-                .output()
-            {
+                .output();
+
+            match fallback {
                 Ok(o) => o,
                 Err(_) => return Vec::new(),
             }
@@ -326,7 +392,65 @@ fn get_pip_packages() -> Vec<String> {
 
 // ─── Main scan ───────────────────────────────────────────────────
 
+/// Try to scan using the terminal script (ps1 or sh) with --scan-json
+/// Returns None if script not found or fails
+fn scan_via_script() -> Option<ScanResult> {
+    #[cfg(target_os = "windows")]
+    let output = {
+        // Find codeready.ps1 — check relative paths from exe location
+        let script_paths = vec![
+            std::env::current_exe().ok()?.parent()?.parent()?.parent()?.join("codeready.ps1"),  // gui/src-tauri/target -> root
+            std::env::current_exe().ok()?.parent()?.parent()?.parent()?.parent()?.join("codeready.ps1"),
+            std::path::PathBuf::from("../../codeready.ps1"),
+            std::path::PathBuf::from("../../../codeready.ps1"),
+        ];
+        let script = script_paths.iter().find(|p| p.exists())?;
+        eprintln!("[scanner] Using script: {}", script.display());
+        Command::new("powershell")
+            .args(["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", &script.to_string_lossy(), "--scan-json"])
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .output()
+            .ok()?
+    };
+
+    #[cfg(not(target_os = "windows"))]
+    let output = {
+        let script_paths = vec![
+            std::env::current_exe().ok()?.parent()?.parent()?.parent()?.join("codeready.sh"),
+            std::env::current_exe().ok()?.parent()?.parent()?.parent()?.parent()?.join("codeready.sh"),
+            std::path::PathBuf::from("../../codeready.sh"),
+            std::path::PathBuf::from("../../../codeready.sh"),
+        ];
+        let script = script_paths.iter().find(|p| p.exists())?;
+        eprintln!("[scanner] Using script: {}", script.display());
+        Command::new("bash")
+            .args([&script.to_string_lossy().to_string(), "--scan-json"])
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .output()
+            .ok()?
+    };
+
+    if !output.status.success() {
+        eprintln!("[scanner] Script failed: {}", String::from_utf8_lossy(&output.stderr));
+        return None;
+    }
+
+    let json_str = String::from_utf8_lossy(&output.stdout);
+    eprintln!("[scanner] Script returned {} bytes", json_str.len());
+    serde_json::from_str::<ScanResult>(&json_str).ok()
+}
+
 pub fn scan_system_sync() -> ScanResult {
+    // Strategy: try script first (single source of truth), fallback to built-in
+    if let Some(result) = scan_via_script() {
+        eprintln!("[scanner] Using script scan result: {}/{} installed", result.installed_count, result.total);
+        return result;
+    }
+    eprintln!("[scanner] Script not available, using built-in scan");
+
+    // ─── FALLBACK: built-in scan (same as before) ─────────────
     let mut items: Vec<ScanItem> = Vec::new();
 
     // 1. Languages & runtimes
@@ -430,21 +554,109 @@ pub fn scan_system_sync() -> ScanResult {
 pub fn run_install(request: &InstallRequest) -> Result<String, String> {
     let result = match request.method.as_str() {
         "winget" => Command::new("winget")
-            .args(["install", "-e", "--id", &request.package_id, "--accept-source-agreements", "--accept-package-agreements"])
+            .args(["install", "-e", "--id", &request.package_id, "--silent", "--accept-source-agreements", "--accept-package-agreements"])
             .output(),
-        "scoop" => Command::new("scoop").args(["install", &request.package_id]).output(),
-        "choco" => Command::new("choco").args(["install", &request.package_id, "-y"]).output(),
-        "pip" => Command::new("pip3").args(["install", "--break-system-packages", &request.package_id]).output(),
-        "npm" => Command::new("npm").args(["install", "-g", &request.package_id]).output(),
+        "scoop" => {
+            #[cfg(target_os = "windows")]
+            { Command::new("powershell").args(["-NoProfile", "-NonInteractive", "-Command", &format!("scoop install {}", request.package_id)]).output() }
+            #[cfg(not(target_os = "windows"))]
+            { Command::new("scoop").args(["install", &request.package_id]).output() }
+        }
+        "choco" => {
+            #[cfg(target_os = "windows")]
+            { Command::new("cmd").args(["/c", "choco", "install", &request.package_id, "-y"]).output() }
+            #[cfg(not(target_os = "windows"))]
+            { Command::new("choco").args(["install", &request.package_id, "-y"]).output() }
+        }
+        "pip" => {
+            #[cfg(target_os = "windows")]
+            { Command::new("cmd").args(["/c", "pip3", "install", "--break-system-packages", &request.package_id]).output() }
+            #[cfg(not(target_os = "windows"))]
+            { Command::new("pip3").args(["install", "--break-system-packages", &request.package_id]).output() }
+        }
+        "pip-local" => {
+            // Install to current directory / venv (no -g, no --break-system-packages)
+            #[cfg(target_os = "windows")]
+            { Command::new("cmd").args(["/c", "pip3", "install", &request.package_id]).output() }
+            #[cfg(not(target_os = "windows"))]
+            { Command::new("pip3").args(["install", "--user", &request.package_id]).output() }
+        }
+        "npm" => {
+            #[cfg(target_os = "windows")]
+            { Command::new("cmd").args(["/c", "npm", "install", "-g", &request.package_id]).output() }
+            #[cfg(not(target_os = "windows"))]
+            { Command::new("npm").args(["install", "-g", &request.package_id]).output() }
+        }
+        "npm-local" => {
+            // Install to current directory (no -g flag)
+            #[cfg(target_os = "windows")]
+            { Command::new("cmd").args(["/c", "npm", "install", &request.package_id]).output() }
+            #[cfg(not(target_os = "windows"))]
+            { Command::new("npm").args(["install", &request.package_id]).output() }
+        }
         "apt" => Command::new("sudo").args(["apt", "install", "-y", &request.package_id]).output(),
         "brew" => Command::new("brew").args(["install", &request.package_id]).output(),
         _ => return Err(format!("Unknown method: {}", request.method)),
     };
 
+    let scope_label = if request.method.ends_with("-local") { " (local)" } else { " (global)" };
+
+    // Refresh PATH so next scan detects newly installed binaries
+    refresh_env_path();
+
     match result {
-        Ok(output) if output.status.success() => Ok(format!("{} installed successfully.", request.name)),
+        Ok(output) if output.status.success() => Ok(format!("{} installed successfully{}.", request.name, scope_label)),
         Ok(output) => Err(format!("Install failed: {}", String::from_utf8_lossy(&output.stderr))),
         Err(e) => Err(format!("Failed to run installer: {}", e)),
+    }
+}
+
+/// Refresh the current process PATH from the system registry (Windows) or shell profiles (Unix)
+fn refresh_env_path() {
+    #[cfg(target_os = "windows")]
+    {
+        // Read latest Machine + User PATH from registry and update current process
+        if let Ok(output) = Command::new("powershell")
+            .args(["-NoProfile", "-NonInteractive", "-Command",
+                "[System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')"])
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::null())
+            .output()
+        {
+            if output.status.success() {
+                let new_path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !new_path.is_empty() {
+                    std::env::set_var("PATH", &new_path);
+                    eprintln!("[scanner] PATH refreshed ({} chars)", new_path.len());
+                }
+            }
+        }
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        // Source common profile files and extract PATH
+        let shells = [
+            ("bash", "-c", "source ~/.bashrc 2>/dev/null; source ~/.profile 2>/dev/null; echo $PATH"),
+            ("zsh", "-c", "source ~/.zshrc 2>/dev/null; echo $PATH"),
+        ];
+        for (sh, flag, cmd) in &shells {
+            if let Ok(output) = Command::new(sh)
+                .args([flag, cmd])
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::null())
+                .output()
+            {
+                if output.status.success() {
+                    let new_path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                    if !new_path.is_empty() && new_path.contains('/') {
+                        std::env::set_var("PATH", &new_path);
+                        eprintln!("[scanner] PATH refreshed via {}", sh);
+                        break;
+                    }
+                }
+            }
+        }
     }
 }
 

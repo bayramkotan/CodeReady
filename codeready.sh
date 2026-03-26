@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # ================================================================
-# CodeReady v2.1.0
+# CodeReady v2.2.0
 # Developer Environment Setup Tool (Linux/macOS)
 # https://github.com/bayramkotan/CodeReady
 # ================================================================
 set -uo pipefail
 
-VERSION="2.1.0"
+VERSION="2.2.0"
 LOG_FILE="$HOME/codeready_install.log"
 INSTALLED=()
 FAILED=()
@@ -1489,6 +1489,8 @@ main() {
         ensure_nix
     else
         update_pkg
+        ensure_flatpak
+        ensure_nix
     fi
 
     # System scan - show what's installed
@@ -1738,5 +1740,183 @@ main() {
     fi
     echo ""
 }
+
+# ================================================================
+# JSON SCAN OUTPUT (for GUI integration)
+# Usage: bash codeready.sh --scan-json
+# ================================================================
+export_scan_json() {
+    local items="["
+    local first=true
+
+    add_item() {
+        local name="$1" category="$2" version="$3" installed="$4"
+        [[ "$first" == "true" ]] && first=false || items+=","
+        if [[ -n "$version" ]]; then
+            items+="{\"name\":\"$name\",\"category\":\"$category\",\"version\":\"$version\",\"installed\":$installed}"
+        else
+            items+="{\"name\":\"$name\",\"category\":\"$category\",\"version\":null,\"installed\":$installed}"
+        fi
+    }
+
+    # Source nvm/cargo if available
+    [[ -s "$HOME/.nvm/nvm.sh" ]] && source "$HOME/.nvm/nvm.sh" 2>/dev/null
+    [[ -s "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env" 2>/dev/null
+
+    # Languages
+    local langs=(
+        "Python|python3|--version"
+        "Node.js|node|-v"
+        "Java (JDK)|java|-version"
+        ".NET SDK|dotnet|--version"
+        "C/C++ (GCC)|gcc|--version"
+        "Go|go|version"
+        "Rust|rustc|--version"
+        "PHP|php|--version"
+        "Ruby|ruby|--version"
+        "Kotlin|kotlin|-version"
+        "Dart|dart|--version"
+        "Swift|swift|--version"
+        "TypeScript|tsc|--version"
+        "R|Rscript|--version"
+        "Lua|lua|-v"
+        "Haskell|ghc|--version"
+        "Perl|perl|--version"
+        "Erlang|erl|+V"
+        "OCaml|ocaml|--version"
+        "Fortran|gfortran|--version"
+        "D|ldc2|--version"
+        "Nim|nim|--version"
+        "Crystal|crystal|--version"
+        "V|v|--version"
+        "Gleam|gleam|--version"
+        "Solidity|solcjs|--version"
+        "Groovy|groovy|--version"
+        "Elixir|elixir|--version"
+        "Scala|scala|-version"
+        "Julia|julia|--version"
+        "Zig|zig|version"
+        "Mojo|mojo|--version"
+        "WebAssembly|wasmtime|--version"
+        "Flutter|flutter|--version"
+    )
+    for entry in "${langs[@]}"; do
+        IFS='|' read -r name cmd flag <<< "$entry"
+        local ver=$(get_cmd_version "$cmd" "$flag")
+        if [[ -n "$ver" ]]; then
+            add_item "$name" "language" "$ver" "true"
+        else
+            add_item "$name" "language" "" "false"
+        fi
+    done
+
+    # IDEs
+    local ides=(
+        "VS Code|code" "VSCodium|codium" "Cursor|cursor" "Zed|zed" "Windsurf|windsurf"
+        "Sublime Text|subl" "Vim|vim" "Neovim|nvim" "GNU Emacs|emacs" "Android Studio|studio"
+        "IntelliJ IDEA|idea" "PyCharm|pycharm" "WebStorm|webstorm" "GoLand|goland"
+        "CLion|clion" "Rider|rider" "RustRover|rustrover" "JetBrains Fleet|fleet"
+        "Eclipse|eclipse" "Apache NetBeans|netbeans" "Notepad++|notepad++"
+    )
+    for entry in "${ides[@]}"; do
+        IFS='|' read -r name cmd <<< "$entry"
+        if command -v "$cmd" &>/dev/null; then
+            add_item "$name" "ide" "found" "true"
+        else
+            add_item "$name" "ide" "" "false"
+        fi
+    done
+
+    # Frameworks — npm globals
+    local npm_json=""
+    if command -v npm &>/dev/null; then
+        npm_json=$(npm list -g --depth=0 --json 2>/dev/null || echo "{}")
+    fi
+    local fw_npm=(
+        "React|create-react-app" "Next.js|create-next-app" "Vue|@vue/cli" "Nuxt|nuxi"
+        "Angular|@angular/cli" "Svelte|create-svelte" "Vite|create-vite" "Astro|create-astro"
+        "Remix|create-remix" "Express|express-generator" "NestJS|@nestjs/cli"
+        "Tailwind|tailwindcss" "Bootstrap|bootstrap" "React Native|react-native-cli"
+        "Expo|expo-cli" "Ionic|@ionic/cli" "Electron|electron"
+    )
+    for entry in "${fw_npm[@]}"; do
+        IFS='|' read -r name pkg <<< "$entry"
+        if echo "$npm_json" | grep -q "\"$pkg\""; then
+            add_item "$name" "framework" "found" "true"
+        else
+            add_item "$name" "framework" "" "false"
+        fi
+    done
+
+    # Frameworks — pip
+    local pip_pkgs=""
+    if command -v pip3 &>/dev/null; then
+        pip_pkgs=$(pip3 list --format=columns 2>/dev/null | tail -n +3 | awk '{print tolower($1)}')
+    elif command -v pip &>/dev/null; then
+        pip_pkgs=$(pip list --format=columns 2>/dev/null | tail -n +3 | awk '{print tolower($1)}')
+    fi
+    local fw_pip=("Django|django" "Flask|flask" "FastAPI|fastapi" "Streamlit|streamlit" "VenvStudio|venvstudio")
+    for entry in "${fw_pip[@]}"; do
+        IFS='|' read -r name pkg <<< "$entry"
+        if echo "$pip_pkgs" | grep -qiw "$pkg"; then
+            add_item "$name" "framework" "found" "true"
+        else
+            add_item "$name" "framework" "" "false"
+        fi
+    done
+
+    # Blazor
+    if command -v dotnet &>/dev/null; then
+        add_item "Blazor" "framework" "via .NET" "true"
+    else
+        add_item "Blazor" "framework" "" "false"
+    fi
+
+    # Tools
+    local tools=(
+        "Git|git|--version" "Docker|docker|--version" "kubectl|kubectl|version --client --short"
+        "Helm|helm|version --short" "Terraform|terraform|--version"
+        "npm|npm|--version" "Yarn|yarn|--version" "pnpm|pnpm|--version" "Bun|bun|--version"
+        "pipx|pipx|--version" "uv|uv|--version" "Poetry|poetry|--version" "Conda|conda|--version"
+    )
+    for entry in "${tools[@]}"; do
+        IFS='|' read -r name cmd flag <<< "$entry"
+        local ver=$(get_cmd_version "$cmd" "$flag")
+        if [[ -n "$ver" ]]; then
+            add_item "$name" "tool" "$ver" "true"
+        else
+            add_item "$name" "tool" "" "false"
+        fi
+    done
+
+    # System package managers
+    local pkgmgrs=("Homebrew|brew|--version" "Flatpak|flatpak|--version" "Nix|nix|--version" "Snap|snap|version")
+    for entry in "${pkgmgrs[@]}"; do
+        IFS='|' read -r name cmd flag <<< "$entry"
+        local ver=$(get_cmd_version "$cmd" "$flag")
+        if [[ -n "$ver" ]]; then
+            add_item "$name" "pkgmanager" "$ver" "true"
+        else
+            add_item "$name" "pkgmanager" "" "false"
+        fi
+    done
+
+    items+="]"
+
+    # Count
+    local total=$(echo "$items" | grep -o '"installed":true' | wc -l)
+    local all=$(echo "$items" | grep -o '"installed":' | wc -l)
+    local missing=$((all - total))
+
+    echo "{\"items\":$items,\"total\":$all,\"installed_count\":$total,\"missing_count\":$missing}"
+}
+
+# ================================================================
+# ENTRY POINT
+# ================================================================
+if [[ "${1:-}" == "--scan-json" ]]; then
+    export_scan_json
+    exit 0
+fi
 
 main "$@"

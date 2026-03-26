@@ -18,6 +18,7 @@ export default function App() {
   const [logs, setLogs] = useState([]);
   const [progress, setProgress] = useState(null);
   const [scanning, setScanning] = useState(false);
+  const [installing, setInstalling] = useState(false);
   const [target, setTarget] = useState({ type: "local" });
   const [backendOnline, setBackendOnline] = useState(null);
 
@@ -104,21 +105,34 @@ export default function App() {
     setScanning(false);
   };
 
-  const handleInstall = async (names) => {
+  const handleInstall = async (installItems) => {
     if (!backendOnline && !api.isTauri) {
       addLog("[-] Cannot install — backend not running");
       return;
     }
+
+    setInstalling(true);
     const prefix = target.type === "remote" ? `[${target.host?.label}] ` : "";
-    for (const name of names) {
-      addLog(`${prefix}[>] Installing ${name}...`);
+    const total = installItems.length;
+
+    for (let i = 0; i < total; i++) {
+      const { name, scope } = installItems[i];
+      const scopeLabel = scope === "local" ? " (local)" : " (global)";
+      const counter = `[${i + 1}/${total}]`;
+      addLog(`${prefix}${counter} [>] Installing ${name}${scopeLabel}...`);
+      setProgress(Math.round(((i) / total) * 100));
+
       try {
-        const result = await api.smartInstall(name);
-        addLog(`${prefix}[+] ${result}`);
+        const result = await api.smartInstall(name, scope);
+        addLog(`${prefix}${counter} [+] ${result}`);
       } catch (e) {
-        addLog(`${prefix}[-] ${name}: ${e.message || e}`);
+        addLog(`${prefix}${counter} [-] ${name}: ${e.message || e}`);
       }
     }
+
+    setProgress(100);
+    addLog(`${prefix}[+] Installation complete. ${total} item(s) processed.`);
+    setInstalling(false);
     handleScan(true);
   };
 
@@ -149,6 +163,14 @@ export default function App() {
     return cat ? scanResult.items.filter((i) => i.category === cat) : scanResult.items;
   };
 
+  // Detect missing package managers for alert banner
+  const getMissingPkgManagers = () => {
+    if (!scanResult) return [];
+    return scanResult.items
+      .filter((i) => i.category === "pkgmanager" && !i.installed)
+      .map((i) => i.name);
+  };
+
   const fallbackLabels = { scan: "System Scan", languages: "Languages", ides: "IDEs", frameworks: "Frameworks", tools: "Tools", profiles: "Profiles" };
 
   return (
@@ -161,30 +183,41 @@ export default function App() {
       />
 
       {/* Header */}
-      <div className="px-6 pt-6 pb-4 border-b border-[rgba(255,255,255,0.06)]">
+      <div className="px-6 pt-6 pb-4 border-b border-[rgba(255,255,255,0.08)]">
         <div className="flex items-center gap-3 mb-1">
-          <span className="text-[20px] font-semibold text-white tracking-wide">
+          <span className="text-[22px] font-bold text-white tracking-wide">
             CodeReady
           </span>
-          <span className="text-[11px] bg-white/10 text-cr-muted px-2.5 py-0.5 rounded-full">
+          <span className="text-[12px] bg-white/10 text-cr-muted px-2.5 py-0.5 rounded-full font-medium">
             v2.2.0
           </span>
           {backendOnline === false && (
-            <span className="text-[10px] bg-cr-red/15 text-cr-red px-2 py-0.5 rounded-full">
+            <span className="text-[11px] bg-cr-red/15 text-cr-red px-2.5 py-1 rounded-full font-medium">
               Offline
             </span>
           )}
+          {target.type === "local" && backendOnline && (
+            <span className="text-[11px] bg-blue-500/15 text-blue-400 px-2.5 py-1 rounded-full font-medium">
+              localhost
+            </span>
+          )}
           {target.type === "remote" && (
-            <span className="text-[10px] bg-cr-green/15 text-cr-green px-2 py-0.5 rounded-full">
+            <span className="text-[11px] bg-cr-green/15 text-cr-green px-2.5 py-1 rounded-full font-medium">
               SSH: {target.host?.label}
             </span>
           )}
+          {installing && (
+            <span className="text-[11px] bg-amber-500/15 text-amber-400 px-2.5 py-1 rounded-full font-medium flex items-center gap-1.5">
+              <span className="inline-block w-2.5 h-2.5 border-2 border-amber-400/50 border-t-amber-400 rounded-full animate-spin" />
+              Installing...
+            </span>
+          )}
         </div>
-        <span className="text-[13px] text-cr-muted">{t("subtitle")}</span>
+        <span className="text-[14px] text-cr-muted">{t("subtitle")}</span>
       </div>
 
       {/* Tab bar */}
-      <div className="flex border-b border-[rgba(255,255,255,0.06)] px-6">
+      <div className="flex border-b border-[rgba(255,255,255,0.08)] px-6">
         {TABS.map((tab) => {
           const label = t(`tabs.${tab}`);
           const displayLabel = label.startsWith("tabs.") ? (fallbackLabels[tab] || tab) : label;
@@ -192,7 +225,7 @@ export default function App() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-5 py-3 text-[13px] transition border-b-2 ${
+              className={`px-5 py-3.5 text-[14px] font-medium transition border-b-2 ${
                 activeTab === tab
                   ? "text-white border-white"
                   : "text-cr-muted border-transparent hover:text-cr-text"
@@ -215,6 +248,8 @@ export default function App() {
             onInstall={handleInstall}
             onRescan={() => handleScan(true)}
             scanning={scanning}
+            installing={installing}
+            missingPkgManagers={getMissingPkgManagers()}
           />
         )}
 

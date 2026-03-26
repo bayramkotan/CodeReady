@@ -30,10 +30,17 @@ async fn api_scan() -> HttpResponse {
 #[derive(Deserialize)]
 struct SmartInstallReq {
     name: String,
+    #[serde(default = "default_scope")]
+    scope: String,
+}
+
+fn default_scope() -> String {
+    "global".to_string()
 }
 
 async fn api_smart_install(body: web::Json<SmartInstallReq>) -> HttpResponse {
     let name = body.name.clone();
+    let scope = body.scope.clone();
     let packages = get_all_packages();
     let pkg = match packages.iter().find(|p| p.name == name) {
         Some(p) => p.clone(),
@@ -43,6 +50,47 @@ async fn api_smart_install(body: web::Json<SmartInstallReq>) -> HttpResponse {
     };
 
     let os = get_os();
+
+    // For local scope: only npm/pip frameworks — install without -g
+    if scope == "local" {
+        // Check if it's an npm or pip package
+        if !pkg.npm.is_empty() {
+            let request = InstallRequest {
+                name: name.clone(),
+                method: "npm-local".to_string(),
+                package_id: pkg.npm.clone(),
+            };
+            let result = tokio::task::spawn_blocking(move || run_install(&request))
+                .await
+                .unwrap_or_else(|e| Err(format!("Task error: {}", e)));
+
+            return match result {
+                Ok(msg) => HttpResponse::Ok().json(serde_json::json!({ "status": "ok", "message": msg })),
+                Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({ "status": "error", "message": e })),
+            };
+        }
+        if !pkg.pip.is_empty() {
+            let request = InstallRequest {
+                name: name.clone(),
+                method: "pip-local".to_string(),
+                package_id: pkg.pip.clone(),
+            };
+            let result = tokio::task::spawn_blocking(move || run_install(&request))
+                .await
+                .unwrap_or_else(|e| Err(format!("Task error: {}", e)));
+
+            return match result {
+                Ok(msg) => HttpResponse::Ok().json(serde_json::json!({ "status": "ok", "message": msg })),
+                Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({ "status": "error", "message": e })),
+            };
+        }
+        // Fallback: no local method available, tell the user
+        return HttpResponse::BadRequest().json(serde_json::json!({
+            "error": format!("{} does not support local install — use global", name)
+        }));
+    }
+
+    // Global install (default)
     let (method, package_id) = match pkg.best_method(&os) {
         Some((m, id)) => (m.to_string(), id.to_string()),
         None => return HttpResponse::BadRequest().json(serde_json::json!({

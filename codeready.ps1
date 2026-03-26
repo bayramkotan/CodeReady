@@ -1,12 +1,11 @@
-#Requires -RunAsAdministrator
 # ================================================================
-# CodeReady v2.1.0
+# CodeReady v2.2.0
 # Developer Environment Setup Tool (Windows)
 # https://github.com/bayramkotan/CodeReady
 # ================================================================
 
 $ErrorActionPreference = "Continue"
-$script:Version = "2.1.0"
+$script:Version = "2.2.0"
 $script:LogFile = "$env:USERPROFILE\codeready_install.log"
 $script:InstalledItems = @()
 $script:FailedItems = @()
@@ -1189,6 +1188,184 @@ function Main {
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
 
     Show-Summary
+}
+
+# ================================================================
+# JSON SCAN OUTPUT (for GUI integration)
+# Usage: powershell -NoProfile -File codeready.ps1 --scan-json
+# ================================================================
+function Export-ScanJson {
+    $items = @()
+
+    # Languages
+    $langChecks = @(
+        @("Python",       "python",   "--version"),
+        @("Node.js",      "node",     "-v"),
+        @("Java (JDK)",   "java",     "-version"),
+        @(".NET SDK",     "dotnet",   "--version"),
+        @("C/C++ (GCC)",  "gcc",      "--version"),
+        @("Go",           "go",       "version"),
+        @("Rust",         "rustc",    "--version"),
+        @("PHP",          "php",      "--version"),
+        @("Ruby",         "ruby",     "--version"),
+        @("Kotlin",       "kotlin",   "-version"),
+        @("Dart",         "dart",     "--version"),
+        @("Swift",        "swift",    "--version"),
+        @("TypeScript",   "tsc",      "--version"),
+        @("R",            "Rscript",  "--version"),
+        @("Lua",          "lua",      "-v"),
+        @("Haskell",      "ghc",      "--version"),
+        @("Perl",         "perl",     "--version"),
+        @("Erlang",       "erl",      "+V"),
+        @("OCaml",        "ocaml",    "--version"),
+        @("Fortran",      "gfortran", "--version"),
+        @("D",            "ldc2",     "--version"),
+        @("Nim",          "nim",      "--version"),
+        @("Crystal",      "crystal",  "--version"),
+        @("V",            "v",        "--version"),
+        @("Gleam",        "gleam",    "--version"),
+        @("Solidity",     "solcjs",   "--version"),
+        @("Groovy",       "groovy",   "--version"),
+        @("Elixir",       "elixir",   "--version"),
+        @("Scala",        "scala",    "-version"),
+        @("Julia",        "julia",    "--version"),
+        @("Zig",          "zig",      "version"),
+        @("Mojo",         "mojo",     "--version"),
+        @("WebAssembly",  "wasmtime", "--version"),
+        @("Flutter",      "flutter",  "--version")
+    )
+    foreach ($lc in $langChecks) {
+        $ver = Get-CmdVersion $lc[1] $lc[2]
+        $items += @{ name = $lc[0]; category = "language"; version = if ($ver) { $ver } else { $null }; installed = [bool]$ver }
+    }
+
+    # IDEs — which/path
+    $ideChecks = @(
+        @("VS Code",       "code"),
+        @("VSCodium",      "codium"),
+        @("Cursor",        "cursor"),
+        @("Zed",           "zed"),
+        @("Windsurf",      "windsurf"),
+        @("Sublime Text",  "subl"),
+        @("Vim",           "vim"),
+        @("Neovim",        "nvim"),
+        @("GNU Emacs",     "emacs"),
+        @("Android Studio","studio")
+    )
+    foreach ($ide in $ideChecks) {
+        $found = [bool](Get-Command $ide[1] -ErrorAction SilentlyContinue)
+        $items += @{ name = $ide[0]; category = "ide"; version = if ($found) { "found" } else { $null }; installed = $found }
+    }
+
+    # JetBrains IDEs — file path only
+    $jbNames = @("IntelliJ IDEA","PyCharm","WebStorm","GoLand","CLion","Rider","RustRover","JetBrains Fleet")
+    $jbFolders = @("IntelliJ IDEA","PyCharm","WebStorm","GoLand","CLion","Rider","RustRover","Fleet")
+    for ($i = 0; $i -lt $jbNames.Count; $i++) {
+        $found = [bool]((Get-ChildItem "${env:ProgramFiles}\JetBrains\$($jbFolders[$i])*" -EA 0) -or (Get-ChildItem "${env:LOCALAPPDATA}\JetBrains\Toolbox\apps\$($jbFolders[$i])*" -EA 0))
+        $items += @{ name = $jbNames[$i]; category = "ide"; version = if ($found) { "found" } else { $null }; installed = $found }
+    }
+
+    # Other GUI IDEs
+    $eclipseFound = (Test-Path "${env:ProgramFiles}\Eclipse\eclipse.exe") -or (Test-Path "C:\Eclipse\eclipse.exe")
+    $items += @{ name = "Eclipse"; category = "ide"; version = if ($eclipseFound) { "found" } else { $null }; installed = $eclipseFound }
+    $netbeansFound = [bool](Get-ChildItem "${env:ProgramFiles}\*NetBeans*" -EA 0)
+    $items += @{ name = "Apache NetBeans"; category = "ide"; version = if ($netbeansFound) { "found" } else { $null }; installed = $netbeansFound }
+    $notepadppFound = (Test-Path "${env:ProgramFiles}\Notepad++\notepad++.exe") -or (Test-Path "${env:ProgramFiles(x86)}\Notepad++\notepad++.exe")
+    $items += @{ name = "Notepad++"; category = "ide"; version = if ($notepadppFound) { "found" } else { $null }; installed = $notepadppFound }
+    $androidFound = (Test-Path "${env:ProgramFiles}\Android\Android Studio\bin\studio64.exe") -or (Test-Path "${env:LOCALAPPDATA}\Programs\Android Studio\bin\studio64.exe")
+    $items += @{ name = "Android Studio"; category = "ide"; version = if ($androidFound) { "found" } else { $null }; installed = $androidFound }
+
+    # Frameworks — npm globals
+    $npmGlobals = @()
+    try { $npmGlobals = (npm list -g --depth=0 --json 2>$null | ConvertFrom-Json).dependencies.PSObject.Properties.Name } catch {}
+    $fwNpm = @(
+        @("React",         "create-react-app"),
+        @("Next.js",       "create-next-app"),
+        @("Vue",           "@vue/cli"),
+        @("Nuxt",          "nuxi"),
+        @("Angular",       "@angular/cli"),
+        @("Svelte",        "create-svelte"),
+        @("Vite",          "create-vite"),
+        @("Astro",         "create-astro"),
+        @("Remix",         "create-remix"),
+        @("Express",       "express-generator"),
+        @("NestJS",        "@nestjs/cli"),
+        @("Tailwind",      "tailwindcss"),
+        @("Bootstrap",     "bootstrap"),
+        @("React Native",  "react-native-cli"),
+        @("Expo",          "expo-cli"),
+        @("Ionic",         "@ionic/cli"),
+        @("Electron",      "electron")
+    )
+    foreach ($fw in $fwNpm) {
+        $inst = $npmGlobals -contains $fw[1]
+        $items += @{ name = $fw[0]; category = "framework"; version = if ($inst) { "found" } else { $null }; installed = [bool]$inst }
+    }
+
+    # Frameworks — pip
+    $pipList = @()
+    try { $pipList = (pip list --format=json 2>$null | ConvertFrom-Json).name } catch {}
+    if (-not $pipList) { try { $pipList = (pip3 list --format=json 2>$null | ConvertFrom-Json).name } catch {} }
+    $fwPip = @(
+        @("Django",      "Django"),
+        @("Flask",       "Flask"),
+        @("FastAPI",     "fastapi"),
+        @("Streamlit",   "streamlit"),
+        @("VenvStudio",  "VenvStudio")
+    )
+    foreach ($fw in $fwPip) {
+        $inst = $pipList -contains $fw[1]
+        $items += @{ name = $fw[0]; category = "framework"; version = if ($inst) { "found" } else { $null }; installed = [bool]$inst }
+    }
+
+    # Blazor
+    $dotnetInst = [bool](Get-Command dotnet -ErrorAction SilentlyContinue)
+    $items += @{ name = "Blazor"; category = "framework"; version = if ($dotnetInst) { "via .NET" } else { $null }; installed = $dotnetInst }
+
+    # Tools
+    $toolChecks = @(
+        @("Git",       "git",       "--version"),
+        @("Docker",    "docker",    "--version"),
+        @("kubectl",   "kubectl",   "version --client --short"),
+        @("Helm",      "helm",      "version --short"),
+        @("Terraform", "terraform", "--version"),
+        @("npm",       "npm",       "--version"),
+        @("Yarn",      "yarn",      "--version"),
+        @("pnpm",      "pnpm",      "--version"),
+        @("Bun",       "bun",       "--version"),
+        @("pipx",      "pipx",      "--version"),
+        @("uv",        "uv",        "--version"),
+        @("Poetry",    "poetry",    "--version"),
+        @("Conda",     "conda",     "--version")
+    )
+    foreach ($tc in $toolChecks) {
+        $ver = Get-CmdVersion $tc[1] $tc[2]
+        $items += @{ name = $tc[0]; category = "tool"; version = if ($ver) { $ver } else { $null }; installed = [bool]$ver }
+    }
+
+    # Package Managers
+    $pmChecks = @(
+        @("winget",     "winget",   "--version"),
+        @("Scoop",      "scoop",    "--version"),
+        @("Chocolatey", "choco",    "--version")
+    )
+    foreach ($pm in $pmChecks) {
+        $ver = Get-CmdVersion $pm[1] $pm[2]
+        $items += @{ name = $pm[0]; category = "pkgmanager"; version = if ($ver) { $ver } else { $null }; installed = [bool]$ver }
+    }
+
+    $total = $items.Count
+    $instCount = ($items | Where-Object { $_.installed }).Count
+    $result = @{ items = $items; total = $total; installed_count = $instCount; missing_count = $total - $instCount }
+    $result | ConvertTo-Json -Depth 4 -Compress
+}
+
+# ================================================================
+# ENTRY POINT
+# ================================================================
+if ($args -contains "--scan-json") {
+    Export-ScanJson
+    exit
 }
 
 Main

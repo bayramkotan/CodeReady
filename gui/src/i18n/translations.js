@@ -7,6 +7,7 @@ export const translations = {
       languages: "Languages",
       ides: "IDEs",
       frameworks: "Frameworks",
+      tools: "Tools",
       profiles: "Profiles",
     },
     scan: {
@@ -45,6 +46,19 @@ export const translations = {
       ide: "IDEs & Editors",
       framework: "Frameworks",
       tool: "Tools & Package Managers",
+      pkgmanager: "System Package Managers",
+    },
+    scope: {
+      local: "Local",
+      global: "Global",
+      localTip: "Install to current project only",
+      globalTip: "Install system-wide (global)",
+    },
+    pkgAlert: {
+      title: "Missing Package Managers",
+      desc: "The following package managers are not installed. Some software may not be installable without them.",
+      install: "Install",
+      dismiss: "Dismiss",
     },
   },
   tr: {
@@ -55,6 +69,7 @@ export const translations = {
       languages: "Diller",
       ides: "IDE'ler",
       frameworks: "Framework'ler",
+      tools: "Araclar",
       profiles: "Profiller",
     },
     scan: {
@@ -93,6 +108,19 @@ export const translations = {
       ide: "IDE'ler & Editorler",
       framework: "Framework'ler",
       tool: "Araclar & Paket Yoneticileri",
+      pkgmanager: "Sistem Paket Yoneticileri",
+    },
+    scope: {
+      local: "Yerel",
+      global: "Global",
+      localTip: "Sadece mevcut projeye kur",
+      globalTip: "Sistem genelinde kur (global)",
+    },
+    pkgAlert: {
+      title: "Eksik Paket Yoneticileri",
+      desc: "Asagidaki paket yoneticileri kurulu degil. Bazi yazilimlar bunlar olmadan yuklenemeyebilir.",
+      install: "Kur",
+      dismiss: "Kapat",
     },
   },
 };
