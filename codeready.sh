@@ -22,12 +22,23 @@ detect_os() {
     elif [[ -f /etc/os-release ]]; then
         . /etc/os-release
         case "$ID" in
-            ubuntu|debian|linuxmint|pop) OS_TYPE="debian"; PKG="apt" ;;
+            ubuntu|debian|linuxmint|pop|elementary|zorin|kali|raspbian|pardus) OS_TYPE="debian"; PKG="apt" ;;
             fedora)                      OS_TYPE="fedora"; PKG="dnf" ;;
             centos|rhel|rocky|alma)      OS_TYPE="rhel";   PKG="dnf" ;;
-            arch|manjaro|endeavouros)    OS_TYPE="arch";   PKG="pacman" ;;
+            arch|manjaro|endeavouros|cachyos|garuda|artix|arcolinux) OS_TYPE="arch"; PKG="pacman" ;;
             opensuse*|sles)              OS_TYPE="suse";   PKG="zypper" ;;
-            *)                           OS_TYPE="linux";  PKG="unknown" ;;
+            void)                        OS_TYPE="void";   PKG="xbps" ;;
+            alpine)                      OS_TYPE="alpine"; PKG="apk" ;;
+            *)
+                # Fallback: check ID_LIKE for parent distro
+                case "${ID_LIKE:-}" in
+                    *arch*)   OS_TYPE="arch";   PKG="pacman" ;;
+                    *debian*) OS_TYPE="debian"; PKG="apt" ;;
+                    *fedora*|*rhel*) OS_TYPE="fedora"; PKG="dnf" ;;
+                    *suse*)   OS_TYPE="suse";   PKG="zypper" ;;
+                    *)        OS_TYPE="linux";  PKG="unknown" ;;
+                esac
+                ;;
         esac
     else
         echo "Unsupported OS"; exit 1
@@ -142,9 +153,6 @@ update_pkg() {
         zypper) sudo zypper refresh &>>"$LOG_FILE" ;;
         brew)   brew update &>>"$LOG_FILE" ;;
     esac
-    # Also check secondary package managers
-    ensure_nix
-    ensure_flatpak
 }
 
 # Helper: try nix as fallback

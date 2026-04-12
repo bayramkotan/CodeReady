@@ -1,0 +1,39 @@
+# === CodeReady .gitignore ===
+
+# Handoff files (local only, not in repo)
+*_Handoff.md
+CodeReady_Handoff.md
+
+# Logs
+*.log
+codeready_install.log
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Node
+node_modules/
+gui/node_modules/
+gui/dist/
+
+# Rust
+gui/src-tauri/target/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+
+# Nix
+.nix-profile
