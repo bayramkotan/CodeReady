@@ -144,6 +144,83 @@ ensure_flatpak() {
     HAS_FLATPAK=1
 }
 
+AUR_HELPER=""
+ensure_aur_helper() {
+    # Only for Arch-based distros
+    [[ "$PKG" != "pacman" ]] && return 0
+
+    step "Checking AUR helper..."
+    if command -v paru &>/dev/null; then
+        ok "paru ready."
+        AUR_HELPER="paru"
+        return 0
+    fi
+    if command -v yay &>/dev/null; then
+        ok "yay ready."
+        AUR_HELPER="yay"
+        return 0
+    fi
+
+    echo ""
+    echo "  [?] No AUR helper found (yay/paru)."
+    echo "      AUR is needed for some packages (Flutter, etc.)"
+    echo "      [1] Install paru (recommended)"
+    echo "      [2] Install yay"
+    echo "      [3] Skip"
+    read -rp "  Choose [1/2/3]: " aur_choice
+
+    case "$aur_choice" in
+        1)
+            step "Installing paru..."
+            local tmp_dir=$(mktemp -d)
+            sudo pacman -S --needed --noconfirm base-devel git &>>"$LOG_FILE"
+            git clone https://aur.archlinux.org/paru.git "$tmp_dir/paru" &>>"$LOG_FILE"
+            (cd "$tmp_dir/paru" && makepkg -si --noconfirm) &>>"$LOG_FILE" 2>&1
+            rm -rf "$tmp_dir"
+            if command -v paru &>/dev/null; then
+                ok "paru installed."
+                AUR_HELPER="paru"
+            else
+                fail "paru installation failed."
+            fi
+            ;;
+        2)
+            step "Installing yay..."
+            local tmp_dir=$(mktemp -d)
+            sudo pacman -S --needed --noconfirm base-devel git &>>"$LOG_FILE"
+            git clone https://aur.archlinux.org/yay.git "$tmp_dir/yay" &>>"$LOG_FILE"
+            (cd "$tmp_dir/yay" && makepkg -si --noconfirm) &>>"$LOG_FILE" 2>&1
+            rm -rf "$tmp_dir"
+            if command -v yay &>/dev/null; then
+                ok "yay installed."
+                AUR_HELPER="yay"
+            else
+                fail "yay installation failed."
+            fi
+            ;;
+        *)
+            info "Skipped AUR helper. Some packages may not be available."
+            AUR_HELPER=""
+            ;;
+    esac
+}
+
+# Helper: install from AUR (uses paru/yay)
+aur_install() {
+    local name="$1" pkg="$2"
+    if [[ -z "$AUR_HELPER" ]]; then
+        info "$name requires AUR. No AUR helper available."
+        fail "$name (needs AUR)"
+        return 1
+    fi
+    step "Installing $name via AUR ($AUR_HELPER)..."
+    if $AUR_HELPER -S --noconfirm "$pkg" &>>"$LOG_FILE" 2>&1; then
+        ok "$name installed via AUR."
+    else
+        fail "$name AUR install failed."
+    fi
+}
+
 update_pkg() {
     step "Updating package manager..."
     case "$PKG" in
@@ -419,6 +496,16 @@ install_dart() {
                 pkg_install "Flutter (includes Dart)" "brew install --cask flutter"
             else
                 pkg_install "Dart SDK" "brew install dart-sdk"
+            fi ;;
+        pacman)
+            # Flutter not in official repos — use AUR
+            if [[ -n "$AUR_HELPER" ]]; then
+                aur_install "Flutter" "flutter"
+            elif command -v snap &>/dev/null; then
+                pkg_install "Flutter" "sudo snap install flutter --classic"
+            else
+                info "Flutter needs AUR helper (paru/yay) or snap. Run script again and install AUR helper."
+                fail "Dart/Flutter (needs AUR)"
             fi ;;
         *)
             if command -v snap &>/dev/null; then
@@ -1499,6 +1586,7 @@ main() {
         update_pkg
         ensure_flatpak
         ensure_nix
+        ensure_aur_helper
     fi
 
     # System scan - show what's installed
