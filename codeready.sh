@@ -6,6 +6,13 @@
 # ================================================================
 set -uo pipefail
 
+# Requires bash 4+ for associative arrays (definitions.sh)
+if ((BASH_VERSINFO[0] < 4)); then
+    echo "CodeReady requires bash 4 or newer." >&2
+    echo "On macOS: brew install bash" >&2
+    exit 1
+fi
+
 VERSION="2.2.0"
 LOG_FILE="$HOME/codeready_install.log"
 INSTALLED=()
@@ -13,6 +20,18 @@ FAILED=()
 HAS_MACPORTS=0
 HAS_NIX=0
 HAS_FLATPAK=0
+
+# --- Load package definitions -----------------------------------
+# definitions.sh sits next to codeready.sh in the repo root
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+if [[ -f "$SCRIPT_DIR/definitions.sh" ]]; then
+    # shellcheck source=definitions.sh
+    source "$SCRIPT_DIR/definitions.sh"
+else
+    echo "ERROR: definitions.sh not found next to codeready.sh" >&2
+    echo "Expected at: $SCRIPT_DIR/definitions.sh" >&2
+    exit 1
+fi
 
 # --- Detect OS --------------------------------------------------
 detect_os() {
@@ -248,9 +267,84 @@ pkg_install() {
     step "Installing $name..."
     if eval "$@" &>>"$LOG_FILE" 2>&1; then
         ok "$name installed."
+        return 0
     else
         fail "$name"
+        return 1
     fi
+}
+
+# --- Map-based installers (see definitions.sh) ------------------
+# Install via native package manager using PKG_MAP / BREW_MAP lookup.
+# Returns 0 on success, 1 if no mapping found (caller should fall back).
+install_native() {
+    local key="$1" display_name="$2"
+
+    if [[ "$PKG" == "brew" ]]; then
+        local brew_arg="${BREW_MAP[$key]:-}"
+        [[ -z "$brew_arg" ]] && return 1
+        pkg_install "$display_name" "brew install $brew_arg"
+        return $?
+    fi
+
+    local pkgs="${PKG_MAP[${key}:${PKG}]:-}"
+    [[ -z "$pkgs" ]] && return 1
+
+    case "$PKG" in
+        apt)    pkg_install "$display_name" "sudo apt install -y $pkgs" ;;
+        dnf)    pkg_install "$display_name" "sudo dnf install -y $pkgs" ;;
+        pacman) pkg_install "$display_name" "sudo pacman -S --noconfirm $pkgs" ;;
+        zypper) pkg_install "$display_name" "sudo zypper install -y $pkgs" ;;
+        apk)    pkg_install "$display_name" "sudo apk add $pkgs" ;;
+        xbps)   pkg_install "$display_name" "sudo xbps-install -y $pkgs" ;;
+        *)      return 1 ;;
+    esac
+    return $?
+}
+
+flatpak_install() {
+    local name="$1" flatpak_id="$2"
+    command -v flatpak &>/dev/null || return 1
+    pkg_install "$name" "flatpak install -y flathub $flatpak_id"
+}
+
+snap_install() {
+    local name="$1" snap_name="$2"
+    command -v snap &>/dev/null || return 1
+    pkg_install "$name" "sudo snap install $snap_name --classic"
+}
+
+# Fallback chain: AUR (Arch only) -> Flatpak -> Snap -> manual notice.
+# Priority per project rule: pacman -> AUR -> flatpak -> snap.
+try_fallback_install() {
+    local key="$1" name="$2"
+
+    # AUR: only on Arch-based systems
+    if [[ "$PKG" == "pacman" && -n "${AUR_MAP[$key]:-}" ]]; then
+        aur_install "$name" "${AUR_MAP[$key]}" && return 0
+    fi
+
+    # Flatpak
+    if [[ -n "${FLATPAK_MAP[$key]:-}" ]]; then
+        flatpak_install "$name" "${FLATPAK_MAP[$key]}" && return 0
+    fi
+
+    # Snap (last resort per project rule)
+    if [[ -n "${SNAP_MAP[$key]:-}" ]]; then
+        snap_install "$name" "${SNAP_MAP[$key]}" && return 0
+    fi
+
+    warn "$name: no install method available for $PKG"
+    fail "$name (unsupported on $OS_TYPE)"
+    return 1
+}
+
+# Convenience wrapper: try native, then fallback chain.
+# Use this for simple packages where the entire install can be table-driven.
+install_from_map() {
+    local key="$1" display_name="$2"
+    install_native "$key" "$display_name" && return 0
+    try_fallback_install "$key" "$display_name"
 }
 
 # Check if a command already exists — skip if installed
@@ -411,13 +505,7 @@ install_csharp() {
 
 install_cpp() {
     local variant="${1:-gcc}"
-    case "$PKG" in
-        brew)   pkg_install "C/C++ ($variant)" "brew install gcc llvm cmake" ;;
-        apt)    pkg_install "C/C++ (GCC/G++)" "sudo apt install -y build-essential gcc g++ gdb cmake" ;;
-        dnf)    pkg_install "C/C++ (GCC/G++)" "sudo dnf install -y gcc gcc-c++ gdb cmake make" ;;
-        pacman) pkg_install "C/C++ (GCC/G++)" "sudo pacman -S --noconfirm base-devel gcc gdb cmake" ;;
-        zypper) pkg_install "C/C++ (GCC/G++)" "sudo zypper install -y gcc gcc-c++ gdb cmake make" ;;
-    esac
+    install_from_map "cpp" "C/C++ ($variant)"
 }
 
 install_go() {
@@ -528,23 +616,27 @@ install_swift() {
 
 install_zig() {
     skip_installed "Zig" "zig" && return
-    case "$PKG" in
-        brew)   pkg_install "Zig" "brew install zig" ;;
-        apt)    if command -v snap &>/dev/null; then
-                    pkg_install "Zig" "sudo snap install zig --classic --beta"
-                else
-                    step "Installing Zig from official binary..."
-                    local ARCH; ARCH=$(uname -m)
-                    case "$ARCH" in x86_64) ARCH="x86_64" ;; aarch64|arm64) ARCH="aarch64" ;; esac
-                    curl -fsSL "https://ziglang.org/download/0.13.0/zig-linux-${ARCH}-0.13.0.tar.xz" -o /tmp/zig.tar.xz 2>>"$LOG_FILE"
-                    sudo tar -C /usr/local -xf /tmp/zig.tar.xz
-                    sudo ln -sf /usr/local/zig-linux-*/zig /usr/local/bin/zig
-                    rm -f /tmp/zig.tar.xz
-                    ok "Zig installed."
-                fi ;;
-        pacman) pkg_install "Zig" "sudo pacman -S --noconfirm zig" ;;
-        dnf)    pkg_install "Zig" "sudo dnf install -y zig || (curl -fsSL https://ziglang.org/download/0.13.0/zig-linux-x86_64-0.13.0.tar.xz -o /tmp/zig.tar.xz && sudo tar -C /usr/local -xf /tmp/zig.tar.xz && sudo ln -sf /usr/local/zig-linux-*/zig /usr/local/bin/zig)" ;;
-    esac
+    # brew / pacman: direct native install via map
+    if [[ "$PKG" == "brew" || "$PKG" == "pacman" ]]; then
+        install_from_map "zig" "Zig"
+        return
+    fi
+    # apt / dnf: try native (map) first, fall back to official tarball
+    if [[ "$PKG" == "dnf" ]] && install_native "zig" "Zig"; then
+        return
+    fi
+    if [[ "$PKG" == "apt" ]] && command -v snap &>/dev/null; then
+        pkg_install "Zig" "sudo snap install zig --classic --beta"
+        return
+    fi
+    step "Installing Zig from official binary..."
+    local ARCH; ARCH=$(uname -m)
+    case "$ARCH" in x86_64) ARCH="x86_64" ;; aarch64|arm64) ARCH="aarch64" ;; esac
+    curl -fsSL "https://ziglang.org/download/0.13.0/zig-linux-${ARCH}-0.13.0.tar.xz" -o /tmp/zig.tar.xz 2>>"$LOG_FILE"
+    sudo tar -C /usr/local -xf /tmp/zig.tar.xz
+    sudo ln -sf /usr/local/zig-linux-*/zig /usr/local/bin/zig
+    rm -f /tmp/zig.tar.xz
+    ok "Zig installed."
 }
 
 install_mojo() {
@@ -593,12 +685,7 @@ install_typescript() {
 
 install_elixir() {
     skip_installed "Elixir" "elixir" && return
-    case "$PKG" in
-        brew)   pkg_install "Elixir" "brew install elixir" ;;
-        apt)    pkg_install "Elixir" "sudo apt install -y elixir" ;;
-        dnf)    pkg_install "Elixir" "sudo dnf install -y elixir" ;;
-        pacman) pkg_install "Elixir" "sudo pacman -S --noconfirm elixir" ;;
-    esac
+    install_from_map "elixir" "Elixir"
 }
 
 install_scala() {
@@ -636,23 +723,12 @@ install_julia() {
 
 install_r() {
     skip_installed "R" "R" && return
-    case "$PKG" in
-        brew)   pkg_install "R" "brew install r" ;;
-        apt)    pkg_install "R" "sudo apt install -y r-base r-base-dev" ;;
-        dnf)    pkg_install "R" "sudo dnf install -y R" ;;
-        pacman) pkg_install "R" "sudo pacman -S --noconfirm r" ;;
-        zypper) pkg_install "R" "sudo zypper install -y R-base R-base-devel" ;;
-    esac
+    install_from_map "r" "R"
 }
 
 install_lua() {
     skip_installed "Lua" "lua" && return
-    case "$PKG" in
-        brew)   pkg_install "Lua" "brew install lua luarocks" ;;
-        apt)    pkg_install "Lua" "sudo apt install -y lua5.4 liblua5.4-dev luarocks" ;;
-        dnf)    pkg_install "Lua" "sudo dnf install -y lua lua-devel luarocks" ;;
-        pacman) pkg_install "Lua" "sudo pacman -S --noconfirm lua luarocks" ;;
-    esac
+    install_from_map "lua" "Lua"
 }
 
 install_haskell() {
@@ -665,22 +741,12 @@ install_haskell() {
 
 install_perl() {
     skip_installed "Perl" "perl" && return
-    case "$PKG" in
-        brew)   pkg_install "Perl" "brew install perl" ;;
-        apt)    pkg_install "Perl" "sudo apt install -y perl cpanminus" ;;
-        dnf)    pkg_install "Perl" "sudo dnf install -y perl perl-App-cpanminus" ;;
-        pacman) pkg_install "Perl" "sudo pacman -S --noconfirm perl cpanminus" ;;
-    esac
+    install_from_map "perl" "Perl"
 }
 
 install_erlang() {
     skip_installed "Erlang" "erl" && return
-    case "$PKG" in
-        brew)   pkg_install "Erlang" "brew install erlang" ;;
-        apt)    pkg_install "Erlang" "sudo apt install -y erlang" ;;
-        dnf)    pkg_install "Erlang" "sudo dnf install -y erlang" ;;
-        pacman) pkg_install "Erlang" "sudo pacman -S --noconfirm erlang" ;;
-    esac
+    install_from_map "erlang" "Erlang"
 }
 
 install_ocaml() {
@@ -702,24 +768,14 @@ install_ocaml() {
 
 install_fortran() {
     skip_installed "Fortran" "gfortran" && return
-    case "$PKG" in
-        brew)   pkg_install "Fortran (GFortran)" "brew install gcc" ;;
-        apt)    pkg_install "Fortran (GFortran)" "sudo apt install -y gfortran" ;;
-        dnf)    pkg_install "Fortran (GFortran)" "sudo dnf install -y gcc-gfortran" ;;
-        pacman) pkg_install "Fortran (GFortran)" "sudo pacman -S --noconfirm gcc-fortran" ;;
-        zypper) pkg_install "Fortran (GFortran)" "sudo zypper install -y gcc-fortran" ;;
-    esac
+    install_from_map "fortran" "Fortran (GFortran)"
 }
 
 install_d() {
     skip_installed "D" "ldc2" && return
-    case "$PKG" in
-        brew)   pkg_install "D (LDC)" "brew install ldc dub" ;;
-        apt)    pkg_install "D (LDC)" "sudo apt install -y ldc dub" ;;
-        dnf)    pkg_install "D (LDC)" "sudo dnf install -y ldc dub" ;;
-        pacman) pkg_install "D (LDC)" "sudo pacman -S --noconfirm ldc dub" ;;
-        *)      info "D language: visit https://dlang.org/install.html"; fail "D (manual)" ;;
-    esac
+    install_native "d" "D (LDC)" && return
+    info "D language: visit https://dlang.org/install.html"
+    fail "D (manual)"
 }
 
 install_nim() {
@@ -732,14 +788,16 @@ install_nim() {
 
 install_crystal() {
     skip_installed "Crystal" "crystal" && return
-    case "$PKG" in
-        brew)   pkg_install "Crystal" "brew install crystal" ;;
-        apt)    step "Installing Crystal..."
-                curl -fsSL https://crystal-lang.org/install.sh | sudo bash &>>"$LOG_FILE" 2>&1
-                ok "Crystal installed." ;;
-        pacman) pkg_install "Crystal" "sudo pacman -S --noconfirm crystal shards" ;;
-        *)      info "Crystal: visit https://crystal-lang.org/install/"; fail "Crystal (manual)" ;;
-    esac
+    # apt has no native crystal package — use the official install script
+    if [[ "$PKG" == "apt" ]]; then
+        step "Installing Crystal..."
+        curl -fsSL https://crystal-lang.org/install.sh | sudo bash &>>"$LOG_FILE" 2>&1
+        ok "Crystal installed."
+        return
+    fi
+    install_native "crystal" "Crystal" && return
+    info "Crystal: visit https://crystal-lang.org/install/"
+    fail "Crystal (manual)"
 }
 
 install_v() {
@@ -808,54 +866,37 @@ install_groovy() {
 
 install_ada() {
     skip_installed "Ada" "gnat" && return
-    case "$PKG" in
-        brew)   pkg_install "Ada (GNAT)" "brew install gnat" ;;
-        apt)    pkg_install "Ada (GNAT)" "sudo apt install -y gnat" ;;
-        dnf)    pkg_install "Ada (GNAT)" "sudo dnf install -y gcc-gnat" ;;
-        pacman) pkg_install "Ada (GNAT)" "sudo pacman -S --noconfirm gcc-ada" ;;
-        *)      info "Ada: visit https://www.adacore.com/download"; fail "Ada (manual)" ;;
-    esac
+    install_native "ada" "Ada (GNAT)" && return
+    info "Ada: visit https://www.adacore.com/download"
+    fail "Ada (manual)"
 }
 
 install_cobol() {
     skip_installed "COBOL" "cobc" && return
-    case "$PKG" in
-        brew)   pkg_install "COBOL (GnuCOBOL)" "brew install gnucobol" ;;
-        apt)    pkg_install "COBOL (GnuCOBOL)" "sudo apt install -y gnucobol" ;;
-        dnf)    pkg_install "COBOL (GnuCOBOL)" "sudo dnf install -y gnucobol" ;;
-        pacman) pkg_install "COBOL (GnuCOBOL)" "sudo pacman -S --noconfirm gnucobol" ;;
-        *)      info "COBOL: visit https://gnucobol.sourceforge.io"; fail "COBOL (manual)" ;;
-    esac
+    install_native "cobol" "COBOL (GnuCOBOL)" && return
+    info "COBOL: visit https://gnucobol.sourceforge.io"
+    fail "COBOL (manual)"
 }
 
 install_lisp() {
     skip_installed "Common Lisp" "sbcl" && return
-    case "$PKG" in
-        brew)   pkg_install "Common Lisp (SBCL)" "brew install sbcl" ;;
-        apt)    pkg_install "Common Lisp (SBCL)" "sudo apt install -y sbcl" ;;
-        dnf)    pkg_install "Common Lisp (SBCL)" "sudo dnf install -y sbcl" ;;
-        pacman) pkg_install "Common Lisp (SBCL)" "sudo pacman -S --noconfirm sbcl" ;;
-    esac
+    install_from_map "lisp" "Common Lisp (SBCL)"
 }
 
 install_racket() {
     skip_installed "Racket" "racket" && return
-    case "$PKG" in
-        brew)   pkg_install "Racket" "brew install racket" ;;
-        apt)    pkg_install "Racket" "sudo apt install -y racket" ;;
-        dnf)    pkg_install "Racket" "sudo dnf install -y racket" ;;
-        pacman) pkg_install "Racket" "sudo pacman -S --noconfirm racket" ;;
-    esac
+    install_from_map "racket" "Racket"
 }
 
 install_objc() {
-    case "$PKG" in
-        brew) info "Objective-C available via Xcode: xcode-select --install"
-              if command -v clang &>/dev/null; then ok "Objective-C (Clang) available."; else fail "Objective-C"; fi ;;
-        apt)  pkg_install "Objective-C (GNUstep)" "sudo apt install -y gobjc gnustep-devel" ;;
-        dnf)  pkg_install "Objective-C (GNUstep)" "sudo dnf install -y gcc-objc gnustep-base-devel" ;;
-        *)    info "Objective-C: use Xcode (macOS) or GNUstep (Linux)"; fail "Objective-C (manual)" ;;
-    esac
+    if [[ "$PKG" == "brew" ]]; then
+        info "Objective-C available via Xcode: xcode-select --install"
+        if command -v clang &>/dev/null; then ok "Objective-C (Clang) available."; else fail "Objective-C"; fi
+        return
+    fi
+    install_native "objc" "Objective-C (GNUstep)" && return
+    info "Objective-C: use Xcode (macOS) or GNUstep (Linux)"
+    fail "Objective-C (manual)"
 }
 
 # ================================================================
@@ -907,138 +948,71 @@ install_ide() {
                 *) flatpak_or_snap "VSCodium" "com.vscodium.codium" "codium" ;;
             esac ;;
         vs2026) info "Visual Studio is Windows-only. Use VS Code or Rider." ;;
-        intellij)
-            skip_installed "IntelliJ IDEA" "idea" && return
-            case "$PKG" in
-                brew) pkg_install "IntelliJ IDEA" "brew install --cask intellij-idea-ce" ;;
-                *) flatpak_or_snap "IntelliJ IDEA" "com.jetbrains.IntelliJ-IDEA-Community" "intellij-idea-community" ;;
-            esac ;;
-        pycharm)
-            skip_installed "PyCharm" "pycharm" && return
-            case "$PKG" in
-                brew) pkg_install "PyCharm" "brew install --cask pycharm-ce" ;;
-                *) flatpak_or_snap "PyCharm" "com.jetbrains.PyCharm-Community" "pycharm-community" ;;
-            esac ;;
-        webstorm)
-            skip_installed "WebStorm" "webstorm" && return
-            case "$PKG" in
-                brew) pkg_install "WebStorm" "brew install --cask webstorm" ;;
-                *) flatpak_or_snap "WebStorm" "com.jetbrains.WebStorm" "webstorm" ;;
-            esac ;;
-        goland)
-            skip_installed "GoLand" "goland" && return
-            case "$PKG" in
-                brew) pkg_install "GoLand" "brew install --cask goland" ;;
-                *) flatpak_or_snap "GoLand" "com.jetbrains.GoLand" "goland" ;;
-            esac ;;
-        clion)
-            skip_installed "CLion" "clion" && return
-            case "$PKG" in
-                brew) pkg_install "CLion" "brew install --cask clion" ;;
-                *) flatpak_or_snap "CLion" "com.jetbrains.CLion" "clion" ;;
-            esac ;;
-        rider)
-            skip_installed "Rider" "rider" && return
-            case "$PKG" in
-                brew) pkg_install "Rider" "brew install --cask rider" ;;
-                *) flatpak_or_snap "Rider" "com.jetbrains.Rider" "rider" ;;
-            esac ;;
-        rustrover)
-            skip_installed "RustRover" "rustrover" && return
-            case "$PKG" in
-                brew) pkg_install "RustRover" "brew install --cask rustrover" ;;
-                *) flatpak_or_snap "RustRover" "com.jetbrains.RustRover" "rustrover" ;;
-            esac ;;
-        eclipse)
-            skip_installed "Eclipse" "eclipse" && return
-            case "$PKG" in
-                brew) pkg_install "Eclipse" "brew install --cask eclipse-jee" ;;
-                *) flatpak_or_snap "Eclipse" "org.eclipse.Java" "eclipse" ;;
-            esac ;;
-        android)
-            skip_installed "Android Studio" "studio" && return
-            case "$PKG" in
-                brew) pkg_install "Android Studio" "brew install --cask android-studio" ;;
-                *) flatpak_or_snap "Android Studio" "com.google.AndroidStudio" "android-studio" ;;
-            esac ;;
+        intellij)   skip_installed "IntelliJ IDEA" "idea" && return
+                    install_from_map "intellij"  "IntelliJ IDEA" ;;
+        pycharm)    skip_installed "PyCharm" "pycharm" && return
+                    install_from_map "pycharm"   "PyCharm" ;;
+        webstorm)   skip_installed "WebStorm" "webstorm" && return
+                    install_from_map "webstorm"  "WebStorm" ;;
+        goland)     skip_installed "GoLand" "goland" && return
+                    install_from_map "goland"    "GoLand" ;;
+        clion)      skip_installed "CLion" "clion" && return
+                    install_from_map "clion"     "CLion" ;;
+        rider)      skip_installed "Rider" "rider" && return
+                    install_from_map "rider"     "Rider" ;;
+        rustrover)  skip_installed "RustRover" "rustrover" && return
+                    install_from_map "rustrover" "RustRover" ;;
+        eclipse)    skip_installed "Eclipse" "eclipse" && return
+                    install_from_map "eclipse"   "Eclipse" ;;
+        android)    skip_installed "Android Studio" "studio" && return
+                    install_from_map "android"   "Android Studio" ;;
         sublime)
             skip_installed "Sublime Text" "subl" && return
-            case "$PKG" in
-                brew) pkg_install "Sublime Text" "brew install --cask sublime-text" ;;
-                apt)
-                    safe_repo_install "Sublime Text" \
-                        "/etc/apt/sources.list.d/sublime-text.list" \
-                        "deb [arch=amd64 signed-by=/usr/share/keyrings/sublimehq-archive-keyring.gpg] https://download.sublimetext.com/ apt/stable/" \
-                        "/usr/share/keyrings/sublimehq-archive-keyring.gpg" \
-                        "https://download.sublimetext.com/sublimehq-pub.gpg" \
-                        "sublime-text" ;;
-                *) flatpak_or_snap "Sublime Text" "com.sublimetext.three" "sublime-text" ;;
-            esac ;;
-        vim)
-            skip_installed "Neovim" "nvim" && return
-            case "$PKG" in
-                brew)   pkg_install "Neovim" "brew install neovim" ;;
-                apt)    pkg_install "Neovim" "sudo apt install -y neovim" ;;
-                dnf)    pkg_install "Neovim" "sudo dnf install -y neovim" ;;
-                pacman) pkg_install "Neovim" "sudo pacman -S --noconfirm neovim" ;;
-                zypper) pkg_install "Neovim" "sudo zypper install -y neovim" ;;
-            esac ;;
-        classicvim)
-            skip_installed "Vim" "vim" && return
-            case "$PKG" in
-                brew)   pkg_install "Vim" "brew install vim" ;;
-                apt)    pkg_install "Vim" "sudo apt install -y vim" ;;
-                dnf)    pkg_install "Vim" "sudo dnf install -y vim-enhanced" ;;
-                pacman) pkg_install "Vim" "sudo pacman -S --noconfirm vim" ;;
-                zypper) pkg_install "Vim" "sudo zypper install -y vim" ;;
-            esac ;;
-        emacs)
-            skip_installed "GNU Emacs" "emacs" && return
-            case "$PKG" in
-                brew)   pkg_install "GNU Emacs" "brew install --cask emacs" ;;
-                apt)    pkg_install "GNU Emacs" "sudo apt install -y emacs" ;;
-                dnf)    pkg_install "GNU Emacs" "sudo dnf install -y emacs" ;;
-                pacman) pkg_install "GNU Emacs" "sudo pacman -S --noconfirm emacs" ;;
-                zypper) pkg_install "GNU Emacs" "sudo zypper install -y emacs" ;;
-            esac ;;
+            # apt: use official signed repo (requires custom keyring)
+            if [[ "$PKG" == "apt" ]]; then
+                safe_repo_install "Sublime Text" \
+                    "/etc/apt/sources.list.d/sublime-text.list" \
+                    "deb [arch=amd64 signed-by=/usr/share/keyrings/sublimehq-archive-keyring.gpg] https://download.sublimetext.com/ apt/stable/" \
+                    "/usr/share/keyrings/sublimehq-archive-keyring.gpg" \
+                    "https://download.sublimetext.com/sublimehq-pub.gpg" \
+                    "sublime-text"
+            else
+                install_from_map "sublime" "Sublime Text"
+            fi ;;
+        vim)        skip_installed "Neovim" "nvim" && return
+                    install_from_map "neovim" "Neovim" ;;
+        classicvim) skip_installed "Vim" "vim" && return
+                    install_from_map "vim" "Vim" ;;
+        emacs)      skip_installed "GNU Emacs" "emacs" && return
+                    install_from_map "emacs" "GNU Emacs" ;;
         antigravity)
             skip_installed "Antigravity" "antigravity" && return
-            case "$PKG" in
-                brew) pkg_install "Antigravity" "brew install --cask antigravity" ;;
-                *)    info "Download Antigravity: https://antigravity.app"; fail "Antigravity (manual)" ;;
-            esac ;;
-        netbeans)
-            skip_installed "NetBeans" "netbeans" && return
-            case "$PKG" in
-                brew) pkg_install "NetBeans" "brew install --cask netbeans" ;;
-                *) flatpak_or_snap "NetBeans" "org.apache.netbeans" "netbeans" ;;
-            esac ;;
-        fleet)
-            skip_installed "Fleet" "fleet" && return
-            case "$PKG" in
-                brew) pkg_install "JetBrains Fleet" "brew install --cask jetbrains-fleet" ;;
-                *) flatpak_or_snap "JetBrains Fleet" "com.jetbrains.Fleet" "fleet" ;;
-            esac ;;
-        notepadpp) info "Notepad++ is Windows-only." ;;
+            if install_native "antigravity" "Antigravity"; then :
+            else info "Download Antigravity: https://antigravity.app"; fail "Antigravity (manual)"
+            fi ;;
+        netbeans)   skip_installed "NetBeans" "netbeans" && return
+                    install_from_map "netbeans" "NetBeans" ;;
+        fleet)      skip_installed "Fleet" "fleet" && return
+                    install_from_map "fleet" "JetBrains Fleet" ;;
+        notepadpp)  info "Notepad++ is Windows-only." ;;
         cursor)
             skip_installed "Cursor" "cursor" && return
-            case "$PKG" in
-                brew) pkg_install "Cursor" "brew install --cask cursor" ;;
-                *)    info "Download Cursor: https://cursor.sh"; fail "Cursor (manual)" ;;
-            esac ;;
+            # AUR fallback for Arch users (was manual-only before)
+            if install_from_map "cursor" "Cursor"; then :
+            else info "Download Cursor: https://cursor.sh"; fi ;;
         windsurf)
             skip_installed "Windsurf" "windsurf" && return
-            case "$PKG" in
-                brew) pkg_install "Windsurf" "brew install --cask windsurf" ;;
-                *)    info "Download Windsurf: https://codeium.com/windsurf"; fail "Windsurf (manual)" ;;
-            esac ;;
+            if install_from_map "windsurf" "Windsurf"; then :
+            else info "Download Windsurf: https://codeium.com/windsurf"; fi ;;
         zed)
             skip_installed "Zed" "zed" && return
-            case "$PKG" in
-                brew) pkg_install "Zed" "brew install --cask zed" ;;
-                *)    step "Installing Zed..."
-                      curl -fsSL https://zed.dev/install.sh | sh &>>"$LOG_FILE" && ok "Zed installed." || fail "Zed" ;;
-            esac ;;
+            # brew / Arch (AUR): use map. Everything else: official install script.
+            if [[ "$PKG" == "brew" ]] || [[ "$PKG" == "pacman" && -n "${AUR_MAP[zed]:-}" ]]; then
+                install_from_map "zed" "Zed"
+            else
+                step "Installing Zed..."
+                curl -fsSL https://zed.dev/install.sh | sh &>>"$LOG_FILE" && ok "Zed installed." || fail "Zed"
+            fi ;;
         *) fail "Unknown IDE: $key" ;;
     esac
 }
@@ -1049,15 +1023,8 @@ install_ide() {
 install_tool() {
     local key="$1"
     case "$key" in
-        git)
-            skip_installed "Git" "git" && return
-            case "$PKG" in
-                brew) pkg_install "Git" "brew install git" ;;
-                apt)  pkg_install "Git" "sudo apt install -y git" ;;
-                dnf)  pkg_install "Git" "sudo dnf install -y git" ;;
-                pacman) pkg_install "Git" "sudo pacman -S --noconfirm git" ;;
-                zypper) pkg_install "Git" "sudo zypper install -y git" ;;
-            esac ;;
+        git)        skip_installed "Git" "git" && return
+                    install_from_map "git" "Git" ;;
         docker)
             skip_installed "Docker" "docker" && return
             case "$PKG" in
@@ -1090,27 +1057,17 @@ install_tool() {
                 dnf)  pkg_install "Docker" "sudo dnf install -y docker && sudo systemctl enable --now docker && sudo usermod -aG docker \$USER" ;;
                 pacman) pkg_install "Docker" "sudo pacman -S --noconfirm docker docker-compose && sudo systemctl enable --now docker && sudo usermod -aG docker \$USER" ;;
             esac ;;
-        postman)
-            skip_installed "Postman" "postman" && return
-            case "$PKG" in
-                brew) pkg_install "Postman" "brew install --cask postman" ;;
-                *) flatpak_or_snap "Postman" "com.getpostman.Postman" "postman" ;;
-            esac ;;
-        cmake)
-            skip_installed "CMake" "cmake" && return
-            case "$PKG" in
-                brew)   pkg_install "CMake" "brew install cmake" ;;
-                apt)    pkg_install "CMake" "sudo apt install -y cmake" ;;
-                dnf)    pkg_install "CMake" "sudo dnf install -y cmake" ;;
-                pacman) pkg_install "CMake" "sudo pacman -S --noconfirm cmake" ;;
-            esac ;;
+        postman)    skip_installed "Postman" "postman" && return
+                    install_from_map "postman" "Postman" ;;
+        cmake)      skip_installed "CMake" "cmake" && return
+                    install_from_map "cmake" "CMake" ;;
         gh)
-            case "$PKG" in
-                brew)   pkg_install "GitHub CLI" "brew install gh" ;;
-                apt)    pkg_install "GitHub CLI" "sudo apt install -y gh || (curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg && echo 'deb [arch=\$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main' | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null && sudo apt update && sudo apt install -y gh)" ;;
-                dnf)    pkg_install "GitHub CLI" "sudo dnf install -y gh" ;;
-                pacman) pkg_install "GitHub CLI" "sudo pacman -S --noconfirm github-cli" ;;
-            esac ;;
+            # apt: keep custom Microsoft-style repo fallback. Everything else: map.
+            if [[ "$PKG" == "apt" ]]; then
+                pkg_install "GitHub CLI" "sudo apt install -y gh || (curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg && echo 'deb [arch=\$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main' | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null && sudo apt update && sudo apt install -y gh)"
+            else
+                install_from_map "gh" "GitHub CLI"
+            fi ;;
         nvm)    info "nvm is installed automatically with Node.js selection." ;;
         pyenv)
             step "Installing pyenv..."
