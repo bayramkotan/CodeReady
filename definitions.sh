@@ -24,6 +24,7 @@ declare -gA BREW_MAP
 declare -gA AUR_MAP
 declare -gA FLATPAK_MAP
 declare -gA SNAP_MAP
+declare -gA CONFIG_MAP
 
 # ================================================================
 # LANGUAGES (version-agnostic ones only)
@@ -262,6 +263,32 @@ BREW_MAP["gh"]="gh"
 BREW_MAP["postman"]="--cask postman"
 FLATPAK_MAP["postman"]="com.getpostman.Postman"
 SNAP_MAP["postman"]="postman"
+
+# ================================================================
+# USER CONFIG PATHS (for uninstall)
+# Space-separated paths that a package creates in the user's HOME.
+# On uninstall, user is asked whether to remove these too.
+# Paths are literal (single-quoted) — expanded at removal time.
+# ================================================================
+
+# Version managers / external installers create user-space state
+CONFIG_MAP["rust"]='$HOME/.cargo $HOME/.rustup'
+CONFIG_MAP["nodejs"]='$HOME/.nvm $HOME/.npm $HOME/.npmrc $HOME/.node-gyp'
+CONFIG_MAP["kotlin"]='$HOME/.sdkman'
+CONFIG_MAP["java"]='$HOME/.jenv'
+CONFIG_MAP["python"]='$HOME/.pyenv $HOME/.local/share/uv $HOME/.cache/pip'
+CONFIG_MAP["go"]='$HOME/go $HOME/.config/go'
+CONFIG_MAP["ruby"]='$HOME/.rbenv $HOME/.gem'
+CONFIG_MAP["php"]='$HOME/.composer'
+CONFIG_MAP["dart"]='$HOME/.pub-cache $HOME/.dart $HOME/.dart-tool'
+CONFIG_MAP["swift"]='$HOME/.swiftpm'
+CONFIG_MAP["julia"]='$HOME/.julia $HOME/.juliaup'
+CONFIG_MAP["haskell"]='$HOME/.ghcup $HOME/.cabal $HOME/.stack'
+CONFIG_MAP["scala"]='$HOME/.sbt $HOME/.coursier $HOME/.cache/coursier'
+CONFIG_MAP["nim"]='$HOME/.nimble $HOME/.choosenim'
+CONFIG_MAP["groovy"]='$HOME/.groovy'
+CONFIG_MAP["zig"]='/usr/local/zig-linux'
+# Note: leading /usr/local paths are absolute and will require sudo to remove
 
 # ================================================================
 # End of definitions.sh

@@ -11,10 +11,12 @@
 |---------|-------|--------|
 | v2.2 | Frameworks, GUI sync, CachyOS | ✅ Shipped |
 | v2.2.1 | Multi-distro pkg_install refactor (definitions.sh) | ✅ Shipped (commit 4702b04) |
-| v2.3 | Uninstall, admin-free mode, .bashrc aliases, ARM/Silicon | Next |
-| v2.4 | Dynamic version from config.json | Planned |
-| v2.5 | Profile JSON export/import | Planned |
-| v2.6 | Update Manager | Planned |
+| v2.3.0 | Uninstall support (Phase 1) — helpers, dispatcher, action menu, top 4 complex uninstallers | ✅ Shipped |
+| v2.3.x | Uninstall Phase 2 — remaining complex uninstallers, profile-based uninstall, codeready.ps1 + scanner.rs (GUI) integration | Next |
+| v2.4 | Admin/sudo-free mode, .bashrc alias polish, ARM/Silicon | Planned |
+| v2.5 | Dynamic version from config.json | Planned |
+| v2.6 | Profile JSON export/import | Planned |
+| v2.7 | Update Manager | Planned |
 | v3.0 | Platform Evolution, Docker, CI/CD | Planned |
 
 ---
@@ -26,7 +28,7 @@
 | 1 | ~~**CRITICAL: pkg_install multi-distro** — codeready.sh install functions currently only use `apt`. Must support `pacman -S` (Arch/CachyOS), `dnf install` (Fedora/RHEL), `zypper install` (openSUSE), `brew install` (macOS) for ALL languages, IDEs, tools.~~ | ~~Critical~~ | ✅ **Done (v2.2.1)** — `definitions.sh` + `install_from_map`. New coverage: Cursor/Windsurf/Sublime AUR on Arch, Crystal on dnf/zypper, Racket/Ada/Neovim/Vim/Emacs on zypper. |
 | 2 | **Flutter/Dart on Arch** — not in pacman repos, needs AUR (yay/paru) or snap/flatpak or git clone from flutter.dev SDK. Add AUR helper detection + install. | High | Partial (`aur_install` exists; add `flutter` to `AUR_MAP` for auto-fallback) |
 | 3 | SSH remote integration | High | Designed, not wired |
-| 4 | Uninstall support | High | Not started |
+| 4 | ~~Uninstall support~~ | ~~High~~ | ✅ **Phase 1 done (v2.3.0)** — Menu + dispatcher + rust/nodejs/kotlin/java. Phase 2 remaining: other complex uninstallers, profile-based uninstall, ps1/scanner.rs |
 | 5 | Language selection at startup (EN/TR) | Medium | GUI done, terminal not |
 | 6 | Docker sudo-free + Desktop | Medium | Not started |
 | 7 | Profile JSON export/import | Medium | Not started |

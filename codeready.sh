@@ -13,7 +13,7 @@ if ((BASH_VERSINFO[0] < 4)); then
     exit 1
 fi
 
-VERSION="2.2.0"
+VERSION="2.3.0"
 LOG_FILE="$HOME/codeready_install.log"
 INSTALLED=()
 FAILED=()
@@ -349,6 +349,127 @@ install_from_map() {
 
 # Check if a command already exists — skip if installed
 is_cmd() { command -v "$1" &>/dev/null; }
+
+# ================================================================
+# UNINSTALL HELPERS
+# ================================================================
+
+# Generic uninstaller (symmetric to pkg_install)
+pkg_uninstall() {
+    local name="$1"; shift
+    step "Removing $name..."
+    if eval "$@" &>>"$LOG_FILE" 2>&1; then
+        ok "$name removed."
+        return 0
+    else
+        fail "$name (removal)"
+        return 1
+    fi
+}
+
+# Uninstall via native package manager using PKG_MAP / BREW_MAP lookup.
+# Returns 0 on success, 1 if no mapping found.
+uninstall_native() {
+    local key="$1" display_name="$2"
+
+    if [[ "$PKG" == "brew" ]]; then
+        local brew_arg="${BREW_MAP[$key]:-}"
+        [[ -z "$brew_arg" ]] && return 1
+        # brew uninstall doesn't take --cask/formula flags the same way
+        # but "brew uninstall <name>" works for both. Strip the --cask flag.
+        local name_only="${brew_arg#--cask }"
+        pkg_uninstall "$display_name" "brew uninstall $name_only"
+        return $?
+    fi
+
+    local pkgs="${PKG_MAP[${key}:${PKG}]:-}"
+    [[ -z "$pkgs" ]] && return 1
+
+    case "$PKG" in
+        apt)    pkg_uninstall "$display_name" "sudo apt remove -y $pkgs" ;;
+        dnf)    pkg_uninstall "$display_name" "sudo dnf remove -y $pkgs" ;;
+        pacman) pkg_uninstall "$display_name" "sudo pacman -Rns --noconfirm $pkgs" ;;
+        zypper) pkg_uninstall "$display_name" "sudo zypper remove -y $pkgs" ;;
+        apk)    pkg_uninstall "$display_name" "sudo apk del $pkgs" ;;
+        xbps)   pkg_uninstall "$display_name" "sudo xbps-remove -y $pkgs" ;;
+        *)      return 1 ;;
+    esac
+    return $?
+}
+
+# Try native uninstall; if not installed via native, tell user other sources
+# to check (flatpak/snap/AUR). Uninstall does not auto-cascade like install
+# because we cannot always tell which source the package came from.
+uninstall_from_map() {
+    local key="$1" display_name="$2"
+
+    if uninstall_native "$key" "$display_name"; then
+        return 0
+    fi
+
+    # Not in native map — inform user of alternate sources
+    local alternates=()
+    [[ -n "${FLATPAK_MAP[$key]:-}" ]] && alternates+=("flatpak uninstall ${FLATPAK_MAP[$key]}")
+    [[ -n "${SNAP_MAP[$key]:-}"    ]] && alternates+=("sudo snap remove ${SNAP_MAP[$key]}")
+    [[ -n "${AUR_MAP[$key]:-}"     ]] && alternates+=("<aur-helper> -R ${AUR_MAP[$key]}")
+
+    if ((${#alternates[@]} > 0)); then
+        warn "$display_name not in native package map for $PKG."
+        info "If installed via alternate source, try:"
+        for cmd in "${alternates[@]}"; do
+            info "  $cmd"
+        done
+    else
+        warn "$display_name: no known removal method for $PKG."
+    fi
+    fail "$display_name (no native mapping)"
+    return 1
+}
+
+# Interactive removal of user-space config directories (~/.cargo, ~/.nvm, etc.)
+# Reads CONFIG_MAP[$key], expands $HOME, prompts once before touching anything.
+remove_user_configs() {
+    local key="$1" display_name="$2"
+    local raw="${CONFIG_MAP[$key]:-}"
+    [[ -z "$raw" ]] && return 0
+
+    # Expand $HOME in the config paths (raw is single-quoted in the map)
+    local expanded_paths=()
+    local p
+    for p in $raw; do
+        expanded_paths+=("${p/\$HOME/$HOME}")
+    done
+
+    # Filter to only paths that actually exist
+    local existing=()
+    for p in "${expanded_paths[@]}"; do
+        [[ -e "$p" ]] && existing+=("$p")
+    done
+
+    if ((${#existing[@]} == 0)); then
+        return 0
+    fi
+
+    echo "" >&2
+    echo -e "  ${YELLOW}Config files found for $display_name:${NC}" >&2
+    for p in "${existing[@]}"; do
+        echo -e "    ${GRAY}- $p${NC}" >&2
+    done
+    echo "" >&2
+    read -rp "  Remove these config files too? [y/N]: " cfg_choice
+    if [[ "$cfg_choice" == "y" || "$cfg_choice" == "Y" ]]; then
+        for p in "${existing[@]}"; do
+            step "Removing $p..."
+            if [[ "$p" == /usr/* || "$p" == /opt/* || "$p" == /etc/* ]]; then
+                sudo rm -rf "$p" &>>"$LOG_FILE" && ok "Removed $p" || fail "Remove $p"
+            else
+                rm -rf "$p" &>>"$LOG_FILE" && ok "Removed $p" || fail "Remove $p"
+            fi
+        done
+    else
+        info "Config files kept."
+    fi
+}
 
 skip_installed() {
     local name="$1" cmd="$2"
@@ -1174,6 +1295,329 @@ install_framework() {
 }
 
 # ================================================================
+# UNINSTALL FUNCTIONS
+# ================================================================
+
+# --- Complex uninstallers for external installers ---------------
+
+uninstall_rust() {
+    if ! is_cmd rustc && ! is_cmd rustup && [[ ! -d "$HOME/.cargo" && ! -d "$HOME/.rustup" ]]; then
+        info "Rust not installed."
+        return
+    fi
+    # rustup ships its own self-uninstall which cleans ~/.cargo and ~/.rustup
+    if is_cmd rustup; then
+        step "Removing Rust via rustup..."
+        rustup self uninstall -y &>>"$LOG_FILE" && ok "Rust removed." || fail "Rust (rustup self uninstall)"
+        # rustup already removes ~/.cargo and ~/.rustup, so config prompt not needed
+        return
+    fi
+    # No rustup — fall back to native uninstall + config prompt
+    uninstall_native "rust" "Rust"
+    remove_user_configs "rust" "Rust"
+}
+
+uninstall_nodejs() {
+    if ! is_cmd node && [[ ! -d "$HOME/.nvm" ]]; then
+        info "Node.js not installed."
+        return
+    fi
+    # NVM-based uninstall
+    if [[ -s "$HOME/.nvm/nvm.sh" ]]; then
+        step "Removing Node.js via nvm..."
+        # nvm has no self-uninstall — just remove its directory
+        rm -rf "$HOME/.nvm" &>>"$LOG_FILE" && ok "nvm removed."
+        # Also remove nvm lines from shell rc files
+        for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+            [[ -f "$rc" ]] && sed -i '/NVM_DIR\|nvm.sh\|bash_completion/d' "$rc" 2>>"$LOG_FILE"
+        done
+        info "nvm lines removed from shell rc files."
+    fi
+    # Try native uninstall as well (some distros install node via pkg manager)
+    if is_cmd node && [[ -z "${NVM_DIR:-}" ]]; then
+        # PKG_MAP doesn't have "nodejs" but distros install as "nodejs" or "node"
+        case "$PKG" in
+            apt)    pkg_uninstall "Node.js" "sudo apt remove -y nodejs npm" ;;
+            dnf)    pkg_uninstall "Node.js" "sudo dnf remove -y nodejs npm" ;;
+            pacman) pkg_uninstall "Node.js" "sudo pacman -Rns --noconfirm nodejs npm" ;;
+            zypper) pkg_uninstall "Node.js" "sudo zypper remove -y nodejs npm" ;;
+            brew)   pkg_uninstall "Node.js" "brew uninstall node" ;;
+        esac
+    fi
+    remove_user_configs "nodejs" "Node.js"
+}
+
+uninstall_kotlin() {
+    if ! is_cmd kotlin && [[ ! -d "$HOME/.sdkman" ]]; then
+        info "Kotlin not installed."
+        return
+    fi
+    # SDKMAN-based uninstall
+    if [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && is_cmd sdk 2>/dev/null; then
+        step "Removing Kotlin via SDKMAN..."
+        # shellcheck disable=SC1091
+        source "$HOME/.sdkman/bin/sdkman-init.sh"
+        sdk uninstall kotlin &>>"$LOG_FILE" && ok "Kotlin removed via SDKMAN."
+    fi
+    # Native fallback
+    case "$PKG" in
+        brew)   is_cmd kotlin && pkg_uninstall "Kotlin" "brew uninstall kotlin" ;;
+        pacman) is_cmd kotlin && pkg_uninstall "Kotlin" "sudo pacman -Rns --noconfirm kotlin" ;;
+    esac
+    # Ask about full SDKMAN removal (which also affects Groovy, Scala, etc.)
+    if [[ -d "$HOME/.sdkman" ]]; then
+        echo "" >&2
+        echo -e "  ${YELLOW}SDKMAN directory exists: $HOME/.sdkman${NC}" >&2
+        echo -e "  ${GRAY}(Warning: this is shared with Groovy, Scala, Java-via-SDKMAN)${NC}" >&2
+        read -rp "  Remove entire SDKMAN? [y/N]: " sdk_choice
+        if [[ "$sdk_choice" == "y" || "$sdk_choice" == "Y" ]]; then
+            rm -rf "$HOME/.sdkman" && ok "SDKMAN removed."
+            for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+                [[ -f "$rc" ]] && sed -i '/SDKMAN_DIR\|sdkman-init.sh/d' "$rc" 2>>"$LOG_FILE"
+            done
+        fi
+    fi
+}
+
+uninstall_java() {
+    if ! is_cmd java && [[ ! -d "$HOME/.jenv" ]]; then
+        info "Java not installed."
+        return
+    fi
+    # jenv cleanup
+    if [[ -d "$HOME/.jenv" ]]; then
+        step "Removing jenv..."
+        rm -rf "$HOME/.jenv"
+        for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+            [[ -f "$rc" ]] && sed -i '/jenv/d' "$rc" 2>>"$LOG_FILE"
+        done
+        ok "jenv removed."
+    fi
+    # Native JDK uninstall — try common package names per distro
+    case "$PKG" in
+        apt)
+            local java_pkgs
+            java_pkgs=$(dpkg -l 'openjdk-*-jdk' 2>/dev/null | awk '/^ii/ {print $2}' | tr '\n' ' ')
+            [[ -n "$java_pkgs" ]] && pkg_uninstall "Java (JDK)" "sudo apt remove -y $java_pkgs"
+            ;;
+        dnf)
+            pkg_uninstall "Java (JDK)" "sudo dnf remove -y 'java-*-openjdk-devel' 'java-*-openjdk'"
+            ;;
+        pacman)
+            local jdk_pkgs
+            jdk_pkgs=$(pacman -Qq 2>/dev/null | grep -E '^jdk-?[0-9]+-openjdk$|^jre-?[0-9]+-openjdk$' | tr '\n' ' ')
+            [[ -n "$jdk_pkgs" ]] && pkg_uninstall "Java (JDK)" "sudo pacman -Rns --noconfirm $jdk_pkgs"
+            ;;
+        zypper)
+            pkg_uninstall "Java (JDK)" "sudo zypper remove -y 'java-*-openjdk-devel' 'java-*-openjdk'"
+            ;;
+        brew)
+            is_cmd java && pkg_uninstall "Java (JDK)" "brew uninstall --cask temurin"
+            ;;
+    esac
+    remove_user_configs "java" "Java"
+}
+
+# --- Uninstall dispatcher ---------------------------------------
+# Routes a package key to the right uninstall function.
+# For simple map-based packages, uses uninstall_from_map + config prompt.
+# For complex packages, delegates to a dedicated uninstall_* function.
+uninstall_package() {
+    local key="$1" display_name="${2:-$1}"
+
+    case "$key" in
+        # --- Complex external installers (Phase 1: implemented) ---
+        rust)     uninstall_rust ;;
+        nodejs)   uninstall_nodejs ;;
+        kotlin)   uninstall_kotlin ;;
+        java)     uninstall_java ;;
+
+        # --- Complex external installers (Phase 2: deferred) ---
+        python|php|ruby|go|dart|swift|julia|haskell|scala|nim|v|gleam|typescript|zig|mojo|wasm|solidity|groovy|carbon|csharp)
+            warn "$display_name uninstall not yet implemented (Phase 2)."
+            info "Manual removal hints:"
+            case "$key" in
+                python)  info "  pyenv: rm -rf ~/.pyenv; system Python: $PKG remove python3" ;;
+                go)      info "  rm -rf /usr/local/go ~/go; then $PKG remove go" ;;
+                haskell) info "  ghcup nuke; or rm -rf ~/.ghcup ~/.cabal ~/.stack" ;;
+                julia)   info "  juliaup self uninstall" ;;
+                scala)   info "  cs uninstall scala; rm -rf ~/.sbt ~/.coursier" ;;
+                nim)     info "  rm -rf ~/.choosenim ~/.nimble" ;;
+                dart)    info "  $PKG remove dart; rm -rf ~/.pub-cache ~/.dart-tool" ;;
+                swift)   info "  rm -rf /opt/swift or /usr/local/swift" ;;
+                typescript) info "  npm uninstall -g typescript" ;;
+                *)       info "  Check installer docs for $display_name" ;;
+            esac
+            ;;
+
+        # --- Simple map-based packages (native uninstall) ---
+        *)
+            uninstall_from_map "$key" "$display_name"
+            # Prompt for config removal if CONFIG_MAP has entry
+            [[ -n "${CONFIG_MAP[$key]:-}" ]] && remove_user_configs "$key" "$display_name"
+            ;;
+    esac
+}
+
+# --- Detect whether a key's package is currently installed ------
+# Maps a package key to a detection command and returns 0 if installed.
+# Simple probe — used only by uninstall menu.
+_installed_marker() {
+    local key="$1"
+    local cmd
+    case "$key" in
+        # Languages
+        python)      cmd="python3" ;;
+        nodejs)      cmd="node" ;;
+        java)        cmd="java" ;;
+        csharp)      cmd="dotnet" ;;
+        cpp)         cmd="gcc" ;;
+        go)          cmd="go" ;;
+        rust)        cmd="rustc" ;;
+        php)         cmd="php" ;;
+        ruby)        cmd="ruby" ;;
+        kotlin)      cmd="kotlin" ;;
+        dart)        cmd="dart" ;;
+        swift)       cmd="swift" ;;
+        zig)         cmd="zig" ;;
+        typescript)  cmd="tsc" ;;
+        elixir)      cmd="elixir" ;;
+        scala)       cmd="scala" ;;
+        julia)       cmd="julia" ;;
+        r)           cmd="R" ;;
+        lua)         cmd="lua" ;;
+        haskell)     cmd="ghc" ;;
+        perl)        cmd="perl" ;;
+        erlang)      cmd="erl" ;;
+        ocaml)       cmd="ocaml" ;;
+        fortran)     cmd="gfortran" ;;
+        d)           cmd="ldc2" ;;
+        nim)         cmd="nim" ;;
+        crystal)     cmd="crystal" ;;
+        v)           cmd="v" ;;
+        gleam)       cmd="gleam" ;;
+        solidity)    cmd="solc" ;;
+        groovy)      cmd="groovy" ;;
+        ada)         cmd="gnat" ;;
+        cobol)       cmd="cobc" ;;
+        lisp)        cmd="sbcl" ;;
+        racket)      cmd="racket" ;;
+        objc)        is_cmd gobjc || is_cmd clang; return $? ;;
+        mojo|wasm|carbon) return 1 ;;  # No single detection command
+        # IDEs
+        vscode)      cmd="code" ;;
+        vscodium)    cmd="codium" ;;
+        cursor)      cmd="cursor" ;;
+        zed)         cmd="zed" ;;
+        sublime)     cmd="subl" ;;
+        vim)         cmd="nvim" ;;
+        classicvim)  cmd="vim" ;;
+        emacs)       cmd="emacs" ;;
+        windsurf)    cmd="windsurf" ;;
+        antigravity) cmd="antigravity" ;;
+        intellij)    is_cmd idea || is_cmd intellij-idea-community; return $? ;;
+        pycharm)     cmd="pycharm" ;;
+        webstorm)    cmd="webstorm" ;;
+        goland)      cmd="goland" ;;
+        clion)       cmd="clion" ;;
+        rider)       cmd="rider" ;;
+        rustrover)   cmd="rustrover" ;;
+        fleet)       cmd="fleet" ;;
+        eclipse)     cmd="eclipse" ;;
+        netbeans)    cmd="netbeans" ;;
+        android)     cmd="studio" ;;
+        notepadpp)   return 1 ;;  # Windows only
+        # Tools
+        git)         cmd="git" ;;
+        docker)      cmd="docker" ;;
+        postman)     cmd="postman" ;;
+        cmake)       cmd="cmake" ;;
+        gh)          cmd="gh" ;;
+        pyenv)       cmd="pyenv" ;;
+        *)           cmd="$key" ;;
+    esac
+    is_cmd "$cmd"
+}
+
+# --- Interactive uninstall selection menu -----------------------
+# Shows currently-installed packages and lets user pick which to remove.
+show_uninstall_menu() {
+    # Combine all category keys/labels for lookup
+    local -a all_keys=("${LANG_KEYS[@]}" "${IDE_KEYS[@]}" "${TOOL_KEYS[@]}")
+    local -a all_labels=("${LANG_LABELS[@]}" "${IDE_LABELS[@]}" "${TOOL_LABELS[@]}")
+
+    # Filter to installed ones only
+    local -a installed_keys=() installed_labels=()
+    local i
+    for i in "${!all_keys[@]}"; do
+        if _installed_marker "${all_keys[$i]}"; then
+            installed_keys+=("${all_keys[$i]}")
+            installed_labels+=("${all_labels[$i]}")
+        fi
+    done
+
+    if ((${#installed_keys[@]} == 0)); then
+        warn "No installed packages detected. Nothing to uninstall."
+        return 1
+    fi
+
+    section "Uninstall — Select Packages" >&2
+    echo "" >&2
+    for i in "${!installed_keys[@]}"; do
+        printf "  ${BOLD}[%2d]${NC} %s\n" "$((i+1))" "${installed_labels[$i]}" >&2
+    done
+    echo "" >&2
+    echo -e "  ${GRAY}Space-separated numbers to select multiple (e.g. 1 3 5), or empty to cancel${NC}" >&2
+    echo "" >&2
+    read -rp "  Uninstall which? " nums
+
+    [[ -z "$nums" ]] && { info "Uninstall cancelled."; return 1; }
+
+    # Confirm
+    echo "" >&2
+    echo -e "  ${YELLOW}The following will be uninstalled:${NC}" >&2
+    local n
+    for n in $nums; do
+        [[ ! "$n" =~ ^[0-9]+$ ]] && continue
+        local idx=$((n-1))
+        (( idx < 0 || idx >= ${#installed_keys[@]} )) && continue
+        echo -e "    ${GRAY}- ${installed_labels[$idx]}${NC}" >&2
+    done
+    echo "" >&2
+    read -rp "  Proceed with uninstall? [y/N]: " confirm
+    [[ "$confirm" != "y" && "$confirm" != "Y" ]] && { info "Uninstall cancelled."; return 1; }
+    echo "" >&2
+
+    # Execute
+    for n in $nums; do
+        [[ ! "$n" =~ ^[0-9]+$ ]] && continue
+        local idx=$((n-1))
+        (( idx < 0 || idx >= ${#installed_keys[@]} )) && continue
+        local key="${installed_keys[$idx]}"
+        local label="${installed_labels[$idx]}"
+        # Extract just the name (before " - ")
+        local display_name="${label%% - *}"
+        section "Uninstalling: $display_name" >&2
+        uninstall_package "$key" "$display_name"
+        echo "" >&2
+    done
+
+    return 0
+}
+
+# --- Action menu (Install/Uninstall/Exit) -----------------------
+show_action_menu() {
+    section "What would you like to do?" >&2
+    echo "" >&2
+    echo -e "  ${BOLD}[1]${NC}  Install    ${GRAY}- Set up development environment${NC}" >&2
+    echo -e "  ${BOLD}[2]${NC}  Uninstall  ${GRAY}- Remove installed packages${NC}" >&2
+    echo -e "  ${BOLD}[3]${NC}  Exit${NC}" >&2
+    echo "" >&2
+    read -rp "  Choose [1/2/3]: " action_choice
+    echo "$action_choice"
+}
+
+# ================================================================
 # PROFILES
 # ================================================================
 show_profile_menu() {
@@ -1549,7 +1993,7 @@ main() {
     # System scan - show what's installed
     system_scan
 
-    # Language, IDE, Tool keys
+    # Language, IDE, Tool keys (defined before action selector so uninstall menu can see them)
     local LANG_KEYS=("python" "nodejs" "java" "csharp" "cpp" "go" "rust" "php" "ruby" "kotlin" "dart" "swift" "zig" "mojo" "wasm" "typescript" "elixir" "scala" "julia" "r" "lua" "haskell" "perl" "erlang" "ocaml" "fortran" "d" "nim" "crystal" "v" "gleam" "carbon" "solidity" "groovy" "ada" "cobol" "lisp" "racket" "objc")
     local LANG_LABELS=("Python - General purpose, AI/ML" "Node.js - JavaScript/TypeScript runtime" "Java (JDK) - Enterprise, Android" "C# / .NET SDK - Microsoft ecosystem" "C/C++ - Systems programming" "Go - Cloud, microservices" "Rust - Memory safety, systems" "PHP - Web, CMS" "Ruby - Web, scripting" "Kotlin - Android, JVM" "Dart/Flutter - Mobile, web UI" "Swift - Apple ecosystem" "Zig - Next-gen systems, C interop" "Mojo - AI/GPU programming" "WebAssembly (WASI) - Portable binary" "TypeScript - Typed JavaScript" "Elixir - Functional, concurrent" "Scala - JVM functional/OOP" "Julia - Scientific computing" "R - Statistics, data science" "Lua - Scripting, game engines" "Haskell - Pure functional, fintech" "Perl - Text processing, sysadmin" "Erlang - Telecom, distributed systems" "OCaml - Fintech, compilers" "Fortran - Scientific computing, HPC" "D - Systems programming, C++ alt" "Nim - Python-like syntax, compiled" "Crystal - Ruby-like, compiled" "V - Simple systems language" "Gleam - Type-safe BEAM language" "Carbon - Experimental C++ successor" "Solidity - Ethereum smart contracts" "Groovy - JVM scripting, Gradle" "Ada - Safety-critical systems" "COBOL - Banking, legacy systems" "Common Lisp (SBCL) - AI, macros" "Racket - PL research, education" "Objective-C - Legacy Apple dev")
 
@@ -1561,6 +2005,28 @@ main() {
 
     local FW_KEYS=("npm" "yarn" "pnpm" "bun" "venvstudio" "uv" "poetry" "pipx" "conda" "react" "nextjs" "vue" "nuxt" "angular" "svelte" "vite" "astro" "express" "nest" "remix" "django" "flask" "fastapi" "streamlit" "tailwind" "bootstrap" "reactnative" "expo" "ionic" "electron" "tauri" "cargo-watch" "wasm-pack" "blazor" "maui" "terraform" "kubectl" "helm")
     local FW_LABELS=("npm (latest) - Node default pkg manager" "Yarn - Fast JS pkg manager" "pnpm - Disk-efficient JS pkg manager" "Bun - Ultra-fast JS runtime" "VenvStudio - GUI venv manager (PySide6)" "uv - Ultra-fast Python pkg manager (Rust)" "Poetry - Python dependency mgmt" "pipx - Isolated Python CLI tools" "Miniconda - Python/R data science" "React (create-react-app) - Facebook UI" "Next.js - React fullstack framework" "Vue CLI - Progressive JS framework" "Nuxt (nuxi) - Vue fullstack framework" "Angular CLI - Google enterprise web" "SvelteKit - Lightweight reactive" "Vite - Next-gen build tool" "Astro - Content-focused web framework" "Express.js - Minimal Node.js web" "NestJS CLI - Progressive Node.js" "Remix - Full stack web framework" "Django - Python web framework" "Flask - Lightweight Python web" "FastAPI - Modern async Python API" "Streamlit - Python data app" "Tailwind CSS - Utility-first CSS" "Bootstrap - Popular CSS framework" "React Native CLI - Cross-platform mobile" "Expo CLI - React Native toolchain" "Ionic CLI - Cross-platform mobile" "Electron Forge - Desktop apps (web tech)" "Tauri CLI - Lightweight desktop (Rust)" "cargo-watch - Rust auto-rebuild" "wasm-pack - Rust to WebAssembly" "Blazor - C# web UI (in .NET SDK)" ".NET MAUI - Cross-platform .NET UI" "Terraform - Infrastructure as code" "kubectl - Kubernetes CLI" "Helm - Kubernetes pkg manager")
+
+    # --- Action selector ---
+    local action
+    action=$(show_action_menu)
+    case "$action" in
+        2)
+            # Uninstall flow
+            show_uninstall_menu
+            section "Uninstall Summary"
+            echo -e "  ${GREEN}✓ ${#INSTALLED[@]} operations completed${NC}"
+            [[ ${#FAILED[@]} -gt 0 ]] && echo -e "  ${RED}✗ ${#FAILED[@]} failed:${NC} ${FAILED[*]}"
+            info "Log: $LOG_FILE"
+            exit 0
+            ;;
+        3|q|Q|"")
+            info "Exited."
+            exit 0
+            ;;
+        1|*)
+            # Continue with install flow (default)
+            ;;
+    esac
 
     local sel_langs=() sel_ides=() sel_tools=() sel_fws=()
 
