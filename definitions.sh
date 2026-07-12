@@ -287,6 +287,7 @@ CONFIG_MAP["haskell"]='$HOME/.ghcup $HOME/.cabal $HOME/.stack'
 CONFIG_MAP["scala"]='$HOME/.sbt $HOME/.coursier $HOME/.cache/coursier'
 CONFIG_MAP["nim"]='$HOME/.nimble $HOME/.choosenim'
 CONFIG_MAP["groovy"]='$HOME/.groovy'
+CONFIG_MAP["csharp"]='$HOME/.dotnet $HOME/.nuget'
 CONFIG_MAP["zig"]='/usr/local/zig-linux'
 # Note: leading /usr/local paths are absolute and will require sudo to remove
 

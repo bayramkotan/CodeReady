@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ================================================================
-# CodeReady v2.2.0
+# CodeReady v2.3.1
 # Developer Environment Setup Tool (Linux/macOS)
 # https://github.com/bayramkotan/CodeReady
 # ================================================================
@@ -13,7 +13,7 @@ if ((BASH_VERSINFO[0] < 4)); then
     exit 1
 fi
 
-VERSION="2.3.0"
+VERSION="2.3.1"
 LOG_FILE="$HOME/codeready_install.log"
 INSTALLED=()
 FAILED=()
@@ -1418,6 +1418,443 @@ uninstall_java() {
     remove_user_configs "java" "Java"
 }
 
+# --- Complex uninstallers (Phase 2, v2.3.1) ----------------------
+
+uninstall_python() {
+    # System Python is critical on Linux — never remove it natively.
+    if [[ "$PKG" == "brew" ]]; then
+        local py_formulas
+        py_formulas=$(brew list --formula 2>/dev/null | grep '^python@' | tr '\n' ' ')
+        if [[ -n "$py_formulas" ]]; then
+            pkg_uninstall "Python (Homebrew)" "brew uninstall $py_formulas"
+        else
+            info "Python not installed via Homebrew."
+        fi
+    else
+        warn "System Python is required by the OS — native removal skipped for safety."
+    fi
+    # pyenv removal (user-space, safe)
+    if [[ -d "$HOME/.pyenv" ]]; then
+        step "Removing pyenv..."
+        rm -rf "$HOME/.pyenv" &>>"$LOG_FILE" && ok "pyenv removed." || fail "pyenv"
+        for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+            [[ -f "$rc" ]] && sed -i '/PYENV_ROOT\|pyenv init\|\.pyenv/d' "$rc" 2>>"$LOG_FILE"
+        done
+        info "pyenv lines removed from shell rc files."
+    fi
+    remove_user_configs "python" "Python"
+}
+
+uninstall_php() {
+    if ! is_cmd php; then
+        info "PHP not installed."
+        return
+    fi
+    case "$PKG" in
+        brew)
+            pkg_uninstall "PHP" "brew uninstall php composer"
+            ;;
+        apt)
+            local php_pkgs
+            php_pkgs=$(dpkg -l 'php*' 2>/dev/null | awk '/^ii/ {print $2}' | tr '\n' ' ')
+            [[ -n "$php_pkgs" ]] && pkg_uninstall "PHP" "sudo apt remove -y $php_pkgs"
+            ;;
+        dnf)    pkg_uninstall "PHP" "sudo dnf remove -y php php-cli php-common composer" ;;
+        pacman) pkg_uninstall "PHP" "sudo pacman -Rns --noconfirm php composer" ;;
+        zypper) pkg_uninstall "PHP" "sudo zypper remove -y php8 composer || sudo zypper remove -y php7 composer" ;;
+    esac
+    remove_user_configs "php" "PHP"
+}
+
+uninstall_ruby() {
+    if ! is_cmd ruby && [[ ! -d "$HOME/.rbenv" ]]; then
+        info "Ruby not installed."
+        return
+    fi
+    # rbenv cleanup (user-space)
+    if [[ -d "$HOME/.rbenv" ]]; then
+        step "Removing rbenv..."
+        rm -rf "$HOME/.rbenv" &>>"$LOG_FILE" && ok "rbenv removed." || fail "rbenv"
+        for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+            [[ -f "$rc" ]] && sed -i '/rbenv/d' "$rc" 2>>"$LOG_FILE"
+        done
+        info "rbenv lines removed from shell rc files."
+    fi
+    if is_cmd ruby; then
+        case "$PKG" in
+            brew)   pkg_uninstall "Ruby" "brew uninstall ruby" ;;
+            apt)    pkg_uninstall "Ruby" "sudo apt remove -y ruby ruby-dev rubygems" ;;
+            dnf)    pkg_uninstall "Ruby" "sudo dnf remove -y ruby ruby-devel rubygems" ;;
+            pacman) pkg_uninstall "Ruby" "sudo pacman -Rns --noconfirm ruby rubygems" ;;
+            zypper) pkg_uninstall "Ruby" "sudo zypper remove -y ruby" ;;
+        esac
+    fi
+    remove_user_configs "ruby" "Ruby"
+}
+
+uninstall_go() {
+    if ! is_cmd go && [[ ! -d /usr/local/go ]]; then
+        info "Go not installed."
+        return
+    fi
+    # Official tarball install (mirror of install_go)
+    if [[ -d /usr/local/go ]]; then
+        step "Removing Go from /usr/local/go..."
+        sudo rm -rf /usr/local/go &>>"$LOG_FILE" && ok "Go removed." || fail "Go (/usr/local/go)"
+        for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+            [[ -f "$rc" ]] && sed -i '\|/usr/local/go/bin|d' "$rc" 2>>"$LOG_FILE"
+        done
+        info "Go PATH lines removed from shell rc files."
+    fi
+    # Native fallback (brew / distro package installs)
+    if is_cmd go; then
+        case "$PKG" in
+            brew)   pkg_uninstall "Go" "brew uninstall go" ;;
+            apt)    pkg_uninstall "Go" "sudo apt remove -y golang-go golang" ;;
+            dnf)    pkg_uninstall "Go" "sudo dnf remove -y golang" ;;
+            pacman) pkg_uninstall "Go" "sudo pacman -Rns --noconfirm go" ;;
+            zypper) pkg_uninstall "Go" "sudo zypper remove -y go" ;;
+        esac
+    fi
+    remove_user_configs "go" "Go"
+}
+
+uninstall_dart() {
+    if ! is_cmd flutter && ! is_cmd dart; then
+        info "Dart/Flutter not installed."
+        return
+    fi
+    # Snap install (mirror of install_dart fallback)
+    if command -v snap &>/dev/null && snap list flutter &>/dev/null; then
+        pkg_uninstall "Flutter" "sudo snap remove flutter"
+    fi
+    case "$PKG" in
+        brew)
+            is_cmd flutter && pkg_uninstall "Flutter" "brew uninstall --cask flutter"
+            is_cmd dart    && pkg_uninstall "Dart SDK" "brew uninstall dart-sdk"
+            ;;
+        pacman)
+            # AUR install — plain pacman can remove AUR packages
+            if pacman -Qq flutter &>/dev/null; then
+                pkg_uninstall "Flutter (AUR)" "sudo pacman -Rns --noconfirm flutter"
+            fi
+            ;;
+    esac
+    remove_user_configs "dart" "Dart/Flutter"
+}
+
+uninstall_swift() {
+    if ! is_cmd swift && [[ ! -d /opt/swift && ! -d /usr/local/swift ]]; then
+        info "Swift not installed."
+        return
+    fi
+    if [[ "$PKG" == "brew" ]]; then
+        info "Swift on macOS ships with Xcode — remove Xcode/CLT manually if desired."
+        return
+    fi
+    if [[ "$PKG" == "apt" ]] && is_cmd swift; then
+        pkg_uninstall "Swift" "sudo apt remove -y swift || sudo apt remove -y swiftlang"
+    fi
+    # Manual tarball locations
+    local d
+    for d in /opt/swift /usr/local/swift; do
+        if [[ -d "$d" ]]; then
+            step "Removing $d..."
+            sudo rm -rf "$d" &>>"$LOG_FILE" && ok "Removed $d" || fail "Remove $d"
+        fi
+    done
+    remove_user_configs "swift" "Swift"
+}
+
+uninstall_julia() {
+    if ! is_cmd julia && [[ ! -d "$HOME/.juliaup" ]]; then
+        info "Julia not installed."
+        return
+    fi
+    # juliaup-based install (mirror of install_julia)
+    if [[ -d "$HOME/.juliaup" ]]; then
+        step "Removing Julia (juliaup)..."
+        rm -rf "$HOME/.juliaup" &>>"$LOG_FILE" && ok "juliaup removed." || fail "juliaup"
+        for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+            [[ -f "$rc" ]] && sed -i '/juliaup/d' "$rc" 2>>"$LOG_FILE"
+        done
+        info "juliaup lines removed from shell rc files."
+    fi
+    if is_cmd julia; then
+        case "$PKG" in
+            brew) pkg_uninstall "Julia" "brew uninstall julia" ;;
+            *)
+                if command -v snap &>/dev/null && snap list julia &>/dev/null; then
+                    pkg_uninstall "Julia" "sudo snap remove julia"
+                fi
+                ;;
+        esac
+    fi
+    remove_user_configs "julia" "Julia"
+}
+
+uninstall_haskell() {
+    if ! is_cmd ghc && [[ ! -d "$HOME/.ghcup" ]]; then
+        info "Haskell not installed."
+        return
+    fi
+    # GHCup-based install (mirror of install_haskell)
+    if [[ -d "$HOME/.ghcup" ]]; then
+        step "Removing Haskell (GHCup)..."
+        if [[ -x "$HOME/.ghcup/bin/ghcup" ]]; then
+            "$HOME/.ghcup/bin/ghcup" nuke &>>"$LOG_FILE" 2>&1 || rm -rf "$HOME/.ghcup" &>>"$LOG_FILE"
+        else
+            rm -rf "$HOME/.ghcup" &>>"$LOG_FILE"
+        fi
+        ok "GHCup removed."
+        for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+            [[ -f "$rc" ]] && sed -i '\|ghcup/env|d' "$rc" 2>>"$LOG_FILE"
+        done
+        info "GHCup lines removed from shell rc files."
+    fi
+    # Native fallback (distro ghc package via map)
+    is_cmd ghc && uninstall_native "haskell" "Haskell (GHC)"
+    remove_user_configs "haskell" "Haskell"
+}
+
+uninstall_scala() {
+    if ! is_cmd scala && ! is_cmd cs && [[ ! -d "$HOME/.local/share/coursier" ]]; then
+        info "Scala not installed."
+        return
+    fi
+    # Coursier-based install (mirror of install_scala)
+    if is_cmd cs; then
+        step "Removing Scala via coursier..."
+        cs uninstall scala3 &>>"$LOG_FILE" 2>&1
+        cs uninstall --all &>>"$LOG_FILE" 2>&1
+        ok "Coursier-managed apps removed."
+    fi
+    if [[ -d "$HOME/.local/share/coursier" ]]; then
+        step "Removing coursier directory..."
+        rm -rf "$HOME/.local/share/coursier" &>>"$LOG_FILE" && ok "Coursier directory removed."
+        for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+            [[ -f "$rc" ]] && sed -i '\|/.local/share/coursier|d' "$rc" 2>>"$LOG_FILE"
+        done
+        info "Coursier PATH lines removed from shell rc files."
+    fi
+    # Native fallback
+    if is_cmd scala; then
+        case "$PKG" in
+            brew)   pkg_uninstall "Scala" "brew uninstall scala" ;;
+            pacman) pkg_uninstall "Scala" "sudo pacman -Rns --noconfirm scala" ;;
+        esac
+    fi
+    remove_user_configs "scala" "Scala"
+}
+
+uninstall_nim() {
+    if ! is_cmd nim && [[ ! -d "$HOME/.choosenim" && ! -d "$HOME/.nimble" ]]; then
+        info "Nim not installed."
+        return
+    fi
+    # choosenim-based install (mirror of install_nim) — these dirs ARE the install
+    if [[ -d "$HOME/.choosenim" || -d "$HOME/.nimble" ]]; then
+        step "Removing Nim (choosenim)..."
+        rm -rf "$HOME/.choosenim" "$HOME/.nimble" &>>"$LOG_FILE" && ok "choosenim + nimble removed." || fail "Nim (choosenim)"
+        for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+            [[ -f "$rc" ]] && sed -i '\|/.nimble/bin|d' "$rc" 2>>"$LOG_FILE"
+        done
+        info "Nim PATH lines removed from shell rc files."
+    fi
+    # Native fallback
+    if is_cmd nim; then
+        case "$PKG" in
+            brew)   pkg_uninstall "Nim" "brew uninstall nim" ;;
+            apt)    pkg_uninstall "Nim" "sudo apt remove -y nim" ;;
+            dnf)    pkg_uninstall "Nim" "sudo dnf remove -y nim" ;;
+            pacman) pkg_uninstall "Nim" "sudo pacman -Rns --noconfirm nim" ;;
+        esac
+    fi
+}
+
+uninstall_v() {
+    if ! is_cmd v; then
+        info "V not installed."
+        return
+    fi
+    case "$PKG" in
+        brew) pkg_uninstall "V" "brew uninstall vlang" ;;
+        *)
+            # Built from source, moved to /usr/local/bin/v (mirror of install_v)
+            if [[ -e /usr/local/bin/v ]]; then
+                step "Removing V binary..."
+                sudo rm -f /usr/local/bin/v &>>"$LOG_FILE" && ok "V removed." || fail "V"
+            fi
+            ;;
+    esac
+}
+
+uninstall_gleam() {
+    if ! is_cmd gleam; then
+        info "Gleam not installed."
+        return
+    fi
+    case "$PKG" in
+        brew)   pkg_uninstall "Gleam" "brew uninstall gleam" ;;
+        pacman)
+            if pacman -Qq gleam &>/dev/null; then
+                pkg_uninstall "Gleam" "sudo pacman -Rns --noconfirm gleam"
+            fi
+            ;;
+    esac
+    # Install-script binary locations
+    local b
+    for b in "$HOME/.local/bin/gleam" /usr/local/bin/gleam; do
+        if [[ -f "$b" ]]; then
+            step "Removing $b..."
+            if [[ "$b" == /usr/local/* ]]; then
+                sudo rm -f "$b" &>>"$LOG_FILE" && ok "Removed $b"
+            else
+                rm -f "$b" &>>"$LOG_FILE" && ok "Removed $b"
+            fi
+        fi
+    done
+}
+
+uninstall_typescript() {
+    if ! is_cmd tsc; then
+        info "TypeScript not installed."
+        return
+    fi
+    if command -v npm &>/dev/null; then
+        pkg_uninstall "TypeScript" "npm uninstall -g typescript ts-node"
+    else
+        warn "npm not found — cannot remove global TypeScript."
+        fail "TypeScript (needs npm)"
+    fi
+}
+
+uninstall_zig() {
+    if ! is_cmd zig; then
+        info "Zig not installed."
+        return
+    fi
+    # Snap install (mirror of install_zig apt path)
+    if command -v snap &>/dev/null && snap list zig &>/dev/null; then
+        pkg_uninstall "Zig" "sudo snap remove zig"
+    fi
+    # Native (brew / pacman / dnf via map)
+    uninstall_native "zig" "Zig"
+    # Official tarball install (/usr/local/zig-linux-* + symlink)
+    if compgen -G "/usr/local/zig-linux-*" > /dev/null; then
+        step "Removing Zig tarball install..."
+        sudo rm -rf /usr/local/zig-linux-* &>>"$LOG_FILE"
+        sudo rm -f /usr/local/bin/zig &>>"$LOG_FILE"
+        ok "Zig tarball install removed."
+    fi
+}
+
+uninstall_mojo() {
+    local pip_cmd=""
+    command -v pip3 &>/dev/null && pip_cmd="pip3"
+    [[ -z "$pip_cmd" ]] && command -v pip &>/dev/null && pip_cmd="pip"
+    if [[ -z "$pip_cmd" ]]; then
+        warn "pip not found — cannot remove Mojo."
+        fail "Mojo (needs pip)"
+        return
+    fi
+    if ! $pip_cmd show mojo &>/dev/null; then
+        info "Mojo not installed."
+        return
+    fi
+    step "Removing Mojo..."
+    pkg_uninstall "Mojo" "$pip_cmd uninstall -y mojo --break-system-packages 2>/dev/null || $pip_cmd uninstall -y mojo"
+}
+
+uninstall_wasm() {
+    local found=0
+    # Wasmtime (mirror of install_wasm wasmtime variant)
+    if [[ -d "$HOME/.wasmtime" ]]; then
+        step "Removing Wasmtime..."
+        rm -rf "$HOME/.wasmtime" &>>"$LOG_FILE" && ok "Wasmtime removed."
+        found=1
+    fi
+    # Wasmer (mirror of install_wasm wasmer variant)
+    if [[ -d "$HOME/.wasmer" ]]; then
+        step "Removing Wasmer..."
+        rm -rf "$HOME/.wasmer" &>>"$LOG_FILE" && ok "Wasmer removed."
+        found=1
+    fi
+    if ((found)); then
+        for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+            [[ -f "$rc" ]] && sed -i '/WASMTIME_HOME\|\.wasmtime\|WASMER_DIR\|\.wasmer/d' "$rc" 2>>"$LOG_FILE"
+        done
+        info "Wasm runtime lines removed from shell rc files."
+    fi
+    if [[ "$PKG" == "brew" ]]; then
+        is_cmd wasmtime && { pkg_uninstall "Wasmtime" "brew uninstall wasmtime"; found=1; }
+        is_cmd wasmer   && { pkg_uninstall "Wasmer" "brew uninstall wasmer"; found=1; }
+    fi
+    ((found)) || info "WebAssembly runtime not installed."
+}
+
+uninstall_solidity() {
+    if ! is_cmd solcjs && ! is_cmd solc; then
+        info "Solidity not installed."
+        return
+    fi
+    # npm global install (mirror of install_solidity)
+    if is_cmd solcjs && command -v npm &>/dev/null; then
+        pkg_uninstall "Solidity (solcjs)" "npm uninstall -g solc"
+    fi
+    if is_cmd solc; then
+        case "$PKG" in
+            brew) pkg_uninstall "Solidity" "brew uninstall solidity" ;;
+            *)
+                if command -v snap &>/dev/null && snap list solc &>/dev/null; then
+                    pkg_uninstall "Solidity" "sudo snap remove solc"
+                fi
+                ;;
+        esac
+    fi
+}
+
+uninstall_groovy() {
+    if ! is_cmd groovy && [[ ! -d "$HOME/.sdkman/candidates/groovy" ]]; then
+        info "Groovy not installed."
+        return
+    fi
+    # SDKMAN-based install — remove candidate dir directly
+    # (sdk uninstall requires an explicit version argument, dir removal is reliable)
+    if [[ -d "$HOME/.sdkman/candidates/groovy" ]]; then
+        step "Removing Groovy (SDKMAN candidate)..."
+        rm -rf "$HOME/.sdkman/candidates/groovy" &>>"$LOG_FILE" && ok "Groovy removed from SDKMAN." || fail "Groovy (SDKMAN)"
+    fi
+    [[ "$PKG" == "brew" ]] && is_cmd groovy && pkg_uninstall "Groovy" "brew uninstall groovy"
+    remove_user_configs "groovy" "Groovy"
+}
+
+uninstall_carbon() {
+    info "Carbon has no installer yet — nothing to uninstall."
+}
+
+uninstall_csharp() {
+    if ! is_cmd dotnet && [[ ! -d "$HOME/.dotnet" ]]; then
+        info ".NET SDK not installed."
+        return
+    fi
+    case "$PKG" in
+        brew)
+            pkg_uninstall ".NET SDK" "brew uninstall dotnet-sdk || brew uninstall dotnet"
+            ;;
+        apt)
+            local dotnet_pkgs
+            dotnet_pkgs=$(dpkg -l 'dotnet-sdk-*' 2>/dev/null | awk '/^ii/ {print $2}' | tr '\n' ' ')
+            [[ -n "$dotnet_pkgs" ]] && pkg_uninstall ".NET SDK" "sudo apt remove -y $dotnet_pkgs"
+            ;;
+        dnf)    pkg_uninstall ".NET SDK" "sudo dnf remove -y 'dotnet-sdk-*'" ;;
+        pacman) pkg_uninstall ".NET SDK" "sudo pacman -Rns --noconfirm dotnet-sdk" ;;
+        zypper) pkg_uninstall ".NET SDK" "sudo zypper remove -y 'dotnet-sdk-*'" ;;
+    esac
+    # dotnet-install.sh script installs into ~/.dotnet — offered via config prompt
+    remove_user_configs "csharp" ".NET SDK"
+}
+
 # --- Uninstall dispatcher ---------------------------------------
 # Routes a package key to the right uninstall function.
 # For simple map-based packages, uses uninstall_from_map + config prompt.
@@ -1432,23 +1869,27 @@ uninstall_package() {
         kotlin)   uninstall_kotlin ;;
         java)     uninstall_java ;;
 
-        # --- Complex external installers (Phase 2: deferred) ---
-        python|php|ruby|go|dart|swift|julia|haskell|scala|nim|v|gleam|typescript|zig|mojo|wasm|solidity|groovy|carbon|csharp)
-            warn "$display_name uninstall not yet implemented (Phase 2)."
-            info "Manual removal hints:"
-            case "$key" in
-                python)  info "  pyenv: rm -rf ~/.pyenv; system Python: $PKG remove python3" ;;
-                go)      info "  rm -rf /usr/local/go ~/go; then $PKG remove go" ;;
-                haskell) info "  ghcup nuke; or rm -rf ~/.ghcup ~/.cabal ~/.stack" ;;
-                julia)   info "  juliaup self uninstall" ;;
-                scala)   info "  cs uninstall scala; rm -rf ~/.sbt ~/.coursier" ;;
-                nim)     info "  rm -rf ~/.choosenim ~/.nimble" ;;
-                dart)    info "  $PKG remove dart; rm -rf ~/.pub-cache ~/.dart-tool" ;;
-                swift)   info "  rm -rf /opt/swift or /usr/local/swift" ;;
-                typescript) info "  npm uninstall -g typescript" ;;
-                *)       info "  Check installer docs for $display_name" ;;
-            esac
-            ;;
+        # --- Complex external installers (Phase 2: implemented) ---
+        python)     uninstall_python ;;
+        php)        uninstall_php ;;
+        ruby)       uninstall_ruby ;;
+        go)         uninstall_go ;;
+        dart)       uninstall_dart ;;
+        swift)      uninstall_swift ;;
+        julia)      uninstall_julia ;;
+        haskell)    uninstall_haskell ;;
+        scala)      uninstall_scala ;;
+        nim)        uninstall_nim ;;
+        v)          uninstall_v ;;
+        gleam)      uninstall_gleam ;;
+        typescript) uninstall_typescript ;;
+        zig)        uninstall_zig ;;
+        mojo)       uninstall_mojo ;;
+        wasm)       uninstall_wasm ;;
+        solidity)   uninstall_solidity ;;
+        groovy)     uninstall_groovy ;;
+        carbon)     uninstall_carbon ;;
+        csharp)     uninstall_csharp ;;
 
         # --- Simple map-based packages (native uninstall) ---
         *)
