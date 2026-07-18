@@ -13,7 +13,7 @@
 | v2.2.1 | Multi-distro pkg_install refactor (definitions.sh) | ✅ Shipped (commit 4702b04) |
 | v2.3.0 | Uninstall support (Phase 1) — helpers, dispatcher, action menu, top 4 complex uninstallers | ✅ Shipped |
 | v2.3.1 | Uninstall Phase 2a — remaining 20 complex uninstallers wired into dispatcher | ✅ Shipped |
-| v2.3.2 | Uninstall Phase 2b — profile-based uninstall (shared resolver, mode submenu, YES-gate) | ✅ Shipped |
+| v2.3.2 | Uninstall Phase 2b — profile-based uninstall (shared resolver, mode submenu, YES-gate) + scan fixes (ready() helper, UNINSTALLED counter, framework versions in scan) | ✅ Shipped |
 | v2.3.3 | Uninstall Phase 2c — codeready.ps1 + scanner.rs (GUI) integration | Next |
 | v2.4 | Admin/sudo-free mode, .bashrc alias polish, ARM/Silicon | Planned |
 | v2.5 | Dynamic version from config.json | Planned |
