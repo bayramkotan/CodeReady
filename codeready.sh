@@ -16,6 +16,8 @@ fi
 VERSION="2.3.2"
 LOG_FILE="$HOME/codeready_install.log"
 INSTALLED=()
+UNINSTALLED=()
+UNINSTALL_MODE=0
 FAILED=()
 HAS_MACPORTS=0
 HAS_NIX=0
@@ -85,7 +87,8 @@ print_banner() {
 }
 
 step()    { echo -e "  ${YELLOW}[>]${NC} $1"; }
-ok()      { echo -e "  ${GREEN}[+]${NC} $1"; echo "[OK] $1" >> "$LOG_FILE"; INSTALLED+=("$1"); }
+ok()      { echo -e "  ${GREEN}[+]${NC} $1"; echo "[OK] $1" >> "$LOG_FILE"; if [[ ${UNINSTALL_MODE:-0} -eq 1 ]]; then UNINSTALLED+=("$1"); else INSTALLED+=("$1"); fi; }
+ready()   { echo -e "  ${GREEN}[+]${NC} $1"; echo "[OK] $1" >> "$LOG_FILE"; }
 fail()    { echo -e "  ${RED}[-]${NC} $1"; echo "[FAIL] $1" >> "$LOG_FILE"; FAILED+=("$1"); }
 info()    { echo -e "  ${CYAN}[i]${NC} ${GRAY}$1${NC}"; }
 warn()    { echo -e "  ${YELLOW}[!]${NC} ${YELLOW}$1${NC}"; echo "[WARN] $1" >> "$LOG_FILE"; }
@@ -109,7 +112,7 @@ ensure_brew() {
 
 ensure_macports() {
     step "Checking MacPorts..."
-    if command -v port &>/dev/null; then ok "MacPorts ready."; HAS_MACPORTS=1; return 0; fi
+    if command -v port &>/dev/null; then ready "MacPorts ready."; HAS_MACPORTS=1; return 0; fi
     info "MacPorts not installed. Using Homebrew as primary."
     echo ""
     read -rp "  [?] Install MacPorts as secondary? (y/N): " answer
@@ -121,7 +124,7 @@ ensure_macports() {
 
 ensure_nix() {
     step "Checking Nix..."
-    if command -v nix &>/dev/null; then ok "Nix ready."; HAS_NIX=1; return 0; fi
+    if command -v nix &>/dev/null; then ready "Nix ready."; HAS_NIX=1; return 0; fi
     echo ""
     read -rp "  [?] Nix is not installed. Install it? (Y/n): " answer
     if [[ "$answer" == "n" || "$answer" == "N" ]]; then
@@ -142,7 +145,7 @@ ensure_nix() {
 
 ensure_flatpak() {
     step "Checking Flatpak..."
-    if command -v flatpak &>/dev/null; then ok "Flatpak ready."; HAS_FLATPAK=1; return 0; fi
+    if command -v flatpak &>/dev/null; then ready "Flatpak ready."; HAS_FLATPAK=1; return 0; fi
     echo ""
     read -rp "  [?] Flatpak is not installed. Install it? (Y/n): " answer
     if [[ "$answer" == "n" || "$answer" == "N" ]]; then
@@ -170,12 +173,12 @@ ensure_aur_helper() {
 
     step "Checking AUR helper..."
     if command -v paru &>/dev/null; then
-        ok "paru ready."
+        ready "paru ready."
         AUR_HELPER="paru"
         return 0
     fi
     if command -v yay &>/dev/null; then
-        ok "yay ready."
+        ready "yay ready."
         AUR_HELPER="yay"
         return 0
     fi
@@ -2469,16 +2472,20 @@ system_scan() {
     echo -e "  ${BOLD}${CYAN}Frameworks (npm global):${NC}"
     local npm_globals=""
     if command -v npm &>/dev/null; then
-        npm_globals=$(npm list -g --depth=0 2>/dev/null | tail -n +2 | sed 's/.*── //' | cut -d@ -f1)
+        # Strip tree prefixes — npm may print unicode (├── └──) or ASCII (+-- `--)
+        npm_globals=$(npm list -g --depth=0 2>/dev/null | tail -n +2 | sed -E 's/^[^@A-Za-z0-9]+//')
     fi
 
     check_npm_fw() {
         local name="$1" pkg="$2"
-        local status=""
-        if echo "$npm_globals" | grep -qiw "$pkg"; then
-            status="found"
+        local line ver=""
+        line=$(echo "$npm_globals" | grep -i -- "^${pkg}@" | head -1)
+        if [[ -n "$line" ]]; then
+            ver="${line##*@}"      # version after the last @ (handles @scope/pkg@x.y.z)
+            ver="${ver%% *}"       # strip trailing "-> path" for linked packages
+            [[ -z "$ver" ]] && ver="found"
         fi
-        show_item "$name" "$status" "latest"
+        show_item "$name" "$ver" "latest"
     }
 
     check_npm_fw "React (CRA)"    "create-react-app"
@@ -2504,18 +2511,16 @@ system_scan() {
     echo -e "  ${BOLD}${CYAN}Frameworks (pip):${NC}"
     local pip_list=""
     if command -v pip3 &>/dev/null; then
-        pip_list=$(pip3 list --format=columns 2>/dev/null | tail -n +3 | awk '{print tolower($1)}')
+        pip_list=$(pip3 list --format=columns 2>/dev/null | tail -n +3 | awk '{print tolower($1)" "$2}')
     elif command -v pip &>/dev/null; then
-        pip_list=$(pip list --format=columns 2>/dev/null | tail -n +3 | awk '{print tolower($1)}')
+        pip_list=$(pip list --format=columns 2>/dev/null | tail -n +3 | awk '{print tolower($1)" "$2}')
     fi
 
     check_pip_fw() {
         local name="$1" pkg="$2"
-        local status=""
-        if echo "$pip_list" | grep -qiw "$pkg"; then
-            status="found"
-        fi
-        show_item "$name" "$status" "latest"
+        local ver=""
+        ver=$(echo "$pip_list" | awk -v p="$pkg" '$1 == p {print $2; exit}')
+        show_item "$name" "$ver" "latest"
     }
 
     check_pip_fw "Django"      "django"
@@ -2591,6 +2596,7 @@ main() {
     case "$action" in
         2)
             # Uninstall flow — choose mode (v2.3.2)
+            UNINSTALL_MODE=1
             echo "" >&2
             echo -e "  ${BOLD}[1]${NC}  Select individual items ${GRAY}- Pick packages one by one${NC}" >&2
             echo -e "  ${BOLD}[2]${NC}  Uninstall by profile    ${GRAY}- Remove a whole stack at once${NC}" >&2
@@ -2603,7 +2609,7 @@ main() {
                 show_uninstall_menu
             fi
             section "Uninstall Summary"
-            echo -e "  ${GREEN}✓ ${#INSTALLED[@]} operations completed${NC}"
+            echo -e "  ${GREEN}✓ ${#UNINSTALLED[@]} operations completed${NC}"
             [[ ${#FAILED[@]} -gt 0 ]] && echo -e "  ${RED}✗ ${#FAILED[@]} failed:${NC} ${FAILED[*]}"
             info "Log: $LOG_FILE"
             exit 0
