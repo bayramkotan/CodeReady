@@ -1,6 +1,6 @@
 [package]
 name = "codeready-gui"
-version = "2.1.0"
+version = "2.3.1"
 description = "CodeReady — Developer Environment Setup Tool"
 authors = ["Bayram Kotan <bayramkotan>"]
 edition = "2021"
