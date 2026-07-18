@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ================================================================
-# CodeReady v2.3.1
+# CodeReady v2.3.2
 # Developer Environment Setup Tool (Linux/macOS)
 # https://github.com/bayramkotan/CodeReady
 # ================================================================
@@ -13,7 +13,7 @@ if ((BASH_VERSINFO[0] < 4)); then
     exit 1
 fi
 
-VERSION="2.3.1"
+VERSION="2.3.2"
 LOG_FILE="$HOME/codeready_install.log"
 INSTALLED=()
 FAILED=()
@@ -2046,6 +2046,104 @@ show_uninstall_menu() {
     return 0
 }
 
+# --- Profile-based uninstall (v2.3.2) ---------------------------
+profile_uninstall_flow() {
+    local profile
+    profile=$(show_profile_menu)
+
+    local p_langs=() p_ides=() p_tools=() p_fws=()
+    local p_custom=0 p_all=0
+    resolve_profile_selection "$profile" p_langs p_ides p_tools p_fws p_custom p_all
+
+    if [[ $p_custom -eq 1 ]]; then
+        info "Custom setup selected — switching to individual uninstall menu."
+        show_uninstall_menu
+        return $?
+    fi
+
+    # Lookup tables — frameworks are excluded (uninstall dispatcher does not support them yet)
+    local -a all_keys=("${LANG_KEYS[@]}" "${IDE_KEYS[@]}" "${TOOL_KEYS[@]}")
+    local -a all_labels=("${LANG_LABELS[@]}" "${IDE_LABELS[@]}" "${TOOL_LABELS[@]}")
+
+    local -a target_keys=()
+    if [[ $p_all -eq 1 ]]; then
+        target_keys=("${all_keys[@]}")
+        info "Framework uninstall is not supported yet — frameworks are skipped."
+    else
+        target_keys=("${p_langs[@]}" "${p_ides[@]}" "${p_tools[@]}")
+        if ((${#p_fws[@]} > 0)); then
+            info "Frameworks in this profile are skipped (not yet supported): ${p_fws[*]}"
+        fi
+    fi
+
+    if ((${#target_keys[@]} == 0)); then
+        warn "No uninstallable packages in this selection."
+        return 1
+    fi
+
+    # Probe: which targets are actually installed?
+    local -a un_keys=() un_labels=() not_installed=()
+    local k i label
+    for k in "${target_keys[@]}"; do
+        label="$k"
+        for i in "${!all_keys[@]}"; do
+            [[ "${all_keys[$i]}" == "$k" ]] && label="${all_labels[$i]}" && break
+        done
+        if _installed_marker "$k"; then
+            un_keys+=("$k")
+            un_labels+=("$label")
+        else
+            not_installed+=("${label%% - *}")
+        fi
+    done
+
+    if ((${#un_keys[@]} == 0)); then
+        warn "None of the profile's packages are installed. Nothing to uninstall."
+        return 1
+    fi
+
+    # Summary
+    section "Profile Uninstall — Summary" >&2
+    echo "" >&2
+    echo -e "  ${YELLOW}The following installed packages will be removed:${NC}" >&2
+    for i in "${!un_keys[@]}"; do
+        case "${un_keys[$i]}" in
+            git|docker|cmake|gh)
+                echo -e "    ${RED}- ${un_labels[$i]%% - *}  (shared tool — other software may depend on it!)${NC}" >&2 ;;
+            *)
+                echo -e "    ${GRAY}- ${un_labels[$i]%% - *}${NC}" >&2 ;;
+        esac
+    done
+    if ((${#not_installed[@]} > 0)); then
+        echo "" >&2
+        echo -e "  ${GRAY}Not installed (skipped): ${not_installed[*]}${NC}" >&2
+    fi
+    echo "" >&2
+
+    # Confirmation — EVERYTHING requires uppercase YES
+    local confirm
+    if [[ $p_all -eq 1 ]]; then
+        echo -e "  ${RED}WARNING: You are about to uninstall EVERYTHING detected on this system!${NC}" >&2
+        echo "" >&2
+        read -rp "  Type 'YES' (uppercase) to confirm: " confirm
+        [[ "$confirm" != "YES" ]] && { info "Uninstall cancelled."; return 1; }
+    else
+        read -rp "  Proceed with uninstall? [y/N]: " confirm
+        [[ "$confirm" != "y" && "$confirm" != "Y" ]] && { info "Uninstall cancelled."; return 1; }
+    fi
+    echo "" >&2
+
+    # Execute
+    local display_name
+    for i in "${!un_keys[@]}"; do
+        display_name="${un_labels[$i]%% - *}"
+        section "Uninstalling: $display_name" >&2
+        uninstall_package "${un_keys[$i]}" "$display_name"
+        echo "" >&2
+    done
+    return 0
+}
+
 # --- Action menu (Install/Uninstall/Exit) -----------------------
 show_action_menu() {
     section "What would you like to do?" >&2
@@ -2090,6 +2188,46 @@ show_profile_menu() {
     echo "" >&2
     read -rp "  Select profile(s): " choice
     echo "$choice"
+}
+
+# Helper: add items to a (nameref) array avoiding duplicates
+add_unique() {
+    local -n _arr=$1; shift
+    local item existing found
+    for item in "$@"; do
+        found=0
+        for existing in "${_arr[@]}"; do [[ "$existing" == "$item" ]] && found=1 && break; done
+        [[ $found -eq 0 ]] && _arr+=("$item")
+    done
+}
+
+# Resolve a profile-menu selection string into package key arrays.
+# Shared by the install flow and profile-based uninstall (v2.3.2).
+# Usage: resolve_profile_selection "<choice>" langs_ref ides_ref tools_ref fws_ref custom_ref all_ref
+resolve_profile_selection() {
+    local _rps_choice="$1"
+    local -n _rps_langs=$2 _rps_ides=$3 _rps_tools=$4 _rps_fws=$5 _rps_custom=$6 _rps_all=$7
+    for pc in $_rps_choice; do
+        case "$pc" in
+            1)  add_unique _rps_langs "nodejs" "typescript"; add_unique _rps_ides "vscode" "zed"; add_unique _rps_tools "git"; add_unique _rps_fws "yarn" "pnpm" "vite" "react" "vue" "tailwind" ;;
+            2)  add_unique _rps_langs "nodejs" "python" "typescript" "php"; add_unique _rps_ides "vscode" "sublime"; add_unique _rps_tools "git" "docker" "postman"; add_unique _rps_fws "yarn" "pnpm" "vite" "react" "nextjs" "express" "django" "tailwind" ;;
+            3)  add_unique _rps_langs "java" "kotlin" "dart" "swift"; add_unique _rps_ides "android" "vscode"; add_unique _rps_tools "git"; add_unique _rps_fws "reactnative" "expo" ;;
+            4)  add_unique _rps_langs "python" "r" "julia"; add_unique _rps_ides "vscode" "pycharm"; add_unique _rps_tools "git" "docker"; add_unique _rps_fws "venvstudio" "uv" "conda" "streamlit" "fastapi" ;;
+            5)  add_unique _rps_langs "python" "mojo" "rust" "julia"; add_unique _rps_ides "vscode" "pycharm" "cursor"; add_unique _rps_tools "git" "docker"; add_unique _rps_fws "venvstudio" "uv" "conda" "streamlit" "fastapi" ;;
+            6)  add_unique _rps_langs "cpp" "rust" "zig" "go"; add_unique _rps_ides "vscode" "clion" "vim"; add_unique _rps_tools "git" "cmake"; add_unique _rps_fws "cargo-watch" "wasm-pack" ;;
+            7)  add_unique _rps_langs "csharp" "nodejs" "typescript"; add_unique _rps_ides "vs2026" "vscode" "rider"; add_unique _rps_tools "git" "docker" "postman"; add_unique _rps_fws "yarn" "vite" "react" "nextjs" "blazor" ;;
+            8)  add_unique _rps_langs "cpp" "csharp" "lua"; add_unique _rps_ides "vs2026" "vscode" "rider"; add_unique _rps_tools "git" "cmake" ;;
+            9)  add_unique _rps_langs "python" "go" "rust"; add_unique _rps_ides "vscode" "vim"; add_unique _rps_tools "git" "docker"; add_unique _rps_fws "terraform" "kubectl" "helm" ;;
+            10) add_unique _rps_langs "solidity" "rust" "typescript" "nodejs"; add_unique _rps_ides "vscode" "cursor"; add_unique _rps_tools "git"; add_unique _rps_fws "npm" "yarn" ;;
+            11) add_unique _rps_langs "cpp" "rust" "python" "lua"; add_unique _rps_ides "vscode" "clion" "vim"; add_unique _rps_tools "git" "cmake" ;;
+            12) add_unique _rps_langs "fortran" "python" "r" "julia" "haskell"; add_unique _rps_ides "vscode" "emacs"; add_unique _rps_tools "git"; add_unique _rps_fws "venvstudio" "uv" "conda" ;;
+            13) add_unique _rps_langs "haskell" "elixir" "erlang" "ocaml" "scala" "gleam"; add_unique _rps_ides "vscode" "emacs" "vim"; add_unique _rps_tools "git" ;;
+            14) add_unique _rps_langs "java" "kotlin" "scala" "groovy"; add_unique _rps_ides "intellij" "eclipse" "netbeans"; add_unique _rps_tools "git" "docker" ;;
+            15) add_unique _rps_langs "go" "rust" "python"; add_unique _rps_ides "vim" "classicvim" "emacs"; add_unique _rps_tools "git" ;;
+            16) _rps_custom=1 ;;
+            17) _rps_all=1 ;;
+        esac
+    done
 }
 
 # ================================================================
@@ -2452,8 +2590,18 @@ main() {
     action=$(show_action_menu)
     case "$action" in
         2)
-            # Uninstall flow
-            show_uninstall_menu
+            # Uninstall flow — choose mode (v2.3.2)
+            echo "" >&2
+            echo -e "  ${BOLD}[1]${NC}  Select individual items ${GRAY}- Pick packages one by one${NC}" >&2
+            echo -e "  ${BOLD}[2]${NC}  Uninstall by profile    ${GRAY}- Remove a whole stack at once${NC}" >&2
+            echo "" >&2
+            local un_mode
+            read -rp "  Choose [1/2]: " un_mode
+            if [[ "$un_mode" == "2" ]]; then
+                profile_uninstall_flow
+            else
+                show_uninstall_menu
+            fi
             section "Uninstall Summary"
             echo -e "  ${GREEN}✓ ${#INSTALLED[@]} operations completed${NC}"
             [[ ${#FAILED[@]} -gt 0 ]] && echo -e "  ${RED}✗ ${#FAILED[@]} failed:${NC} ${FAILED[*]}"
@@ -2474,39 +2622,8 @@ main() {
     local profile
     profile=$(show_profile_menu)
 
-    # Helper: add items avoiding duplicates
-    add_unique() {
-        local -n _arr=$1; shift
-        for item in "$@"; do
-            local found=0
-            for existing in "${_arr[@]}"; do [[ "$existing" == "$item" ]] && found=1 && break; done
-            [[ $found -eq 0 ]] && _arr+=("$item")
-        done
-    }
-
     local is_custom=0 is_all=0
-
-    for pc in $profile; do
-        case "$pc" in
-            1)  add_unique sel_langs "nodejs" "typescript"; add_unique sel_ides "vscode" "zed"; add_unique sel_tools "git"; add_unique sel_fws "yarn" "pnpm" "vite" "react" "vue" "tailwind" ;;
-            2)  add_unique sel_langs "nodejs" "python" "typescript" "php"; add_unique sel_ides "vscode" "sublime"; add_unique sel_tools "git" "docker" "postman"; add_unique sel_fws "yarn" "pnpm" "vite" "react" "nextjs" "express" "django" "tailwind" ;;
-            3)  add_unique sel_langs "java" "kotlin" "dart" "swift"; add_unique sel_ides "android" "vscode"; add_unique sel_tools "git"; add_unique sel_fws "reactnative" "expo" ;;
-            4)  add_unique sel_langs "python" "r" "julia"; add_unique sel_ides "vscode" "pycharm"; add_unique sel_tools "git" "docker"; add_unique sel_fws "venvstudio" "uv" "conda" "streamlit" "fastapi" ;;
-            5)  add_unique sel_langs "python" "mojo" "rust" "julia"; add_unique sel_ides "vscode" "pycharm" "cursor"; add_unique sel_tools "git" "docker"; add_unique sel_fws "venvstudio" "uv" "conda" "streamlit" "fastapi" ;;
-            6)  add_unique sel_langs "cpp" "rust" "zig" "go"; add_unique sel_ides "vscode" "clion" "vim"; add_unique sel_tools "git" "cmake"; add_unique sel_fws "cargo-watch" "wasm-pack" ;;
-            7)  add_unique sel_langs "csharp" "nodejs" "typescript"; add_unique sel_ides "vs2026" "vscode" "rider"; add_unique sel_tools "git" "docker" "postman"; add_unique sel_fws "yarn" "vite" "react" "nextjs" "blazor" ;;
-            8)  add_unique sel_langs "cpp" "csharp" "lua"; add_unique sel_ides "vs2026" "vscode" "rider"; add_unique sel_tools "git" "cmake" ;;
-            9)  add_unique sel_langs "python" "go" "rust"; add_unique sel_ides "vscode" "vim"; add_unique sel_tools "git" "docker"; add_unique sel_fws "terraform" "kubectl" "helm" ;;
-            10) add_unique sel_langs "solidity" "rust" "typescript" "nodejs"; add_unique sel_ides "vscode" "cursor"; add_unique sel_tools "git"; add_unique sel_fws "npm" "yarn" ;;
-            11) add_unique sel_langs "cpp" "rust" "python" "lua"; add_unique sel_ides "vscode" "clion" "vim"; add_unique sel_tools "git" "cmake" ;;
-            12) add_unique sel_langs "fortran" "python" "r" "julia" "haskell"; add_unique sel_ides "vscode" "emacs"; add_unique sel_tools "git"; add_unique sel_fws "venvstudio" "uv" "conda" ;;
-            13) add_unique sel_langs "haskell" "elixir" "erlang" "ocaml" "scala" "gleam"; add_unique sel_ides "vscode" "emacs" "vim"; add_unique sel_tools "git" ;;
-            14) add_unique sel_langs "java" "kotlin" "scala" "groovy"; add_unique sel_ides "intellij" "eclipse" "netbeans"; add_unique sel_tools "git" "docker" ;;
-            15) add_unique sel_langs "go" "rust" "python"; add_unique sel_ides "vim" "classicvim" "emacs"; add_unique sel_tools "git" ;;
-            16) is_custom=1 ;;
-            17) is_all=1 ;;
-        esac
-    done
+    resolve_profile_selection "$profile" sel_langs sel_ides sel_tools sel_fws is_custom is_all
 
     if [[ $is_all -eq 1 ]]; then
         echo ""
