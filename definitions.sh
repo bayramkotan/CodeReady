@@ -331,3 +331,9 @@ CONFIG_MAP["aliyuncli"]='$HOME/.aliyun'
 CONFIG_MAP["ocicli"]='$HOME/.oci'
 CONFIG_MAP["doctl"]='$HOME/.config/doctl'
 CONFIG_MAP["huaweicli"]='$HOME/.hcloud'
+
+# --- Yandex Cloud CLI (v2.3.3) ----------------------------------
+AUR_MAP["yccli"]="yandex-cloud-cli"
+BREW_MAP["yccli"]="yandex-cloud-cli"
+# other distros → official install script (install_tool)
+CONFIG_MAP["yccli"]='$HOME/.config/yandex-cloud $HOME/yandex-cloud'

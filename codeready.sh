@@ -1246,6 +1246,18 @@ install_tool() {
             skip_installed "DigitalOcean doctl" "doctl" && return
             install_from_map "doctl" "DigitalOcean doctl"
             ;;
+        yccli)
+            skip_installed "Yandex Cloud CLI" "yc" && return
+            case "$PKG" in
+                brew|pacman) install_from_map "yccli" "Yandex Cloud CLI" ;;
+                *)
+                    step "Installing Yandex Cloud CLI (official script)..."
+                    (curl -fsSL "https://storage.yandexcloud.net/yandexcloud-yc/install.sh" -o /tmp/yc_install.sh \
+                        && bash /tmp/yc_install.sh -i "$HOME/yandex-cloud" -n) &>>"$LOG_FILE" 2>&1 \
+                        && ok "Yandex Cloud CLI installed. Add $HOME/yandex-cloud/bin to PATH if needed." || fail "Yandex Cloud CLI"
+                    ;;
+            esac
+            ;;
         huaweicli)
             skip_installed "Huawei Cloud KooCLI" "hcloud" && return
             step "Installing Huawei Cloud KooCLI (official script)..."
@@ -2031,6 +2043,31 @@ uninstall_huaweicli() {
     remove_user_configs "huaweicli" "Huawei Cloud KooCLI"
 }
 
+uninstall_yccli() {
+    if ! is_cmd yc && [[ ! -d "$HOME/yandex-cloud" ]]; then
+        info "Yandex Cloud CLI not installed."
+        return
+    fi
+    case "$PKG" in
+        brew) is_cmd yc && pkg_uninstall "Yandex Cloud CLI" "brew uninstall yandex-cloud-cli" ;;
+        pacman)
+            if pacman -Qq yandex-cloud-cli &>/dev/null; then
+                pkg_uninstall "Yandex Cloud CLI" "sudo pacman -Rns --noconfirm yandex-cloud-cli"
+            fi
+            ;;
+    esac
+    # Official script install (~/yandex-cloud, mirror of install)
+    if [[ -d "$HOME/yandex-cloud" ]]; then
+        step "Removing Yandex Cloud CLI directory..."
+        rm -rf "$HOME/yandex-cloud" &>>"$LOG_FILE" && ok "Yandex Cloud CLI removed." || fail "Yandex Cloud CLI"
+        for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+            [[ -f "$rc" ]] && sed -i '\|yandex-cloud|d' "$rc" 2>>"$LOG_FILE"
+        done
+        info "Yandex Cloud lines removed from shell rc files."
+    fi
+    remove_user_configs "yccli" "Yandex Cloud CLI"
+}
+
 # --- Uninstall dispatcher ---------------------------------------
 # Routes a package key to the right uninstall function.
 # For simple map-based packages, uses uninstall_from_map + config prompt.
@@ -2053,6 +2090,7 @@ uninstall_package() {
         ocicli)     uninstall_ocicli ;;
         doctl)      uninstall_doctl ;;
         huaweicli)  uninstall_huaweicli ;;
+        yccli)      uninstall_yccli ;;
 
         # --- Complex external installers (Phase 2: implemented) ---
         python)     uninstall_python ;;
@@ -2168,6 +2206,7 @@ _installed_marker() {
         ocicli)      cmd="oci" ;;
         doctl)       cmd="doctl" ;;
         huaweicli)   cmd="hcloud" ;;
+        yccli)       cmd="yc" ;;
         *)           cmd="$key" ;;
     esac
     is_cmd "$cmd"
@@ -2570,6 +2609,7 @@ system_scan() {
     local oci_ver=$(get_cmd_version oci "--version")
     local doctl_ver=$(get_cmd_version doctl "version")
     local hcloud_ver=$(get_cmd_version hcloud "version")
+    local yc_ver=$(get_cmd_version yc "version")
 
     # Detect package managers / frameworks
     local npm_ver=$(get_cmd_version npm "--version")
@@ -2703,6 +2743,7 @@ system_scan() {
     show_item "Oracle OCI"   "$oci_ver"    "latest"
     show_item "DigitalOcean" "$doctl_ver"  "latest"
     show_item "hcloud"       "$hcloud_ver" "latest"
+    show_item "Yandex Cloud" "$yc_ver"     "latest"
     echo ""
 
     echo -e "  ${BOLD}${CYAN}Package Managers:${NC}"
@@ -2870,8 +2911,8 @@ main() {
     local IDE_KEYS=("vscode" "vscodium" "antigravity" "cursor" "zed" "windsurf" "sublime" "classicvim" "vim" "emacs" "notepadpp" "intellij" "pycharm" "webstorm" "goland" "clion" "rider" "rustrover" "fleet" "eclipse" "netbeans" "android")
     local IDE_LABELS=("VS Code - Lightweight, extensible" "VSCodium - VS Code without telemetry" "Antigravity - AI-native code editor" "Cursor - AI-powered code editor" "Zed - High-performance editor" "Windsurf - AI-powered IDE" "Sublime Text - Fast, lightweight" "Vim - Classic terminal editor" "Neovim - Modern terminal editor" "GNU Emacs - Extensible text editor" "Notepad++ - Windows code editor" "IntelliJ IDEA Community - Java, Kotlin" "PyCharm Community - Python IDE" "WebStorm - JS/TS IDE (paid)" "GoLand - Go IDE (paid)" "CLion - C/C++ IDE (paid)" "Rider - .NET IDE (paid)" "RustRover - Rust IDE" "JetBrains Fleet - Lightweight multi-lang" "Eclipse IDE - Java, multi-language" "Apache NetBeans - Java, PHP, HTML5" "Android Studio - Android development")
 
-    local TOOL_KEYS=("git" "docker" "postman" "cmake" "gh" "pyenv" "awscli" "azurecli" "gcloudcli" "aliyuncli" "ocicli" "doctl" "huaweicli")
-    local TOOL_LABELS=("Git - Version control" "Docker - Containers" "Postman - API testing" "CMake - Build system" "GitHub CLI - GitHub from terminal" "pyenv - Python version manager" "AWS CLI v2 - Amazon Web Services" "Azure CLI - Microsoft Azure (az)" "Google Cloud CLI - gcloud" "Alibaba Cloud CLI - aliyun" "Oracle OCI CLI - oci" "doctl - DigitalOcean CLI" "Huawei Cloud KooCLI - hcloud")
+    local TOOL_KEYS=("git" "docker" "postman" "cmake" "gh" "pyenv" "awscli" "azurecli" "gcloudcli" "aliyuncli" "ocicli" "doctl" "huaweicli" "yccli")
+    local TOOL_LABELS=("Git - Version control" "Docker - Containers" "Postman - API testing" "CMake - Build system" "GitHub CLI - GitHub from terminal" "pyenv - Python version manager" "AWS CLI v2 - Amazon Web Services" "Azure CLI - Microsoft Azure (az)" "Google Cloud CLI - gcloud" "Alibaba Cloud CLI - aliyun" "Oracle OCI CLI - oci" "doctl - DigitalOcean CLI" "Huawei Cloud KooCLI - hcloud" "Yandex Cloud CLI - yc")
 
     local FW_KEYS=("npm" "yarn" "pnpm" "bun" "venvstudio" "uv" "poetry" "pipx" "conda" "react" "nextjs" "vue" "nuxt" "angular" "svelte" "vite" "astro" "express" "nest" "remix" "django" "flask" "fastapi" "streamlit" "tailwind" "bootstrap" "reactnative" "expo" "ionic" "electron" "tauri" "cargo-watch" "wasm-pack" "blazor" "maui" "efcore" "terraform" "kubectl" "helm")
     local FW_LABELS=("npm (latest) - Node default pkg manager" "Yarn - Fast JS pkg manager" "pnpm - Disk-efficient JS pkg manager" "Bun - Ultra-fast JS runtime" "VenvStudio - GUI venv manager (PySide6)" "uv - Ultra-fast Python pkg manager (Rust)" "Poetry - Python dependency mgmt" "pipx - Isolated Python CLI tools" "Miniconda - Python/R data science" "React (create-react-app) - Facebook UI" "Next.js - React fullstack framework" "Vue CLI - Progressive JS framework" "Nuxt (nuxi) - Vue fullstack framework" "Angular CLI - Google enterprise web" "SvelteKit - Lightweight reactive" "Vite - Next-gen build tool" "Astro - Content-focused web framework" "Express.js - Minimal Node.js web" "NestJS CLI - Progressive Node.js" "Remix - Full stack web framework" "Django - Python web framework" "Flask - Lightweight Python web" "FastAPI - Modern async Python API" "Streamlit - Python data app" "Tailwind CSS - Utility-first CSS" "Bootstrap - Popular CSS framework" "React Native CLI - Cross-platform mobile" "Expo CLI - React Native toolchain" "Ionic CLI - Cross-platform mobile" "Electron Forge - Desktop apps (web tech)" "Tauri CLI - Lightweight desktop (Rust)" "cargo-watch - Rust auto-rebuild" "wasm-pack - Rust to WebAssembly" "Blazor - C# web UI (in .NET SDK)" ".NET MAUI - Cross-platform .NET UI" "EF Core CLI - dotnet-ef migrations tool" "Terraform - Infrastructure as code" "kubectl - Kubernetes CLI" "Helm - Kubernetes pkg manager")
