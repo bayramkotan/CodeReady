@@ -14,7 +14,7 @@
 | v2.3.0 | Uninstall support (Phase 1) — helpers, dispatcher, action menu, top 4 complex uninstallers | ✅ Shipped |
 | v2.3.1 | Uninstall Phase 2a — remaining 20 complex uninstallers wired into dispatcher | ✅ Shipped |
 | v2.3.2 | Uninstall Phase 2b — profile-based uninstall (shared resolver, mode submenu, YES-gate) + scan fixes (ready() helper, UNINSTALLED counter, framework versions in scan) | ✅ Shipped |
-| v2.3.3 | Cloud CLI support — az, aws, gcloud, aliyun, oci, doctl, hcloud (Huawei/Hetzner clash noted), yc (Yandex): scan + install + uninstall + maps + DevOps profile | ✅ Shipped |
+| v2.3.3 | Cloud CLI support — 16 CLIs: az, aws, gcloud, aliyun, oci, doctl, hcloud (Huawei/Hetzner clash noted), yc, ibmcloud, wrangler, vultr-cli, linode-cli, scw, tccli, heroku, flyctl: scan + install + uninstall + maps + DevOps profile | ✅ Shipped |
 | v2.3.4 | Uninstall Phase 2c — codeready.ps1 + scanner.rs (GUI) integration + cloud CLI GUI parity (definitions.rs) | Next |
 | v2.4 | Admin/sudo-free mode, .bashrc alias polish, ARM/Silicon | Planned |
 | v2.5 | Dynamic version from config.json | Planned |

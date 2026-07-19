@@ -1258,6 +1258,89 @@ install_tool() {
                     ;;
             esac
             ;;
+        ibmcloudcli)
+            skip_installed "IBM Cloud CLI" "ibmcloud" && return
+            case "$PKG" in
+                brew|pacman) install_from_map "ibmcloudcli" "IBM Cloud CLI" ;;
+                *)
+                    step "Installing IBM Cloud CLI (official script)..."
+                    curl -fsSL https://clis.cloud.ibm.com/install/linux | sh &>>"$LOG_FILE" 2>&1 \
+                        && ok "IBM Cloud CLI installed." || fail "IBM Cloud CLI"
+                    ;;
+            esac
+            ;;
+        wranglercli)
+            skip_installed "Cloudflare Wrangler" "wrangler" && return
+            if command -v npm &>/dev/null; then
+                pkg_install "Cloudflare Wrangler" "npm install -g wrangler"
+            else
+                warn "npm required for Wrangler — install Node.js first."
+                fail "Cloudflare Wrangler (needs npm)"
+            fi
+            ;;
+        vultrcli)
+            skip_installed "Vultr CLI" "vultr-cli" && return
+            case "$PKG" in
+                brew)   pkg_install "Vultr CLI" "brew install vultr/vultr-cli/vultr-cli" ;;
+                pacman) install_from_map "vultrcli" "Vultr CLI" ;;
+                *)
+                    if command -v go &>/dev/null; then
+                        step "Installing Vultr CLI via go install..."
+                        go install github.com/vultr/vultr-cli/v3@latest &>>"$LOG_FILE" 2>&1 \
+                            && ok "Vultr CLI installed (in \$HOME/go/bin)." || fail "Vultr CLI"
+                    else
+                        warn "Vultr CLI needs Go (or AUR/brew) — install Go first, or download from GitHub releases."
+                        fail "Vultr CLI (needs go)"
+                    fi
+                    ;;
+            esac
+            ;;
+        linodecli)
+            skip_installed "Linode CLI" "linode-cli" && return
+            step "Installing Linode CLI via pip..."
+            (pipx install linode-cli || pip3 install --user --break-system-packages linode-cli) &>>"$LOG_FILE" 2>&1 \
+                && ok "Linode CLI installed." || fail "Linode CLI"
+            ;;
+        scwcli)
+            skip_installed "Scaleway CLI" "scw" && return
+            case "$PKG" in
+                brew|pacman) install_from_map "scwcli" "Scaleway CLI" ;;
+                *)
+                    step "Installing Scaleway CLI (official script)..."
+                    curl -fsSL https://raw.githubusercontent.com/scaleway/scaleway-cli/master/scripts/get.sh | sh &>>"$LOG_FILE" 2>&1 \
+                        && ok "Scaleway CLI installed." || fail "Scaleway CLI"
+                    ;;
+            esac
+            ;;
+        tencentcli)
+            skip_installed "Tencent Cloud CLI" "tccli" && return
+            step "Installing Tencent Cloud CLI via pip..."
+            (pipx install tccli || pip3 install --user --break-system-packages tccli) &>>"$LOG_FILE" 2>&1 \
+                && ok "Tencent Cloud CLI installed." || fail "Tencent Cloud CLI"
+            ;;
+        herokucli)
+            skip_installed "Heroku CLI" "heroku" && return
+            case "$PKG" in
+                brew)   pkg_install "Heroku CLI" "brew install heroku/brew/heroku" ;;
+                pacman) install_from_map "herokucli" "Heroku CLI" ;;
+                *)
+                    step "Installing Heroku CLI (official script)..."
+                    curl -fsSL https://cli-assets.heroku.com/install.sh | sh &>>"$LOG_FILE" 2>&1 \
+                        && ok "Heroku CLI installed." || fail "Heroku CLI"
+                    ;;
+            esac
+            ;;
+        flycli)
+            skip_installed "Fly.io CLI" "flyctl" && return
+            case "$PKG" in
+                brew|pacman) install_from_map "flycli" "Fly.io CLI" ;;
+                *)
+                    step "Installing Fly.io CLI (official script)..."
+                    curl -fsSL https://fly.io/install.sh | sh &>>"$LOG_FILE" 2>&1 \
+                        && ok "Fly.io CLI installed (in \$HOME/.fly/bin)." || fail "Fly.io CLI"
+                    ;;
+            esac
+            ;;
         huaweicli)
             skip_installed "Huawei Cloud KooCLI" "hcloud" && return
             step "Installing Huawei Cloud KooCLI (official script)..."
@@ -2068,6 +2151,149 @@ uninstall_yccli() {
     remove_user_configs "yccli" "Yandex Cloud CLI"
 }
 
+# Generic pip/pipx-based CLI uninstaller (linode-cli, tccli, ...)
+uninstall_pipcli() {
+    local pkg="$1" name="$2" cfg_key="$3"
+    if ! is_cmd "$pkg" && ! (pipx list 2>/dev/null | grep -q "$pkg"); then
+        info "$name not installed."
+        return
+    fi
+    step "Removing $name (pip)..."
+    (pipx uninstall "$pkg" || pip3 uninstall -y "$pkg" --break-system-packages || pip3 uninstall -y "$pkg") &>>"$LOG_FILE" 2>&1 \
+        && ok "$name removed." || fail "$name"
+    remove_user_configs "$cfg_key" "$name"
+}
+
+uninstall_ibmcloudcli() {
+    if ! is_cmd ibmcloud; then
+        info "IBM Cloud CLI not installed."
+        return
+    fi
+    case "$PKG" in
+        brew) pkg_uninstall "IBM Cloud CLI" "brew uninstall --cask ibm-cloud-cli" ;;
+        pacman)
+            if pacman -Qq ibmcloud-cli &>/dev/null; then
+                pkg_uninstall "IBM Cloud CLI" "sudo pacman -Rns --noconfirm ibmcloud-cli"
+            fi
+            ;;
+    esac
+    # Official script locations
+    if [[ -e /usr/local/bin/ibmcloud || -d /usr/local/ibmcloud ]]; then
+        step "Removing IBM Cloud CLI files..."
+        sudo rm -rf /usr/local/ibmcloud &>>"$LOG_FILE"
+        sudo rm -f /usr/local/bin/ibmcloud /usr/local/bin/bluemix /usr/local/bin/bx &>>"$LOG_FILE"
+        ok "IBM Cloud CLI removed."
+    fi
+    remove_user_configs "ibmcloudcli" "IBM Cloud CLI"
+}
+
+uninstall_wranglercli() {
+    if ! is_cmd wrangler; then
+        info "Cloudflare Wrangler not installed."
+        return
+    fi
+    if command -v npm &>/dev/null; then
+        pkg_uninstall "Cloudflare Wrangler" "npm uninstall -g wrangler"
+    else
+        warn "npm not found — cannot remove Wrangler."
+        fail "Cloudflare Wrangler (needs npm)"
+        return
+    fi
+    remove_user_configs "wranglercli" "Cloudflare Wrangler"
+}
+
+uninstall_vultrcli() {
+    if ! is_cmd vultr-cli; then
+        info "Vultr CLI not installed."
+        return
+    fi
+    case "$PKG" in
+        brew) pkg_uninstall "Vultr CLI" "brew uninstall vultr-cli" ;;
+        pacman)
+            if pacman -Qq vultr-cli &>/dev/null; then
+                pkg_uninstall "Vultr CLI" "sudo pacman -Rns --noconfirm vultr-cli"
+            fi
+            ;;
+    esac
+    # go install location
+    if [[ -e "$HOME/go/bin/vultr-cli" ]]; then
+        step "Removing vultr-cli binary..."
+        rm -f "$HOME/go/bin/vultr-cli" &>>"$LOG_FILE" && ok "Vultr CLI removed."
+    fi
+    remove_user_configs "vultrcli" "Vultr CLI"
+}
+
+uninstall_scwcli() {
+    if ! is_cmd scw; then
+        info "Scaleway CLI not installed."
+        return
+    fi
+    case "$PKG" in
+        brew) pkg_uninstall "Scaleway CLI" "brew uninstall scw" ;;
+        pacman)
+            if pacman -Qq scaleway-cli &>/dev/null; then
+                pkg_uninstall "Scaleway CLI" "sudo pacman -Rns --noconfirm scaleway-cli"
+            fi
+            ;;
+    esac
+    # Official script location
+    if [[ -e /usr/local/bin/scw ]]; then
+        step "Removing scw binary..."
+        sudo rm -f /usr/local/bin/scw &>>"$LOG_FILE" && ok "Scaleway CLI removed." || fail "Scaleway CLI"
+    fi
+    remove_user_configs "scwcli" "Scaleway CLI"
+}
+
+uninstall_herokucli() {
+    if ! is_cmd heroku; then
+        info "Heroku CLI not installed."
+        return
+    fi
+    case "$PKG" in
+        brew) pkg_uninstall "Heroku CLI" "brew uninstall heroku" ;;
+        pacman)
+            if pacman -Qq heroku-cli &>/dev/null; then
+                pkg_uninstall "Heroku CLI" "sudo pacman -Rns --noconfirm heroku-cli"
+            elif pacman -Qq heroku-cli-bin &>/dev/null; then
+                pkg_uninstall "Heroku CLI" "sudo pacman -Rns --noconfirm heroku-cli-bin"
+            fi
+            ;;
+    esac
+    # Official script locations
+    if [[ -d /usr/local/lib/heroku || -e /usr/local/bin/heroku ]]; then
+        step "Removing Heroku CLI files..."
+        sudo rm -rf /usr/local/lib/heroku &>>"$LOG_FILE"
+        sudo rm -f /usr/local/bin/heroku &>>"$LOG_FILE"
+        ok "Heroku CLI removed."
+    fi
+    remove_user_configs "herokucli" "Heroku CLI"
+}
+
+uninstall_flycli() {
+    if ! is_cmd flyctl && ! is_cmd fly && [[ ! -d "$HOME/.fly" ]]; then
+        info "Fly.io CLI not installed."
+        return
+    fi
+    case "$PKG" in
+        brew) pkg_uninstall "Fly.io CLI" "brew uninstall flyctl" ;;
+        pacman)
+            if pacman -Qq flyctl &>/dev/null; then
+                pkg_uninstall "Fly.io CLI" "sudo pacman -Rns --noconfirm flyctl"
+            fi
+            ;;
+    esac
+    # Official script location (~/.fly)
+    if [[ -d "$HOME/.fly" ]]; then
+        step "Removing Fly.io CLI directory..."
+        rm -rf "$HOME/.fly" &>>"$LOG_FILE" && ok "Fly.io CLI removed." || fail "Fly.io CLI"
+        for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+            [[ -f "$rc" ]] && sed -i '/FLYCTL_INSTALL\|\.fly\/bin/d' "$rc" 2>>"$LOG_FILE"
+        done
+        info "Fly.io lines removed from shell rc files."
+    fi
+    remove_user_configs "flycli" "Fly.io CLI"
+}
+
 # --- Uninstall dispatcher ---------------------------------------
 # Routes a package key to the right uninstall function.
 # For simple map-based packages, uses uninstall_from_map + config prompt.
@@ -2091,6 +2317,14 @@ uninstall_package() {
         doctl)      uninstall_doctl ;;
         huaweicli)  uninstall_huaweicli ;;
         yccli)      uninstall_yccli ;;
+        ibmcloudcli) uninstall_ibmcloudcli ;;
+        wranglercli) uninstall_wranglercli ;;
+        vultrcli)    uninstall_vultrcli ;;
+        linodecli)   uninstall_pipcli "linode-cli" "Linode CLI" "linodecli" ;;
+        scwcli)      uninstall_scwcli ;;
+        tencentcli)  uninstall_pipcli "tccli" "Tencent Cloud CLI" "tencentcli" ;;
+        herokucli)   uninstall_herokucli ;;
+        flycli)      uninstall_flycli ;;
 
         # --- Complex external installers (Phase 2: implemented) ---
         python)     uninstall_python ;;
@@ -2207,6 +2441,14 @@ _installed_marker() {
         doctl)       cmd="doctl" ;;
         huaweicli)   cmd="hcloud" ;;
         yccli)       cmd="yc" ;;
+        ibmcloudcli) cmd="ibmcloud" ;;
+        wranglercli) cmd="wrangler" ;;
+        vultrcli)    cmd="vultr-cli" ;;
+        linodecli)   cmd="linode-cli" ;;
+        scwcli)      cmd="scw" ;;
+        tencentcli)  cmd="tccli" ;;
+        herokucli)   cmd="heroku" ;;
+        flycli)      is_cmd flyctl || is_cmd fly; return $? ;;
         *)           cmd="$key" ;;
     esac
     is_cmd "$cmd"
@@ -2610,6 +2852,15 @@ system_scan() {
     local doctl_ver=$(get_cmd_version doctl "version")
     local hcloud_ver=$(get_cmd_version hcloud "version")
     local yc_ver=$(get_cmd_version yc "version")
+    local ibmcloud_ver=$(get_cmd_version ibmcloud "--version")
+    local wrangler_ver=$(get_cmd_version wrangler "--version")
+    local vultr_ver=$(get_cmd_version vultr-cli "version")
+    local linode_ver=$(get_cmd_version linode-cli "--version")
+    local scw_ver=$(get_cmd_version scw "version")
+    local tccli_ver=$(get_cmd_version tccli "--version")
+    local heroku_ver=$(get_cmd_version heroku "--version")
+    local fly_ver=$(get_cmd_version flyctl "version")
+    [[ -z "$fly_ver" ]] && fly_ver=$(get_cmd_version fly "version")
 
     # Detect package managers / frameworks
     local npm_ver=$(get_cmd_version npm "--version")
@@ -2744,6 +2995,14 @@ system_scan() {
     show_item "DigitalOcean" "$doctl_ver"  "latest"
     show_item "hcloud"       "$hcloud_ver" "latest"
     show_item "Yandex Cloud" "$yc_ver"     "latest"
+    show_item "IBM Cloud"    "$ibmcloud_ver" "latest"
+    show_item "Cloudflare"   "$wrangler_ver" "latest"
+    show_item "Vultr"        "$vultr_ver"  "latest"
+    show_item "Linode"       "$linode_ver" "latest"
+    show_item "Scaleway"     "$scw_ver"    "latest"
+    show_item "Tencent"      "$tccli_ver"  "latest"
+    show_item "Heroku"       "$heroku_ver" "latest"
+    show_item "Fly.io"       "$fly_ver"    "latest"
     echo ""
 
     echo -e "  ${BOLD}${CYAN}Package Managers:${NC}"
@@ -2911,8 +3170,8 @@ main() {
     local IDE_KEYS=("vscode" "vscodium" "antigravity" "cursor" "zed" "windsurf" "sublime" "classicvim" "vim" "emacs" "notepadpp" "intellij" "pycharm" "webstorm" "goland" "clion" "rider" "rustrover" "fleet" "eclipse" "netbeans" "android")
     local IDE_LABELS=("VS Code - Lightweight, extensible" "VSCodium - VS Code without telemetry" "Antigravity - AI-native code editor" "Cursor - AI-powered code editor" "Zed - High-performance editor" "Windsurf - AI-powered IDE" "Sublime Text - Fast, lightweight" "Vim - Classic terminal editor" "Neovim - Modern terminal editor" "GNU Emacs - Extensible text editor" "Notepad++ - Windows code editor" "IntelliJ IDEA Community - Java, Kotlin" "PyCharm Community - Python IDE" "WebStorm - JS/TS IDE (paid)" "GoLand - Go IDE (paid)" "CLion - C/C++ IDE (paid)" "Rider - .NET IDE (paid)" "RustRover - Rust IDE" "JetBrains Fleet - Lightweight multi-lang" "Eclipse IDE - Java, multi-language" "Apache NetBeans - Java, PHP, HTML5" "Android Studio - Android development")
 
-    local TOOL_KEYS=("git" "docker" "postman" "cmake" "gh" "pyenv" "awscli" "azurecli" "gcloudcli" "aliyuncli" "ocicli" "doctl" "huaweicli" "yccli")
-    local TOOL_LABELS=("Git - Version control" "Docker - Containers" "Postman - API testing" "CMake - Build system" "GitHub CLI - GitHub from terminal" "pyenv - Python version manager" "AWS CLI v2 - Amazon Web Services" "Azure CLI - Microsoft Azure (az)" "Google Cloud CLI - gcloud" "Alibaba Cloud CLI - aliyun" "Oracle OCI CLI - oci" "doctl - DigitalOcean CLI" "Huawei Cloud KooCLI - hcloud" "Yandex Cloud CLI - yc")
+    local TOOL_KEYS=("git" "docker" "postman" "cmake" "gh" "pyenv" "awscli" "azurecli" "gcloudcli" "aliyuncli" "ocicli" "doctl" "huaweicli" "yccli" "ibmcloudcli" "wranglercli" "vultrcli" "linodecli" "scwcli" "tencentcli" "herokucli" "flycli")
+    local TOOL_LABELS=("Git - Version control" "Docker - Containers" "Postman - API testing" "CMake - Build system" "GitHub CLI - GitHub from terminal" "pyenv - Python version manager" "AWS CLI v2 - Amazon Web Services" "Azure CLI - Microsoft Azure (az)" "Google Cloud CLI - gcloud" "Alibaba Cloud CLI - aliyun" "Oracle OCI CLI - oci" "doctl - DigitalOcean CLI" "Huawei Cloud KooCLI - hcloud" "Yandex Cloud CLI - yc" "IBM Cloud CLI - ibmcloud" "Cloudflare Wrangler - workers CLI" "Vultr CLI - vultr-cli" "Linode CLI - linode-cli" "Scaleway CLI - scw" "Tencent Cloud CLI - tccli" "Heroku CLI - PaaS deploys" "Fly.io CLI - flyctl")
 
     local FW_KEYS=("npm" "yarn" "pnpm" "bun" "venvstudio" "uv" "poetry" "pipx" "conda" "react" "nextjs" "vue" "nuxt" "angular" "svelte" "vite" "astro" "express" "nest" "remix" "django" "flask" "fastapi" "streamlit" "tailwind" "bootstrap" "reactnative" "expo" "ionic" "electron" "tauri" "cargo-watch" "wasm-pack" "blazor" "maui" "efcore" "terraform" "kubectl" "helm")
     local FW_LABELS=("npm (latest) - Node default pkg manager" "Yarn - Fast JS pkg manager" "pnpm - Disk-efficient JS pkg manager" "Bun - Ultra-fast JS runtime" "VenvStudio - GUI venv manager (PySide6)" "uv - Ultra-fast Python pkg manager (Rust)" "Poetry - Python dependency mgmt" "pipx - Isolated Python CLI tools" "Miniconda - Python/R data science" "React (create-react-app) - Facebook UI" "Next.js - React fullstack framework" "Vue CLI - Progressive JS framework" "Nuxt (nuxi) - Vue fullstack framework" "Angular CLI - Google enterprise web" "SvelteKit - Lightweight reactive" "Vite - Next-gen build tool" "Astro - Content-focused web framework" "Express.js - Minimal Node.js web" "NestJS CLI - Progressive Node.js" "Remix - Full stack web framework" "Django - Python web framework" "Flask - Lightweight Python web" "FastAPI - Modern async Python API" "Streamlit - Python data app" "Tailwind CSS - Utility-first CSS" "Bootstrap - Popular CSS framework" "React Native CLI - Cross-platform mobile" "Expo CLI - React Native toolchain" "Ionic CLI - Cross-platform mobile" "Electron Forge - Desktop apps (web tech)" "Tauri CLI - Lightweight desktop (Rust)" "cargo-watch - Rust auto-rebuild" "wasm-pack - Rust to WebAssembly" "Blazor - C# web UI (in .NET SDK)" ".NET MAUI - Cross-platform .NET UI" "EF Core CLI - dotnet-ef migrations tool" "Terraform - Infrastructure as code" "kubectl - Kubernetes CLI" "Helm - Kubernetes pkg manager")

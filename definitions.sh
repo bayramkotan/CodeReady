@@ -337,3 +337,28 @@ AUR_MAP["yccli"]="yandex-cloud-cli"
 BREW_MAP["yccli"]="yandex-cloud-cli"
 # other distros → official install script (install_tool)
 CONFIG_MAP["yccli"]='$HOME/.config/yandex-cloud $HOME/yandex-cloud'
+
+# --- More cloud CLIs (v2.3.3) -----------------------------------
+BREW_MAP["ibmcloudcli"]="--cask ibm-cloud-cli"
+AUR_MAP["ibmcloudcli"]="ibmcloud-cli"
+CONFIG_MAP["ibmcloudcli"]='$HOME/.bluemix'
+
+CONFIG_MAP["wranglercli"]='$HOME/.config/.wrangler $HOME/.wrangler'
+
+AUR_MAP["vultrcli"]="vultr-cli"
+CONFIG_MAP["vultrcli"]='$HOME/.vultr-cli.yaml'
+
+CONFIG_MAP["linodecli"]='$HOME/.config/linode-cli'
+
+BREW_MAP["scwcli"]="scw"
+AUR_MAP["scwcli"]="scaleway-cli"
+CONFIG_MAP["scwcli"]='$HOME/.config/scw'
+
+CONFIG_MAP["tencentcli"]='$HOME/.tccli'
+
+AUR_MAP["herokucli"]="heroku-cli"
+CONFIG_MAP["herokucli"]='$HOME/.local/share/heroku'
+
+BREW_MAP["flycli"]="flyctl"
+AUR_MAP["flycli"]="flyctl"
+CONFIG_MAP["flycli"]='$HOME/.fly'
