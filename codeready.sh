@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ================================================================
-# CodeReady v2.3.2
+# CodeReady v2.3.3
 # Developer Environment Setup Tool (Linux/macOS)
 # https://github.com/bayramkotan/CodeReady
 # ================================================================
@@ -13,7 +13,7 @@ if ((BASH_VERSINFO[0] < 4)); then
     exit 1
 fi
 
-VERSION="2.3.2"
+VERSION="2.3.3"
 LOG_FILE="$HOME/codeready_install.log"
 INSTALLED=()
 UNINSTALLED=()
@@ -1197,6 +1197,60 @@ install_tool() {
             step "Installing pyenv..."
             curl https://pyenv.run | bash &>>"$LOG_FILE" && ok "pyenv installed." || fail "pyenv"
             ;;
+        # --- Cloud CLIs (v2.3.3) ---
+        awscli)
+            skip_installed "AWS CLI" "aws" && return
+            if [[ "$PKG" == "apt" ]]; then
+                step "Installing AWS CLI v2 (official installer)..."
+                local aws_arch="x86_64"
+                [[ "$(uname -m)" == "aarch64" ]] && aws_arch="aarch64"
+                (cd /tmp && curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-${aws_arch}.zip" -o awscliv2.zip                     && unzip -oq awscliv2.zip && sudo ./aws/install --update) &>>"$LOG_FILE" 2>&1                     && ok "AWS CLI installed." || fail "AWS CLI"
+            else
+                install_from_map "awscli" "AWS CLI"
+            fi
+            ;;
+        azurecli)
+            skip_installed "Azure CLI" "az" && return
+            case "$PKG" in
+                pacman|brew) install_from_map "azurecli" "Azure CLI" ;;
+                apt)
+                    step "Installing Azure CLI (Microsoft script)..."
+                    curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash &>>"$LOG_FILE" 2>&1                         && ok "Azure CLI installed." || fail "Azure CLI"
+                    ;;
+                *)
+                    step "Installing Azure CLI via pip..."
+                    (pipx install azure-cli || pip3 install --user --break-system-packages azure-cli) &>>"$LOG_FILE" 2>&1                         && ok "Azure CLI installed." || fail "Azure CLI"
+                    ;;
+            esac
+            ;;
+        gcloudcli)
+            skip_installed "Google Cloud CLI" "gcloud" && return
+            install_from_map "gcloudcli" "Google Cloud CLI"
+            ;;
+        aliyuncli)
+            skip_installed "Alibaba Cloud CLI" "aliyun" && return
+            case "$PKG" in
+                brew|pacman) install_from_map "aliyuncli" "Alibaba Cloud CLI" ;;
+                *)
+                    step "Installing Alibaba Cloud CLI (official tarball)..."
+                    (cd /tmp && curl -fsSL "https://aliyuncli.alicdn.com/aliyun-cli-linux-latest-amd64.tgz" -o aliyun.tgz                         && tar xzf aliyun.tgz && sudo mv -f aliyun /usr/local/bin/aliyun) &>>"$LOG_FILE" 2>&1                         && ok "Alibaba Cloud CLI installed." || fail "Alibaba Cloud CLI"
+                    ;;
+            esac
+            ;;
+        ocicli)
+            skip_installed "Oracle OCI CLI" "oci" && return
+            step "Installing Oracle OCI CLI via pip..."
+            (pipx install oci-cli || pip3 install --user --break-system-packages oci-cli) &>>"$LOG_FILE" 2>&1                 && ok "Oracle OCI CLI installed." || fail "Oracle OCI CLI"
+            ;;
+        doctl)
+            skip_installed "DigitalOcean doctl" "doctl" && return
+            install_from_map "doctl" "DigitalOcean doctl"
+            ;;
+        huaweicli)
+            skip_installed "Huawei Cloud KooCLI" "hcloud" && return
+            step "Installing Huawei Cloud KooCLI (official script)..."
+            (curl -fsSL "https://hwcloudcli.obs.cn-north-1.myhuaweicloud.com/cli/latest/hcloud_install.sh" -o /tmp/hcloud_install.sh                 && bash /tmp/hcloud_install.sh -y) &>>"$LOG_FILE" 2>&1                 && ok "Huawei Cloud KooCLI installed." || fail "Huawei Cloud KooCLI"
+            ;;
         wsl)    info "WSL is Windows-only." ;;
         terminal) info "Windows Terminal is Windows-only." ;;
         *) fail "Unknown tool: $key" ;;
@@ -1275,6 +1329,15 @@ install_framework() {
         # .NET info
         blazor)     info "Blazor is included in .NET SDK - use: dotnet new blazor" ;;
         maui)       info ".NET MAUI - install via: dotnet workload install maui" ;;
+        efcore)
+            if command -v dotnet &>/dev/null; then
+                step "Installing EF Core CLI (dotnet-ef)..."
+                dotnet tool install --global dotnet-ef &>>"$LOG_FILE" 2>&1 && ok "EF Core CLI installed." || fail "EF Core CLI"
+            else
+                warn ".NET SDK required for EF Core CLI — install C#/.NET first."
+                fail "EF Core CLI (needs dotnet)"
+            fi
+            ;;
 
         # DevOps/Infra
         terraform)
@@ -1858,6 +1921,116 @@ uninstall_csharp() {
     remove_user_configs "csharp" ".NET SDK"
 }
 
+# --- Cloud CLI uninstallers (v2.3.3) ----------------------------
+
+uninstall_awscli() {
+    if ! is_cmd aws && [[ ! -d /usr/local/aws-cli ]]; then
+        info "AWS CLI not installed."
+        return
+    fi
+    # Official zip installer locations
+    if [[ -d /usr/local/aws-cli ]]; then
+        step "Removing AWS CLI (official installer)..."
+        sudo rm -rf /usr/local/aws-cli &>>"$LOG_FILE"
+        sudo rm -f /usr/local/bin/aws /usr/local/bin/aws_completer &>>"$LOG_FILE"
+        ok "AWS CLI removed."
+    fi
+    is_cmd aws && uninstall_native "awscli" "AWS CLI"
+    remove_user_configs "awscli" "AWS CLI"
+}
+
+uninstall_azurecli() {
+    if ! is_cmd az; then
+        info "Azure CLI not installed."
+        return
+    fi
+    case "$PKG" in
+        pacman|brew) uninstall_native "azurecli" "Azure CLI" ;;
+        apt)         pkg_uninstall "Azure CLI" "sudo apt remove -y azure-cli" ;;
+        *)
+            step "Removing Azure CLI (pip)..."
+            (pipx uninstall azure-cli || pip3 uninstall -y azure-cli --break-system-packages || pip3 uninstall -y azure-cli) &>>"$LOG_FILE" 2>&1 \
+                && ok "Azure CLI removed." || fail "Azure CLI"
+            ;;
+    esac
+    remove_user_configs "azurecli" "Azure CLI"
+}
+
+uninstall_gcloudcli() {
+    if ! is_cmd gcloud; then
+        info "Google Cloud CLI not installed."
+        return
+    fi
+    if command -v snap &>/dev/null && snap list google-cloud-cli &>/dev/null; then
+        pkg_uninstall "Google Cloud CLI" "sudo snap remove google-cloud-cli"
+    elif [[ "$PKG" == "pacman" ]] && pacman -Qq google-cloud-cli &>/dev/null; then
+        pkg_uninstall "Google Cloud CLI" "sudo pacman -Rns --noconfirm google-cloud-cli"
+    elif [[ "$PKG" == "brew" ]]; then
+        pkg_uninstall "Google Cloud CLI" "brew uninstall --cask google-cloud-sdk"
+    fi
+    remove_user_configs "gcloudcli" "Google Cloud CLI"
+}
+
+uninstall_aliyuncli() {
+    if ! is_cmd aliyun; then
+        info "Alibaba Cloud CLI not installed."
+        return
+    fi
+    case "$PKG" in
+        brew) pkg_uninstall "Alibaba Cloud CLI" "brew uninstall aliyun-cli" ;;
+        pacman)
+            if pacman -Qq aliyun-cli &>/dev/null; then
+                pkg_uninstall "Alibaba Cloud CLI" "sudo pacman -Rns --noconfirm aliyun-cli"
+            fi
+            ;;
+    esac
+    # Official tarball location
+    if [[ -e /usr/local/bin/aliyun ]]; then
+        step "Removing aliyun binary..."
+        sudo rm -f /usr/local/bin/aliyun &>>"$LOG_FILE" && ok "Alibaba Cloud CLI removed." || fail "Alibaba Cloud CLI"
+    fi
+    remove_user_configs "aliyuncli" "Alibaba Cloud CLI"
+}
+
+uninstall_ocicli() {
+    if ! is_cmd oci; then
+        info "Oracle OCI CLI not installed."
+        return
+    fi
+    step "Removing Oracle OCI CLI (pip)..."
+    (pipx uninstall oci-cli || pip3 uninstall -y oci-cli --break-system-packages || pip3 uninstall -y oci-cli) &>>"$LOG_FILE" 2>&1 \
+        && ok "Oracle OCI CLI removed." || fail "Oracle OCI CLI"
+    remove_user_configs "ocicli" "Oracle OCI CLI"
+}
+
+uninstall_doctl() {
+    if ! is_cmd doctl; then
+        info "doctl not installed."
+        return
+    fi
+    if command -v snap &>/dev/null && snap list doctl &>/dev/null; then
+        pkg_uninstall "doctl" "sudo snap remove doctl"
+    else
+        uninstall_native "doctl" "DigitalOcean doctl"
+    fi
+    remove_user_configs "doctl" "doctl"
+}
+
+uninstall_huaweicli() {
+    if ! is_cmd hcloud; then
+        info "Huawei Cloud KooCLI not installed."
+        return
+    fi
+    warn "Note: 'hcloud' may also be the Hetzner Cloud CLI — verify before removing."
+    if [[ -e /usr/local/bin/hcloud ]]; then
+        step "Removing hcloud binary..."
+        sudo rm -f /usr/local/bin/hcloud &>>"$LOG_FILE" && ok "Huawei Cloud KooCLI removed." || fail "Huawei Cloud KooCLI"
+    elif [[ "$PKG" == "pacman" ]] && pacman -Qq hcloud &>/dev/null; then
+        pkg_uninstall "hcloud" "sudo pacman -Rns --noconfirm hcloud"
+    fi
+    remove_user_configs "huaweicli" "Huawei Cloud KooCLI"
+}
+
 # --- Uninstall dispatcher ---------------------------------------
 # Routes a package key to the right uninstall function.
 # For simple map-based packages, uses uninstall_from_map + config prompt.
@@ -1871,6 +2044,15 @@ uninstall_package() {
         nodejs)   uninstall_nodejs ;;
         kotlin)   uninstall_kotlin ;;
         java)     uninstall_java ;;
+
+        # --- Cloud CLIs (v2.3.3) ---
+        awscli)     uninstall_awscli ;;
+        azurecli)   uninstall_azurecli ;;
+        gcloudcli)  uninstall_gcloudcli ;;
+        aliyuncli)  uninstall_aliyuncli ;;
+        ocicli)     uninstall_ocicli ;;
+        doctl)      uninstall_doctl ;;
+        huaweicli)  uninstall_huaweicli ;;
 
         # --- Complex external installers (Phase 2: implemented) ---
         python)     uninstall_python ;;
@@ -1978,6 +2160,14 @@ _installed_marker() {
         cmake)       cmd="cmake" ;;
         gh)          cmd="gh" ;;
         pyenv)       cmd="pyenv" ;;
+        # Cloud CLIs (v2.3.3)
+        awscli)      cmd="aws" ;;
+        azurecli)    cmd="az" ;;
+        gcloudcli)   cmd="gcloud" ;;
+        aliyuncli)   cmd="aliyun" ;;
+        ocicli)      cmd="oci" ;;
+        doctl)       cmd="doctl" ;;
+        huaweicli)   cmd="hcloud" ;;
         *)           cmd="$key" ;;
     esac
     is_cmd "$cmd"
@@ -2220,7 +2410,7 @@ resolve_profile_selection() {
             6)  add_unique _rps_langs "cpp" "rust" "zig" "go"; add_unique _rps_ides "vscode" "clion" "vim"; add_unique _rps_tools "git" "cmake"; add_unique _rps_fws "cargo-watch" "wasm-pack" ;;
             7)  add_unique _rps_langs "csharp" "nodejs" "typescript"; add_unique _rps_ides "vs2026" "vscode" "rider"; add_unique _rps_tools "git" "docker" "postman"; add_unique _rps_fws "yarn" "vite" "react" "nextjs" "blazor" ;;
             8)  add_unique _rps_langs "cpp" "csharp" "lua"; add_unique _rps_ides "vs2026" "vscode" "rider"; add_unique _rps_tools "git" "cmake" ;;
-            9)  add_unique _rps_langs "python" "go" "rust"; add_unique _rps_ides "vscode" "vim"; add_unique _rps_tools "git" "docker"; add_unique _rps_fws "terraform" "kubectl" "helm" ;;
+            9)  add_unique _rps_langs "python" "go" "rust"; add_unique _rps_ides "vscode" "vim"; add_unique _rps_tools "git" "docker" "awscli" "azurecli" "gcloudcli"; add_unique _rps_fws "terraform" "kubectl" "helm" ;;
             10) add_unique _rps_langs "solidity" "rust" "typescript" "nodejs"; add_unique _rps_ides "vscode" "cursor"; add_unique _rps_tools "git"; add_unique _rps_fws "npm" "yarn" ;;
             11) add_unique _rps_langs "cpp" "rust" "python" "lua"; add_unique _rps_ides "vscode" "clion" "vim"; add_unique _rps_tools "git" "cmake" ;;
             12) add_unique _rps_langs "fortran" "python" "r" "julia" "haskell"; add_unique _rps_ides "vscode" "emacs"; add_unique _rps_tools "git"; add_unique _rps_fws "venvstudio" "uv" "conda" ;;
@@ -2242,6 +2432,38 @@ get_cmd_version() {
     local ver
     ver=$("$cmd" $flag 2>&1 | head -3 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
     [[ -n "$ver" ]] && echo "$ver" || echo "found"
+}
+
+# Query installed package version from the system package manager.
+# Fast (no app launch) — used for GUI IDEs where running --version is slow
+# or unreliable. Tries each candidate package name, returns first hit.
+get_pkg_version() {
+    local pkg v=""
+    for pkg in "$@"; do
+        v=""
+        case "$PKG" in
+            pacman) v=$(pacman -Q "$pkg" 2>/dev/null | awk '{print $2}') ;;
+            apt)    v=$(dpkg-query -W -f='${Version}' "$pkg" 2>/dev/null) ;;
+            dnf|zypper)
+                    rpm -q "$pkg" &>/dev/null && v=$(rpm -q --qf '%{VERSION}' "$pkg" 2>/dev/null) ;;
+            brew)   v=$(brew list --versions "$pkg" 2>/dev/null | awk '{print $2}') ;;
+        esac
+        # Clean display: strip epoch prefix (1:2.43.0 -> 2.43.0) and release suffix (2025.1-2 -> 2025.1)
+        v="${v#*:}"
+        v="${v%%-*}"
+        [[ -n "$v" ]] && { echo "$v"; return 0; }
+    done
+    echo ""
+}
+
+# Presence + package-manager version for GUI apps: prints version if the
+# package manager knows it, "installed" if only the command exists, "" if absent.
+gui_app_ver() {
+    local cmd="$1"; shift
+    command -v "$cmd" &>/dev/null || { echo ""; return; }
+    local v
+    v=$(get_pkg_version "$@")
+    [[ -n "$v" ]] && echo "$v" || echo "installed"
 }
 
 system_scan() {
@@ -2299,38 +2521,55 @@ system_scan() {
     local cobc_ver=$(get_cmd_version cobc "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
     local sbcl_ver=$(get_cmd_version sbcl "--version")
     local racket_ver=$(get_cmd_version racket "--version" 2>&1 | grep -oP '\d+\.\d+[\.\d]*' | head -1)
-    local objc_ver="" && command -v gobjc &>/dev/null && objc_ver="installed"
-    [[ -z "$objc_ver" ]] && command -v clang &>/dev/null && objc_ver="via clang"
+    local objc_ver=""
+    if command -v gobjc &>/dev/null; then
+        objc_ver=$(get_cmd_version gobjc "--version")
+    elif command -v clang &>/dev/null; then
+        local _clang_v
+        _clang_v=$(get_cmd_version clang "--version")
+        [[ -n "$_clang_v" && "$_clang_v" != "found" ]] && objc_ver="via clang $_clang_v" || objc_ver="via clang"
+    fi
 
     # Detect IDEs/Editors
     local code_ver=$(get_cmd_version code "--version" 2>/dev/null | head -1)
     local codium_ver=$(get_cmd_version codium "--version" 2>/dev/null | head -1)
     local nvim_ver=$(get_cmd_version nvim "--version")
     local vim_ver=$(get_cmd_version vim "--version" 2>&1 | grep -oP '\d+\.\d+' | head -1)
-    local cursor_ver="" && command -v cursor &>/dev/null && cursor_ver="installed"
-    local sublime_ver="" && command -v subl &>/dev/null && sublime_ver="installed"
+    local cursor_ver=$(gui_app_ver cursor cursor cursor-bin cursor-editor)
+    local sublime_ver=$(gui_app_ver subl sublime-text sublime-text-4 sublime-text-bin)
     local emacs_ver=$(get_cmd_version emacs "--version")
-    local zed_ver="" && command -v zed &>/dev/null && zed_ver="installed"
-    local windsurf_ver="" && command -v windsurf &>/dev/null && windsurf_ver="installed"
-    local antigravity_ver="" && command -v antigravity &>/dev/null && antigravity_ver="installed"
-    local fleet_ver="" && command -v fleet &>/dev/null && fleet_ver="installed"
-    local idea_ver="" && (command -v idea &>/dev/null || command -v intellij-idea-community &>/dev/null) && idea_ver="installed"
-    local pycharm_ver="" && command -v pycharm &>/dev/null && pycharm_ver="installed"
-    local webstorm_ver="" && command -v webstorm &>/dev/null && webstorm_ver="installed"
-    local goland_ver="" && command -v goland &>/dev/null && goland_ver="installed"
-    local clion_ver="" && command -v clion &>/dev/null && clion_ver="installed"
-    local rider_ver="" && command -v rider &>/dev/null && rider_ver="installed"
-    local rustrover_ver="" && command -v rustrover &>/dev/null && rustrover_ver="installed"
-    local eclipse_ver="" && command -v eclipse &>/dev/null && eclipse_ver="installed"
-    local netbeans_ver="" && command -v netbeans &>/dev/null && netbeans_ver="installed"
-    local android_ver="" && (command -v studio &>/dev/null || command -v android-studio &>/dev/null) && android_ver="installed"
-    local notepadpp_ver="" && command -v notepad++ &>/dev/null && notepadpp_ver="installed"
+    local zed_ver=$(gui_app_ver zed zed zed-editor)
+    local windsurf_ver=$(gui_app_ver windsurf windsurf windsurf-bin)
+    local antigravity_ver=$(gui_app_ver antigravity antigravity antigravity-bin)
+    local fleet_ver=$(gui_app_ver fleet jetbrains-fleet fleet)
+    local idea_ver=$(gui_app_ver idea intellij-idea-community-edition intellij-idea-ce intellij-idea-community)
+    [[ -z "$idea_ver" ]] && idea_ver=$(gui_app_ver intellij-idea-community intellij-idea-community-edition intellij-idea-ce intellij-idea-community)
+    local pycharm_ver=$(gui_app_ver pycharm pycharm-community-edition pycharm-community pycharm-ce)
+    local webstorm_ver=$(gui_app_ver webstorm webstorm)
+    local goland_ver=$(gui_app_ver goland goland)
+    local clion_ver=$(gui_app_ver clion clion)
+    local rider_ver=$(gui_app_ver rider rider)
+    local rustrover_ver=$(gui_app_ver rustrover rustrover)
+    local eclipse_ver=$(gui_app_ver eclipse eclipse-java eclipse-jee eclipse)
+    local netbeans_ver=$(gui_app_ver netbeans netbeans apache-netbeans)
+    local android_ver=$(gui_app_ver studio android-studio)
+    [[ -z "$android_ver" ]] && android_ver=$(gui_app_ver android-studio android-studio)
+    local notepadpp_ver=$(gui_app_ver notepad++ notepad-plus-plus notepadpp)
 
     # Detect tools
     local git_ver=$(get_cmd_version git "--version")
     local docker_ver=$(get_cmd_version docker "--version")
     local cmake_ver=$(get_cmd_version cmake "--version")
     local gh_ver=$(get_cmd_version gh "--version")
+
+    # Cloud CLIs (v2.3.3)
+    local az_ver=$(get_cmd_version az "--version")
+    local aws_ver=$(get_cmd_version aws "--version")
+    local gcloud_ver=$(get_cmd_version gcloud "--version")
+    local aliyun_ver=$(get_cmd_version aliyun "version")
+    local oci_ver=$(get_cmd_version oci "--version")
+    local doctl_ver=$(get_cmd_version doctl "version")
+    local hcloud_ver=$(get_cmd_version hcloud "version")
 
     # Detect package managers / frameworks
     local npm_ver=$(get_cmd_version npm "--version")
@@ -2339,6 +2578,7 @@ system_scan() {
     local bun_ver=$(get_cmd_version bun "--version")
     local uv_ver=$(get_cmd_version uv "--version")
     local poetry_ver=$(get_cmd_version poetry "--version")
+    local pipx_ver=$(get_cmd_version pipx "--version")
     local conda_ver=$(get_cmd_version conda "--version")
     local pip_ver=$(get_cmd_version pip3 "--version")
     [[ -z "$pip_ver" ]] && pip_ver=$(get_cmd_version pip "--version")
@@ -2455,6 +2695,16 @@ system_scan() {
     show_item "GitHub CLI" "$gh_ver"     "${LATEST[gh]}"
     echo ""
 
+    echo -e "  ${BOLD}${CYAN}Cloud CLIs:${NC}"
+    show_item "Azure CLI"    "$az_ver"     "latest"
+    show_item "AWS CLI"      "$aws_ver"    "latest"
+    show_item "Google Cloud" "$gcloud_ver" "latest"
+    show_item "Alibaba"      "$aliyun_ver" "latest"
+    show_item "Oracle OCI"   "$oci_ver"    "latest"
+    show_item "DigitalOcean" "$doctl_ver"  "latest"
+    show_item "hcloud"       "$hcloud_ver" "latest"
+    echo ""
+
     echo -e "  ${BOLD}${CYAN}Package Managers:${NC}"
     show_item "npm"        "$npm_ver"    "${LATEST[npm]}"
     show_item "Yarn"       "$yarn_ver"   "${LATEST[yarn]}"
@@ -2462,6 +2712,7 @@ system_scan() {
     show_item "Bun"        "$bun_ver"    "${LATEST[bun]}"
     show_item "uv"         "$uv_ver"     "${LATEST[uv]}"
     show_item "Poetry"     "$poetry_ver" "${LATEST[poetry]}"
+    show_item "pipx"       "$pipx_ver"   "latest"
     show_item "Conda"      "$conda_ver"  "${LATEST[conda]}"
     show_item "Terraform"  "$terraform_ver" "${LATEST[terraform]}"
     show_item "kubectl"    "$kubectl_ver" "${LATEST[kubectl]}"
@@ -2530,10 +2781,45 @@ system_scan() {
     check_pip_fw "VenvStudio"  "venvstudio"
     echo ""
 
-    # Blazor check
-    local blazor_status=""
-    [[ -n "$dotnet_ver" ]] && blazor_status="via .NET"
-    show_item "Blazor" "$blazor_status" "latest"
+    # Frameworks — cargo (Rust) tools
+    echo -e "  ${BOLD}${CYAN}Frameworks (cargo):${NC}"
+    local cargo_list=""
+    if command -v cargo &>/dev/null; then
+        cargo_list=$(cargo install --list 2>/dev/null | awk '/^[A-Za-z0-9_-]+ v[0-9]/ {gsub(/[v:]/,"",$2); print $1" "$2}')
+    fi
+
+    check_cargo_fw() {
+        local name="$1" pkg="$2" ver=""
+        ver=$(echo "$cargo_list" | awk -v p="$pkg" '$1 == p {print $2; exit}')
+        show_item "$name" "$ver" "latest"
+    }
+
+    check_cargo_fw "cargo-watch" "cargo-watch"
+    check_cargo_fw "wasm-pack"   "wasm-pack"
+    check_cargo_fw "Tauri CLI"   "tauri-cli"
+    echo ""
+
+    # Frameworks — .NET (Blazor ships inside the SDK; MAUI is a workload)
+    echo -e "  ${BOLD}${CYAN}Frameworks (.NET):${NC}"
+    local blazor_status="" maui_status=""
+    if [[ -n "$dotnet_ver" ]]; then
+        blazor_status="via .NET $dotnet_ver"
+        local dotnet_workloads
+        dotnet_workloads=$(dotnet workload list 2>/dev/null)
+        if echo "$dotnet_workloads" | grep -qiw "maui"; then
+            maui_status=$(echo "$dotnet_workloads" | awk 'tolower($1) ~ /^maui/ {print $2; exit}')
+            [[ -z "$maui_status" ]] && maui_status="installed"
+        fi
+    fi
+    local aspnet_status="" efcore_status=""
+    if [[ -n "$dotnet_ver" ]]; then
+        aspnet_status=$(dotnet --list-runtimes 2>/dev/null | awk '$1 == "Microsoft.AspNetCore.App" {print $2}' | sort -V | tail -1)
+        efcore_status=$(dotnet tool list --global 2>/dev/null | awk 'tolower($1) == "dotnet-ef" {print $2; exit}')
+    fi
+    show_item "Blazor"     "$blazor_status" "latest"
+    show_item "ASP.NET"    "$aspnet_status" "latest"
+    show_item ".NET MAUI"  "$maui_status"   "latest"
+    show_item "EF Core"    "$efcore_status" "latest"
     echo ""
 
     # Count stats
@@ -2584,11 +2870,11 @@ main() {
     local IDE_KEYS=("vscode" "vscodium" "antigravity" "cursor" "zed" "windsurf" "sublime" "classicvim" "vim" "emacs" "notepadpp" "intellij" "pycharm" "webstorm" "goland" "clion" "rider" "rustrover" "fleet" "eclipse" "netbeans" "android")
     local IDE_LABELS=("VS Code - Lightweight, extensible" "VSCodium - VS Code without telemetry" "Antigravity - AI-native code editor" "Cursor - AI-powered code editor" "Zed - High-performance editor" "Windsurf - AI-powered IDE" "Sublime Text - Fast, lightweight" "Vim - Classic terminal editor" "Neovim - Modern terminal editor" "GNU Emacs - Extensible text editor" "Notepad++ - Windows code editor" "IntelliJ IDEA Community - Java, Kotlin" "PyCharm Community - Python IDE" "WebStorm - JS/TS IDE (paid)" "GoLand - Go IDE (paid)" "CLion - C/C++ IDE (paid)" "Rider - .NET IDE (paid)" "RustRover - Rust IDE" "JetBrains Fleet - Lightweight multi-lang" "Eclipse IDE - Java, multi-language" "Apache NetBeans - Java, PHP, HTML5" "Android Studio - Android development")
 
-    local TOOL_KEYS=("git" "docker" "postman" "cmake" "gh" "pyenv")
-    local TOOL_LABELS=("Git - Version control" "Docker - Containers" "Postman - API testing" "CMake - Build system" "GitHub CLI - GitHub from terminal" "pyenv - Python version manager")
+    local TOOL_KEYS=("git" "docker" "postman" "cmake" "gh" "pyenv" "awscli" "azurecli" "gcloudcli" "aliyuncli" "ocicli" "doctl" "huaweicli")
+    local TOOL_LABELS=("Git - Version control" "Docker - Containers" "Postman - API testing" "CMake - Build system" "GitHub CLI - GitHub from terminal" "pyenv - Python version manager" "AWS CLI v2 - Amazon Web Services" "Azure CLI - Microsoft Azure (az)" "Google Cloud CLI - gcloud" "Alibaba Cloud CLI - aliyun" "Oracle OCI CLI - oci" "doctl - DigitalOcean CLI" "Huawei Cloud KooCLI - hcloud")
 
-    local FW_KEYS=("npm" "yarn" "pnpm" "bun" "venvstudio" "uv" "poetry" "pipx" "conda" "react" "nextjs" "vue" "nuxt" "angular" "svelte" "vite" "astro" "express" "nest" "remix" "django" "flask" "fastapi" "streamlit" "tailwind" "bootstrap" "reactnative" "expo" "ionic" "electron" "tauri" "cargo-watch" "wasm-pack" "blazor" "maui" "terraform" "kubectl" "helm")
-    local FW_LABELS=("npm (latest) - Node default pkg manager" "Yarn - Fast JS pkg manager" "pnpm - Disk-efficient JS pkg manager" "Bun - Ultra-fast JS runtime" "VenvStudio - GUI venv manager (PySide6)" "uv - Ultra-fast Python pkg manager (Rust)" "Poetry - Python dependency mgmt" "pipx - Isolated Python CLI tools" "Miniconda - Python/R data science" "React (create-react-app) - Facebook UI" "Next.js - React fullstack framework" "Vue CLI - Progressive JS framework" "Nuxt (nuxi) - Vue fullstack framework" "Angular CLI - Google enterprise web" "SvelteKit - Lightweight reactive" "Vite - Next-gen build tool" "Astro - Content-focused web framework" "Express.js - Minimal Node.js web" "NestJS CLI - Progressive Node.js" "Remix - Full stack web framework" "Django - Python web framework" "Flask - Lightweight Python web" "FastAPI - Modern async Python API" "Streamlit - Python data app" "Tailwind CSS - Utility-first CSS" "Bootstrap - Popular CSS framework" "React Native CLI - Cross-platform mobile" "Expo CLI - React Native toolchain" "Ionic CLI - Cross-platform mobile" "Electron Forge - Desktop apps (web tech)" "Tauri CLI - Lightweight desktop (Rust)" "cargo-watch - Rust auto-rebuild" "wasm-pack - Rust to WebAssembly" "Blazor - C# web UI (in .NET SDK)" ".NET MAUI - Cross-platform .NET UI" "Terraform - Infrastructure as code" "kubectl - Kubernetes CLI" "Helm - Kubernetes pkg manager")
+    local FW_KEYS=("npm" "yarn" "pnpm" "bun" "venvstudio" "uv" "poetry" "pipx" "conda" "react" "nextjs" "vue" "nuxt" "angular" "svelte" "vite" "astro" "express" "nest" "remix" "django" "flask" "fastapi" "streamlit" "tailwind" "bootstrap" "reactnative" "expo" "ionic" "electron" "tauri" "cargo-watch" "wasm-pack" "blazor" "maui" "efcore" "terraform" "kubectl" "helm")
+    local FW_LABELS=("npm (latest) - Node default pkg manager" "Yarn - Fast JS pkg manager" "pnpm - Disk-efficient JS pkg manager" "Bun - Ultra-fast JS runtime" "VenvStudio - GUI venv manager (PySide6)" "uv - Ultra-fast Python pkg manager (Rust)" "Poetry - Python dependency mgmt" "pipx - Isolated Python CLI tools" "Miniconda - Python/R data science" "React (create-react-app) - Facebook UI" "Next.js - React fullstack framework" "Vue CLI - Progressive JS framework" "Nuxt (nuxi) - Vue fullstack framework" "Angular CLI - Google enterprise web" "SvelteKit - Lightweight reactive" "Vite - Next-gen build tool" "Astro - Content-focused web framework" "Express.js - Minimal Node.js web" "NestJS CLI - Progressive Node.js" "Remix - Full stack web framework" "Django - Python web framework" "Flask - Lightweight Python web" "FastAPI - Modern async Python API" "Streamlit - Python data app" "Tailwind CSS - Utility-first CSS" "Bootstrap - Popular CSS framework" "React Native CLI - Cross-platform mobile" "Expo CLI - React Native toolchain" "Ionic CLI - Cross-platform mobile" "Electron Forge - Desktop apps (web tech)" "Tauri CLI - Lightweight desktop (Rust)" "cargo-watch - Rust auto-rebuild" "wasm-pack - Rust to WebAssembly" "Blazor - C# web UI (in .NET SDK)" ".NET MAUI - Cross-platform .NET UI" "EF Core CLI - dotnet-ef migrations tool" "Terraform - Infrastructure as code" "kubectl - Kubernetes CLI" "Helm - Kubernetes pkg manager")
 
     # --- Action selector ---
     local action

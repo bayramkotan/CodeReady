@@ -294,3 +294,40 @@ CONFIG_MAP["zig"]='/usr/local/zig-linux'
 # ================================================================
 # End of definitions.sh
 # ================================================================
+
+# ================================================================
+# CLOUD CLIs (v2.3.3)
+# ================================================================
+PKG_MAP["awscli:pacman"]="aws-cli-v2"
+PKG_MAP["awscli:dnf"]="awscli2"
+PKG_MAP["awscli:zypper"]="aws-cli"
+BREW_MAP["awscli"]="awscli"
+# awscli:apt → official zip installer (handled in install_tool)
+
+PKG_MAP["azurecli:pacman"]="azure-cli"
+BREW_MAP["azurecli"]="azure-cli"
+# azurecli:apt → Microsoft install script; dnf/zypper → pip fallback (install_tool)
+
+BREW_MAP["gcloudcli"]="--cask google-cloud-sdk"
+AUR_MAP["gcloudcli"]="google-cloud-cli"
+SNAP_MAP["gcloudcli"]="google-cloud-cli"
+
+BREW_MAP["aliyuncli"]="aliyun-cli"
+AUR_MAP["aliyuncli"]="aliyun-cli"
+# other distros → official CDN tarball (install_tool)
+
+# ocicli → pipx/pip based (install_tool)
+
+PKG_MAP["doctl:pacman"]="doctl"
+BREW_MAP["doctl"]="doctl"
+SNAP_MAP["doctl"]="doctl"
+
+# huaweicli → official install script (install_tool)
+
+CONFIG_MAP["awscli"]='$HOME/.aws'
+CONFIG_MAP["azurecli"]='$HOME/.azure'
+CONFIG_MAP["gcloudcli"]='$HOME/.config/gcloud'
+CONFIG_MAP["aliyuncli"]='$HOME/.aliyun'
+CONFIG_MAP["ocicli"]='$HOME/.oci'
+CONFIG_MAP["doctl"]='$HOME/.config/doctl'
+CONFIG_MAP["huaweicli"]='$HOME/.hcloud'
