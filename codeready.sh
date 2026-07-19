@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ================================================================
-# CodeReady v2.3.3
+# CodeReady v2.3.4
 # Developer Environment Setup Tool (Linux/macOS)
 # https://github.com/bayramkotan/CodeReady
 # ================================================================
@@ -13,7 +13,7 @@ if ((BASH_VERSINFO[0] < 4)); then
     exit 1
 fi
 
-VERSION="2.3.3"
+VERSION="2.3.4"
 LOG_FILE="$HOME/codeready_install.log"
 INSTALLED=()
 UNINSTALLED=()

@@ -1,14 +1,15 @@
 # ================================================================
-# CodeReady v2.3.3
+# CodeReady v2.3.4
 # Developer Environment Setup Tool (Windows)
 # https://github.com/bayramkotan/CodeReady
 # ================================================================
 
 $ErrorActionPreference = "Continue"
-$script:Version = "2.3.3"
+$script:Version = "2.3.4"
 $script:LogFile = "$env:USERPROFILE\codeready_install.log"
 $script:InstalledItems = @()
 $script:FailedItems = @()
+$script:UninstalledItems = @()
 
 # --- Colors and UI ----------------------------------------------
 function Write-Banner {
@@ -461,7 +462,23 @@ function Get-Tools {
         @{ Key="cmake";     Name="CMake";              Desc="Cross-platform build system";     WinGet="Kitware.CMake";            Choco="cmake" },
         @{ Key="gh";        Name="GitHub CLI";         Desc="GitHub from command line";        WinGet="GitHub.cli";               Choco="gh" },
         @{ Key="nvm";       Name="NVM for Windows";    Desc="Node version manager";            WinGet="CoreyButler.NVMforWindows"; Choco="nvm" },
-        @{ Key="pyenv";     Name="pyenv-win";          Desc="Python version manager";          WinGet="";                         Choco="pyenv-win" }
+        @{ Key="pyenv";     Name="pyenv-win";          Desc="Python version manager";          WinGet="";                         Choco="pyenv-win" },
+        @{ Key="awscli";      Name="AWS CLI v2";          Desc="Amazon Web Services CLI";        WinGet="Amazon.AWSCLI";        Choco="awscli" },
+        @{ Key="azurecli";    Name="Azure CLI";           Desc="Microsoft Azure (az)";           WinGet="Microsoft.AzureCLI";   Choco="azure-cli" },
+        @{ Key="gcloudcli";   Name="Google Cloud CLI";    Desc="gcloud SDK";                     WinGet="Google.CloudSDK";      Choco="gcloudsdk" },
+        @{ Key="aliyuncli";   Name="Alibaba Cloud CLI";   Desc="aliyun (official zip)";          WinGet="";                     Choco="" },
+        @{ Key="ocicli";      Name="Oracle OCI CLI";      Desc="oci (pip-based)";                WinGet="";                     Choco="" },
+        @{ Key="doctl";       Name="DigitalOcean doctl";  Desc="DigitalOcean CLI";               WinGet="DigitalOcean.Doctl";   Choco="doctl"; Scoop="doctl" },
+        @{ Key="huaweicli";   Name="Huawei Cloud KooCLI"; Desc="hcloud (manual)";                WinGet="";                     Choco="" },
+        @{ Key="yccli";       Name="Yandex Cloud CLI";    Desc="yc (official script)";           WinGet="";                     Choco="" },
+        @{ Key="ibmcloudcli"; Name="IBM Cloud CLI";       Desc="ibmcloud (official script)";     WinGet="";                     Choco="" },
+        @{ Key="wranglercli"; Name="Cloudflare Wrangler"; Desc="Workers CLI (npm)";              WinGet="";                     Choco="" },
+        @{ Key="vultrcli";    Name="Vultr CLI";           Desc="vultr-cli";                      WinGet="";                     Choco="";       Scoop="vultr-cli" },
+        @{ Key="linodecli";   Name="Linode CLI";          Desc="linode-cli (pip)";               WinGet="";                     Choco="" },
+        @{ Key="scwcli";      Name="Scaleway CLI";        Desc="scw";                            WinGet="";                     Choco="";       Scoop="scaleway-cli" },
+        @{ Key="tencentcli";  Name="Tencent Cloud CLI";   Desc="tccli (pip)";                    WinGet="";                     Choco="" },
+        @{ Key="herokucli";   Name="Heroku CLI";          Desc="PaaS deploys";                   WinGet="";                     Choco="heroku-cli" },
+        @{ Key="flycli";      Name="Fly.io CLI";          Desc="flyctl";                         WinGet="";                     Choco="";       Scoop="flyctl" }
     )
 }
 
@@ -647,6 +664,93 @@ function Install-Mojo {
 # ================================================================
 # SUMMARY
 # ================================================================
+# --- Cloud CLI installers (v2.3.4) ------------------------------
+function Install-PipCli($key) {
+    $map = @{
+        "linodecli"  = @("linode-cli", "Linode CLI")
+        "tencentcli" = @("tccli", "Tencent Cloud CLI")
+        "ocicli"     = @("oci-cli", "Oracle OCI CLI")
+    }
+    $pkg = $map[$key][0]; $name = $map[$key][1]
+    if (Get-Command pip -ErrorAction SilentlyContinue) {
+        Write-Step "Installing $name via pip..."
+        pip install $pkg *>> $script:LogFile
+        if ($LASTEXITCODE -eq 0) { Write-Success "$name installed."; $script:InstalledItems += $name }
+        else { Write-Fail $name; $script:FailedItems += $name }
+    } else {
+        Write-Fail "$name (needs pip - install Python first)"
+        $script:FailedItems += $name
+    }
+}
+
+function Install-Wrangler {
+    if (Get-Command npm -ErrorAction SilentlyContinue) {
+        Write-Step "Installing Cloudflare Wrangler via npm..."
+        npm install -g wrangler *>> $script:LogFile
+        if ($LASTEXITCODE -eq 0) { Write-Success "Cloudflare Wrangler installed."; $script:InstalledItems += "Cloudflare Wrangler" }
+        else { Write-Fail "Cloudflare Wrangler"; $script:FailedItems += "Cloudflare Wrangler" }
+    } else {
+        Write-Fail "Cloudflare Wrangler (needs npm - install Node.js first)"
+        $script:FailedItems += "Cloudflare Wrangler"
+    }
+}
+
+function Install-FlyCli {
+    Write-Step "Installing Fly.io CLI (official script)..."
+    try {
+        Invoke-WebRequest "https://fly.io/install.ps1" -UseBasicParsing | Invoke-Expression *>> $script:LogFile
+        Write-Success "Fly.io CLI installed."
+        $script:InstalledItems += "Fly.io CLI"
+    } catch {
+        Write-Fail "Fly.io CLI"
+        $script:FailedItems += "Fly.io CLI"
+    }
+}
+
+function Install-YcCli {
+    Write-Step "Installing Yandex Cloud CLI (official script)..."
+    try {
+        Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://storage.yandexcloud.net/yandexcloud-yc/install.ps1')) *>> $script:LogFile
+        Write-Success "Yandex Cloud CLI installed."
+        $script:InstalledItems += "Yandex Cloud CLI"
+    } catch {
+        Write-Fail "Yandex Cloud CLI"
+        $script:FailedItems += "Yandex Cloud CLI"
+    }
+}
+
+function Install-IbmCloudCli {
+    Write-Step "Installing IBM Cloud CLI (official script)..."
+    try {
+        Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://clis.cloud.ibm.com/install/powershell')) *>> $script:LogFile
+        Write-Success "IBM Cloud CLI installed."
+        $script:InstalledItems += "IBM Cloud CLI"
+    } catch {
+        Write-Fail "IBM Cloud CLI"
+        $script:FailedItems += "IBM Cloud CLI"
+    }
+}
+
+function Install-AliyunCli {
+    Write-Step "Installing Alibaba Cloud CLI (official zip)..."
+    try {
+        $dest = "$env:LOCALAPPDATA\Programs\aliyun"
+        New-Item -ItemType Directory -Force -Path $dest | Out-Null
+        $zip = "$env:TEMP\aliyun-cli.zip"
+        Invoke-WebRequest "https://aliyuncli.alicdn.com/aliyun-cli-windows-latest-amd64.zip" -OutFile $zip -UseBasicParsing
+        Expand-Archive -Path $zip -DestinationPath $dest -Force
+        $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+        if ($userPath -notlike "*$dest*") {
+            [Environment]::SetEnvironmentVariable("Path", "$userPath;$dest", "User")
+        }
+        Write-Success "Alibaba Cloud CLI installed (in $dest)."
+        $script:InstalledItems += "Alibaba Cloud CLI"
+    } catch {
+        Write-Fail "Alibaba Cloud CLI"
+        $script:FailedItems += "Alibaba Cloud CLI"
+    }
+}
+
 function Show-Summary {
     Write-SectionHeader "Installation Summary"
 
@@ -671,13 +775,233 @@ function Show-Summary {
 }
 
 # ================================================================
+# UNINSTALL SUPPORT (v2.3.4 - Windows Phase 1)
+# ================================================================
+function Uninstall-WithWinGet($id, $name) {
+    Write-Step "Removing $name via WinGet..."
+    winget uninstall --id $id --silent --accept-source-agreements *>> $script:LogFile
+    if ($LASTEXITCODE -eq 0) {
+        Write-Success "$name removed."
+        $script:UninstalledItems += $name
+        return $true
+    }
+    Write-Fail "$name (winget)"
+    $script:FailedItems += $name
+    return $false
+}
+
+function Uninstall-WithScoop($pkg, $name) {
+    Write-Step "Removing $name via Scoop..."
+    scoop uninstall $pkg *>> $script:LogFile
+    if ($LASTEXITCODE -eq 0) {
+        Write-Success "$name removed."
+        $script:UninstalledItems += $name
+        return $true
+    }
+    Write-Fail "$name (scoop)"
+    $script:FailedItems += $name
+    return $false
+}
+
+function Uninstall-WithChoco($pkg, $name) {
+    Write-Step "Removing $name via Chocolatey..."
+    choco uninstall $pkg -y *>> $script:LogFile
+    if ($LASTEXITCODE -eq 0) {
+        Write-Success "$name removed."
+        $script:UninstalledItems += $name
+        return $true
+    }
+    Write-Fail "$name (choco)"
+    $script:FailedItems += $name
+    return $false
+}
+
+function Uninstall-Item($wingetId, $chocoId, $name, $scoopId) {
+    # Try the manager that actually has the package installed
+    if ($wingetId -and (Get-Command winget -ErrorAction SilentlyContinue)) {
+        $listed = winget list --id $wingetId --exact 2>$null | Out-String
+        if ($listed -match [regex]::Escape($wingetId)) { return Uninstall-WithWinGet $wingetId $name }
+    }
+    if ($scoopId -and (Get-Command scoop -ErrorAction SilentlyContinue)) {
+        $slist = scoop list 2>$null | Out-String
+        if ($slist -match [regex]::Escape($scoopId)) { return Uninstall-WithScoop $scoopId $name }
+    }
+    if ($chocoId -and (Get-Command choco -ErrorAction SilentlyContinue)) {
+        $clist = choco list --limit-output 2>$null | Out-String
+        if ($clist -match ([regex]::Escape($chocoId) + "\|")) { return Uninstall-WithChoco $chocoId $name }
+    }
+    Write-Fail "No uninstall method found for $name (not installed via winget/scoop/choco?)"
+    $script:FailedItems += $name
+    return $false
+}
+
+function Start-UninstallFlow($langs, $ides, $tools) {
+    # key -> probe command (installed detection)
+    $probeMap = @{
+        python="python"; nodejs="node"; java="java"; csharp="dotnet"; cpp="gcc"; go="go";
+        rust="rustc"; php="php"; ruby="ruby"; kotlin="kotlin"; dart="dart"; zig="zig";
+        typescript="tsc"; r="R"; lua="lua"; perl="perl"; julia="julia"; haskell="ghc";
+        scala="scala"; groovy="groovy"; nim="nim"; crystal="crystal"; gleam="gleam";
+        erlang="erl"; elixir="elixir"; ocaml="ocaml"; mojo="mojo";
+        vscode="code"; vscodium="codium"; cursor="cursor"; zed="zed"; sublime="subl";
+        vim="nvim"; classicvim="vim"; emacs="emacs";
+        git="git"; docker="docker"; cmake="cmake"; gh="gh"; nvm="nvm"; pyenv="pyenv";
+        awscli="aws"; azurecli="az"; gcloudcli="gcloud"; aliyuncli="aliyun"; ocicli="oci";
+        doctl="doctl"; huaweicli="hcloud"; yccli="yc"; ibmcloudcli="ibmcloud";
+        wranglercli="wrangler"; vultrcli="vultr-cli"; linodecli="linode-cli";
+        scwcli="scw"; tencentcli="tccli"; herokucli="heroku"; flycli="flyctl"
+    }
+
+    # Build candidate list from installed items only
+    $candidates = @()
+    foreach ($def in $langs) {
+        $probe = $probeMap[$def.Key]
+        if ($probe -and (Get-Command $probe -ErrorAction SilentlyContinue)) {
+            $wg = ""; $ch = ""
+            if ($def.Versions -and $def.Versions.Count -gt 0) { $wg = $def.Versions[0].WinGet; $ch = $def.Versions[0].Choco }
+            $candidates += @{ Key=$def.Key; Name=$def.Name; WinGet=$wg; Choco=$ch; Scoop="" }
+        }
+    }
+    foreach ($def in $ides) {
+        $probe = $probeMap[$def.Key]
+        if ($probe -and (Get-Command $probe -ErrorAction SilentlyContinue)) {
+            $candidates += @{ Key=$def.Key; Name=$def.Name; WinGet=$def.WinGet; Choco=$def.Choco; Scoop="" }
+        }
+    }
+    foreach ($def in $tools) {
+        $probe = $probeMap[$def.Key]
+        if ($probe -and (Get-Command $probe -ErrorAction SilentlyContinue)) {
+            $candidates += @{ Key=$def.Key; Name=$def.Name; WinGet=$def.WinGet; Choco=$def.Choco; Scoop=$def.Scoop }
+        }
+    }
+    # flycli: brew-style alias check (fly.exe instead of flyctl.exe)
+    if (-not ($candidates | Where-Object { $_.Key -eq "flycli" })) {
+        if (Get-Command fly -ErrorAction SilentlyContinue) {
+            $candidates += @{ Key="flycli"; Name="Fly.io CLI"; WinGet=""; Choco=""; Scoop="flyctl" }
+        }
+    }
+
+    if ($candidates.Count -eq 0) {
+        Write-Info "Nothing detected to uninstall."
+        return
+    }
+
+    Write-SectionHeader "Uninstall - Select Packages"
+    for ($i = 0; $i -lt $candidates.Count; $i++) {
+        $num = ($i + 1).ToString().PadLeft(2)
+        Write-Host "  [$num] $($candidates[$i].Name)" -ForegroundColor White
+    }
+    Write-Host ""
+    Write-Host "  Space-separated numbers to select multiple (e.g. 1 3 5), or empty to cancel" -ForegroundColor DarkGray
+    $selection = Read-Host "  Uninstall which?"
+    if ([string]::IsNullOrWhiteSpace($selection)) { Write-Info "Cancelled."; return }
+
+    $picked = @()
+    foreach ($num in $selection.Split(" ", [StringSplitOptions]::RemoveEmptyEntries)) {
+        $n = 0
+        if ([int]::TryParse($num, [ref]$n)) {
+            if ($n -ge 1 -and $n -le $candidates.Count) { $picked += $candidates[$n - 1] }
+        }
+    }
+    if ($picked.Count -eq 0) { Write-Info "Nothing selected."; return }
+
+    Write-Host ""
+    Write-Host "  The following will be uninstalled:" -ForegroundColor Yellow
+    foreach ($p in $picked) { Write-Host "    - $($p.Name)" -ForegroundColor White }
+    Write-Host ""
+    $confirm = Read-Host "  Proceed with uninstall? [y/N]"
+    if ($confirm -ne "y" -and $confirm -ne "Y") { Write-Info "Cancelled."; return }
+
+    foreach ($p in $picked) {
+        Write-SectionHeader "Uninstalling: $($p.Name)"
+        switch ($p.Key) {
+            "rust" {
+                if (Get-Command rustup -ErrorAction SilentlyContinue) {
+                    Write-Step "Removing Rust via rustup..."
+                    rustup self uninstall -y *>> $script:LogFile
+                    if ($LASTEXITCODE -eq 0) { Write-Success "Rust removed."; $script:UninstalledItems += "Rust" }
+                    else { Write-Fail "Rust"; $script:FailedItems += "Rust" }
+                } else { Uninstall-Item $p.WinGet $p.Choco $p.Name $p.Scoop | Out-Null }
+            }
+            "typescript" {
+                if (Get-Command npm -ErrorAction SilentlyContinue) {
+                    Write-Step "Removing TypeScript via npm..."
+                    npm uninstall -g typescript ts-node *>> $script:LogFile
+                    Write-Success "TypeScript removed."
+                    $script:UninstalledItems += "TypeScript"
+                } else { Write-Fail "TypeScript (needs npm)"; $script:FailedItems += "TypeScript" }
+            }
+            "wranglercli" {
+                if (Get-Command npm -ErrorAction SilentlyContinue) {
+                    Write-Step "Removing Cloudflare Wrangler via npm..."
+                    npm uninstall -g wrangler *>> $script:LogFile
+                    Write-Success "Cloudflare Wrangler removed."
+                    $script:UninstalledItems += "Cloudflare Wrangler"
+                } else { Write-Fail "Wrangler (needs npm)"; $script:FailedItems += "Cloudflare Wrangler" }
+            }
+            { $_ -in @("mojo","linodecli","tencentcli","ocicli") } {
+                $pipPkgs = @{ mojo="mojo"; linodecli="linode-cli"; tencentcli="tccli"; ocicli="oci-cli" }
+                if (Get-Command pip -ErrorAction SilentlyContinue) {
+                    Write-Step "Removing $($p.Name) via pip..."
+                    pip uninstall -y $pipPkgs[$p.Key] *>> $script:LogFile
+                    if ($LASTEXITCODE -eq 0) { Write-Success "$($p.Name) removed."; $script:UninstalledItems += $p.Name }
+                    else { Write-Fail $p.Name; $script:FailedItems += $p.Name }
+                } else { Write-Fail "$($p.Name) (needs pip)"; $script:FailedItems += $p.Name }
+            }
+            "yccli" {
+                $ycDir = "$env:USERPROFILE\yandex-cloud"
+                if (Test-Path $ycDir) {
+                    Write-Step "Removing Yandex Cloud CLI directory..."
+                    Remove-Item $ycDir -Recurse -Force -ErrorAction SilentlyContinue
+                    Write-Success "Yandex Cloud CLI removed."
+                    $script:UninstalledItems += "Yandex Cloud CLI"
+                } else { Uninstall-Item $p.WinGet $p.Choco $p.Name $p.Scoop | Out-Null }
+            }
+            "flycli" {
+                $handled = Uninstall-Item $p.WinGet $p.Choco $p.Name $p.Scoop
+                $flyDir = "$env:USERPROFILE\.fly"
+                if (Test-Path $flyDir) {
+                    Write-Step "Removing Fly.io directory..."
+                    Remove-Item $flyDir -Recurse -Force -ErrorAction SilentlyContinue
+                    Write-Success "Fly.io CLI directory removed."
+                    if (-not $handled) { $script:UninstalledItems += "Fly.io CLI" }
+                }
+            }
+            "huaweicli" {
+                Write-Info "Huawei Cloud KooCLI: remove manually (installed outside package managers)."
+            }
+            default {
+                Uninstall-Item $p.WinGet $p.Choco $p.Name $p.Scoop | Out-Null
+            }
+        }
+    }
+}
+
+function Show-UninstallSummary {
+    Write-SectionHeader "Uninstall Summary"
+    if ($script:UninstalledItems.Count -gt 0) {
+        Write-Host "  Removed ($($script:UninstalledItems.Count)):" -ForegroundColor Green
+        foreach ($item in $script:UninstalledItems) { Write-Host "    - $item" -ForegroundColor Green }
+    }
+    if ($script:FailedItems.Count -gt 0) {
+        Write-Host ""
+        Write-Host "  Failed ($($script:FailedItems.Count)):" -ForegroundColor Red
+        foreach ($item in $script:FailedItems) { Write-Host "    - $item" -ForegroundColor Red }
+    }
+    Write-Host ""
+    Write-Host "  Total: $($script:UninstalledItems.Count) removed, $($script:FailedItems.Count) failed" -ForegroundColor Cyan
+    Write-Host "  Log: $script:LogFile" -ForegroundColor DarkGray
+    Write-Host ""
+}
+
+# ================================================================
 # SYSTEM SCAN - Auto-detect installed software and versions
 # ================================================================
 function Get-CmdVersion($cmd, $flag) {
     if (-not $flag) { $flag = "--version" }
     if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) { return "" }
     # Only run --version on safe CLI tools (no GUI, no interactive shell)
-    $safeCmds = @("python","node","java","dotnet","gcc","go","rustc","php","ruby","dart","zig","tsc","nim","crystal","gleam","gfortran","ldc2","cobc","gnat","sbcl","git","docker","cmake","gh","npm","yarn","pnpm","bun","uv","poetry","conda","terraform","code","codium","nvim","vim","subl","emacs","perl","ghc","ocaml","racket","lua","julia","groovy","mojo","solcjs","wasmtime","wasmer")
+    $safeCmds = @("python","node","java","dotnet","gcc","go","rustc","php","ruby","dart","zig","tsc","nim","crystal","gleam","gfortran","ldc2","cobc","gnat","sbcl","git","docker","cmake","gh","npm","yarn","pnpm","bun","uv","poetry","conda","terraform","code","codium","nvim","vim","subl","emacs","perl","ghc","ocaml","racket","lua","julia","groovy","mojo","solcjs","wasmtime","wasmer","az","aws","gcloud","aliyun","oci","doctl","hcloud","yc","ibmcloud","wrangler","vultr-cli","linode-cli","scw","tccli","heroku","flyctl","fly")
     if ($safeCmds -notcontains $cmd) { return "found" }
     try {
         $out = & $cmd $flag 2>&1 | Select-Object -First 3
@@ -882,6 +1206,27 @@ function Start-SystemScan {
     Show-ScanItem "Docker"     $docker "latest"
     Show-ScanItem "CMake"      $cmake  "latest"
     Show-ScanItem "GitHub CLI" $gh     "latest"
+
+    Write-Host ""
+    Write-Host "  Cloud CLIs:" -ForegroundColor Cyan
+    Show-ScanItem "Azure CLI"    (Get-CmdVersion "az" "--version")         "latest"
+    Show-ScanItem "AWS CLI"      (Get-CmdVersion "aws" "--version")        "latest"
+    Show-ScanItem "Google Cloud" (Get-CmdVersion "gcloud" "--version")     "latest"
+    Show-ScanItem "Alibaba"      (Get-CmdVersion "aliyun" "version")       "latest"
+    Show-ScanItem "Oracle OCI"   (Get-CmdVersion "oci" "--version")        "latest"
+    Show-ScanItem "DigitalOcean" (Get-CmdVersion "doctl" "version")        "latest"
+    Show-ScanItem "hcloud"       (Get-CmdVersion "hcloud" "version")       "latest"
+    Show-ScanItem "Yandex Cloud" (Get-CmdVersion "yc" "version")           "latest"
+    Show-ScanItem "IBM Cloud"    (Get-CmdVersion "ibmcloud" "--version")   "latest"
+    Show-ScanItem "Cloudflare"   (Get-CmdVersion "wrangler" "--version")   "latest"
+    Show-ScanItem "Vultr"        (Get-CmdVersion "vultr-cli" "version")    "latest"
+    Show-ScanItem "Linode"       (Get-CmdVersion "linode-cli" "--version") "latest"
+    Show-ScanItem "Scaleway"     (Get-CmdVersion "scw" "version")          "latest"
+    Show-ScanItem "Tencent"      (Get-CmdVersion "tccli" "--version")      "latest"
+    Show-ScanItem "Heroku"       (Get-CmdVersion "heroku" "--version")     "latest"
+    $flyScanV = Get-CmdVersion "flyctl" "version"
+    if ([string]::IsNullOrEmpty($flyScanV)) { $flyScanV = Get-CmdVersion "fly" "version" }
+    Show-ScanItem "Fly.io"       $flyScanV "latest"
     Write-Host ""
 
     Write-Host "  Package Managers:" -ForegroundColor Cyan
@@ -995,6 +1340,20 @@ function Main {
     $langs = Get-Languages
     $ides = Get-IDEs
     $tools = Get-Tools
+
+    # Action selection (v2.3.4)
+    Write-SectionHeader "What would you like to do?"
+    Write-Host "  [1]  Install    - Set up development environment" -ForegroundColor White
+    Write-Host "  [2]  Uninstall  - Remove installed packages" -ForegroundColor White
+    Write-Host "  [3]  Exit" -ForegroundColor White
+    Write-Host ""
+    $action = Read-Host "  Choose [1/2/3]"
+    if ($action -eq "3") { Write-Info "Goodbye!"; return }
+    if ($action -eq "2") {
+        Start-UninstallFlow $langs $ides $tools
+        Show-UninstallSummary
+        return
+    }
 
     # Profile selection
     $profileChoice = Show-ProfileMenu
@@ -1170,8 +1529,15 @@ function Main {
     Write-SectionHeader "Installing Developer Tools"
     foreach ($toolKey in $selectedToolKeys) {
         if ($toolKey -eq "wsl") { Install-WSL; continue }
+        if ($toolKey -in @("linodecli","tencentcli","ocicli")) { Install-PipCli $toolKey; continue }
+        if ($toolKey -eq "wranglercli") { Install-Wrangler; continue }
+        if ($toolKey -eq "yccli") { Install-YcCli; continue }
+        if ($toolKey -eq "ibmcloudcli") { Install-IbmCloudCli; continue }
+        if ($toolKey -eq "aliyuncli") { Install-AliyunCli; continue }
+        if ($toolKey -eq "flycli" -and -not (Get-Command scoop -ErrorAction SilentlyContinue)) { Install-FlyCli; continue }
+        if ($toolKey -eq "huaweicli") { Write-Info "Huawei Cloud KooCLI: manual install - https://support.huaweicloud.com/intl/en-us/cli/"; continue }
         $tool = $tools | Where-Object { $_.Key -eq $toolKey }
-        if ($tool) { Install-Item $tool.WinGet $tool.Choco $tool.Name }
+        if ($tool) { Install-Item $tool.WinGet $tool.Choco $tool.Name $tool.Scoop }
     }
 
     # INSTALL FRAMEWORKS
